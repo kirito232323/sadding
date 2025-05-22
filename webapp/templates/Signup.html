@@ -1,0 +1,318 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sign Up - Dragon Ricemill</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    rel="stylesheet"
+  />
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen text-gray-800">
+
+  <div class="bg-white p-10 rounded-2xl shadow-lg w-full max-w-lg">
+    <header class="text-center mb-6">
+      <h1 class="text-3xl font-bold text-[#1e293b]">Dragon Ricemill</h1>
+      <p class="text-sm text-gray-500 mt-1">Create your account</p>
+    </header>
+
+    {% if show_otp %}
+      <!-- OTP Verification Form -->
+      <form method="post" action="{% url 'signup' %}">
+        <input type="hidden" name="form_type" value="verify_otp">
+        {% csrf_token %}
+        <p class="mb-4">
+          Please enter the OTP sent to <strong>{{ email }}</strong>:
+        </p>
+        <input
+          type="text"
+          name="otp"
+          required
+          class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter OTP"
+        />
+        <button
+          type="submit"
+          name="otp_submit"
+          class="w-full bg-[#1e293b] text-white py-2 px-4 rounded-md hover:bg-[#334155] transition mt-4"
+        >
+          Verify OTP
+        </button>
+        {% if error %}
+          <p class="text-red-600 text-sm mt-2">{{ error }}</p>
+        {% endif %}
+        {% if success %}
+          <p class="text-green-600 text-sm mt-2">{{ success }}</p>
+        {% endif %}
+      </form>
+
+    {% else %}
+      <!-- Original Signup Form -->
+      <form method="post" action="{% url 'signup' %}" class="space-y-6">
+        <input type="hidden" name="form_type" value="signup">
+        {% csrf_token %}
+
+        {% if error %}
+          <div class="bg-red-100 text-red-700 p-3 rounded-md text-sm text-center">
+            {{ error }}
+          </div>
+        {% endif %}
+
+        {% if success %}
+          <div class="bg-green-100 text-green-700 p-3 rounded-md text-sm text-center">
+            {{ success }}
+          </div>
+        {% endif %}
+
+
+        <!-- Personal Information -->
+        <fieldset class="border p-4 rounded-md space-y-4 mb-4">
+          <legend class="font-semibold text-gray-700">Personal Information</legend>
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label for="first_name" class="block text-sm font-medium text-gray-700">First Name<span class="text-red-500">*</span></label>
+              <input
+                type="text"
+                id="first_name"
+                name="first_name"
+                required
+                autofocus
+                class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label for="middle_name" class="block text-sm font-medium text-gray-700">Middle Name</label>
+              <input
+                type="text"
+                id="middle_name"
+                name="middle_name"
+                class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name<span class="text-red-500">*</span></label>
+              <input
+                type="text"
+                id="last_name"
+                name="last_name"
+                required
+                class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <div>
+            <label for="suffix" class="block text-sm font-medium text-gray-700">Suffix</label>
+            <input
+              type="text"
+              id="suffix"
+              name="suffix"
+              placeholder="Jr., Sr., III, etc."
+              class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </fieldset>
+
+
+        <!-- Account Credentials -->
+        <fieldset class="border p-4 rounded-md space-y-4 mb-4">
+          <legend class="font-semibold text-gray-700">Account Credentials</legend>
+          <div>
+            <label for="username" class="block text-sm font-medium text-gray-700">Username<span class="text-red-500">*</span></label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              required
+              class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label for="password" class="block text-sm font-medium text-gray-700">Password<span class="text-red-500">*</span></label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
+              minlength="8"
+              class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p class="text-xs text-gray-500 mt-1">Password must be at least 8 characters.</p>
+          </div>
+          <div>
+            <label for="confirm_password" class="block text-sm font-medium text-gray-700">Confirm Password<span class="text-red-500">*</span></label>
+            <input
+              type="password"
+              id="confirm_password"
+              name="confirm_password"
+              required
+              minlength="8"
+              class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p id="password-match-message" class="text-xs mt-1"></p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" id="show_password" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
+            <label for="show_password" class="text-sm text-gray-700 select-none cursor-pointer">Show Passwords</label>
+          </div>
+        </fieldset>
+
+        <!-- Email -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700">Email<span class="text-red-500">*</span></label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <!-- Mobile Number -->
+        <div>
+          <label for="mobile_number" class="block text-sm font-medium text-gray-700">Mobile Number<span class="text-red-500">*</span></label>
+          <div class="flex gap-2">
+            <select id="country_code" name="country_code" class="border rounded-md px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="+63" selected>+63</option>
+              <option value="+1">+1</option>
+              <option value="+44">+44</option>
+              <option value="+61">+61</option>
+              <!-- Add more country codes as needed -->
+            </select>
+            <input
+              type="tel"
+              id="mobile_number"
+              name="mobile_number"
+              required
+              pattern="[0-9]{10,11}"
+              maxlength="11"
+              placeholder="9XXXXXXXXX"
+              class="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <!-- Address Fields -->
+        <fieldset class="border p-4 rounded-md space-y-4">
+          <legend class="font-semibold text-gray-700">Address</legend>
+
+          <div>
+            <label for="house_unit_number" class="block text-sm font-medium text-gray-700">House / Unit Number</label>
+            <input
+              type="text"
+              id="house_unit_number"
+              name="house_unit_number"
+              class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label for="building_name" class="block text-sm font-medium text-gray-700">Building / Subdivision / Apartment Name</label>
+            <input
+              type="text"
+              id="building_name"
+              name="building_name"
+              class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label for="street_name" class="block text-sm font-medium text-gray-700">Street Name</label>
+            <input
+              type="text"
+              id="street_name"
+              name="street_name"
+              class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label for="barangay" class="block text-sm font-medium text-gray-700">Barangay</label>
+            <input
+              type="text"
+              id="barangay"
+              name="barangay"
+              class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label for="city_municipality" class="block text-sm font-medium text-gray-700">City / Municipality</label>
+            <input
+              type="text"
+              id="city_municipality"
+              name="city_municipality"
+              class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label for="province" class="block text-sm font-medium text-gray-700">Province</label>
+            <input
+              type="text"
+              id="province"
+              name="province"
+              class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label for="zip_code" class="block text-sm font-medium text-gray-700">ZIP / Postal Code</label>
+            <input
+              type="text"
+              id="zip_code"
+              name="zip_code"
+              class="mt-1 w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </fieldset>
+
+        <button
+          type="submit"
+          class="w-full bg-[#1e293b] text-white py-2 px-4 rounded-md hover:bg-[#334155] transition"
+        >
+          Sign Up
+        </button>
+
+        <p class="text-center text-sm text-gray-600">
+          Already have an account? 
+          <a href="{% url 'login' %}" class="text-blue-600 hover:underline">Log in</a>
+        </p>
+      </form>
+    {% endif %}
+  </div>
+
+  <script>
+    // Password show/hide toggle
+    const showPasswordCheckbox = document.getElementById('show_password');
+    const passwordField = document.getElementById('password');
+    const confirmPasswordField = document.getElementById('confirm_password');
+    showPasswordCheckbox.addEventListener('change', () => {
+      const type = showPasswordCheckbox.checked ? 'text' : 'password';
+      passwordField.type = type;
+      confirmPasswordField.type = type;
+    });
+
+    // Password match validation
+    const passwordMatchMessage = document.getElementById('password-match-message');
+    function checkPasswordMatch() {
+      if (passwordField.value && confirmPasswordField.value) {
+        if (passwordField.value === confirmPasswordField.value) {
+          passwordMatchMessage.textContent = 'Passwords match';
+          passwordMatchMessage.className = 'text-green-600 text-xs mt-1';
+        } else {
+          passwordMatchMessage.textContent = 'Passwords do not match';
+          passwordMatchMessage.className = 'text-red-600 text-xs mt-1';
+        }
+      } else {
+        passwordMatchMessage.textContent = '';
+      }
+    }
+    passwordField.addEventListener('input', checkPasswordMatch);
+    confirmPasswordField.addEventListener('input', checkPasswordMatch);
+  </script>
+</body>
+</html>

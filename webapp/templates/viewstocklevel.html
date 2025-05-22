@@ -1,0 +1,310 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard - Dragon Ricemill</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    .dropdown:hover .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    /* Hide scrollbar */
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;  /* IE/Edge */
+      scrollbar-width: none;     /* Firefox */
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen font-sans leading-relaxed overflow-x-hidden">
+
+<header class="fixed top-0 right-0 h-screen w-56 bg-white shadow-lg flex flex-col z-50 border-l border-gray-200">
+  <!-- Logo / Brand -->
+  <div class="h-14 flex items-center justify-center border-b border-gray-200">
+    <a href="#" class="flex items-center space-x-2 select-none text-gray-900 font-bold text-lg tracking-wide">
+      <span class="text-yellow-500 text-2xl">🌾</span>
+      <span>Dragon Ricemill</span>
+    </a>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="flex-1 flex flex-col py-1 pr-1 overflow-y-auto scrollbar-hide">
+    {% if request.session.user_role == 'admin' %}
+      <div class="px-2 py-1">
+        <span class="block text-1 text-gray-500 font-semibold mb-3">Welcome, {{ request.session.user_name }}!</span>
+        <a href="{% url 'dashboard' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50  font-semibold hover:text-yellow-600 transition">
+          <i class="fas fa-home w-4 text-yellow-500"></i>
+          <span>Home</span>
+        </a>
+        <a href="{% url 'profile' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition text-gray-900">
+        <i class="fas fa-user-circle w-4 text-yellow-500"></i>
+        <span>Profile</span>
+      </a>
+      </div>
+      <div class="mb-2 px-2">
+        <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Users</p>
+        <a href="{% url 'add_user' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+          <i class="fas fa-user-plus w-4 text-yellow-500"></i>
+          <span>Add User</span>
+        </a>
+        <a href="{% url 'edituser' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+          <i class="fas fa-user-edit w-4 text-yellow-500"></i>
+          <span>Edit User</span>
+        </a>
+        <a href="{% url 'user_account' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+          <i class="fas fa-user-circle w-4 text-yellow-500"></i>
+          <span>Customer</span>
+        </a>
+        <a href="{% url 'logs' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+          <i class="fas fa-file-alt w-4 text-yellow-500"></i>
+          <span>User Logs</span>
+        </a>
+      </div>
+      <div class="mb-2 px-2">
+        <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Settings</p>
+        <a href="{%url 'supplier_order'%}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+          <i class="fas fa-truck w-4 text-yellow-500"></i>
+          <span>Supplier (Order)</span>
+        </a>
+        <a href="{% url 'orders' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+          <i class="fas fa-clipboard-check w-4 text-yellow-500"></i>
+          <span>Order Confirmation</span>
+        </a>
+        <a href="{% url 'supplier' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+          <i class="fas fa-truck-loading w-4 text-yellow-500"></i>
+          <span>Supplier Confirmation</span>
+        </a>
+      </div>
+      <div class="mb-2 px-2">
+        <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Delivery System</p>
+        <a href="{% url 'delivery-management' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+          <i class="fas fa-truck-moving w-4 text-yellow-500"></i>
+          <span>Manage Deliveries</span>
+        </a>
+      </div>
+      <div class="mb-2 px-2">
+        <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Inventory</p>
+        <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+          <i class="fas fa-box-open w-4 text-yellow-500"></i>
+          <span>Add Stock</span>
+        </a>
+        <a href="{% url 'viewstocklevel' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+          <i class="fas fa-layer-group w-4 text-yellow-500"></i>
+          <span>View Levels</span>
+        </a>
+      </div>
+      <div class="mb-2 px-2">
+        <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
+        <a href="{% url 'new_sale' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+          <i class="fas fa-cart-plus w-4 text-yellow-500"></i>
+          <span>New Sale</span>
+        </a>
+        <a href="{% url 'view_sales_history' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+          <i class="fas fa-history w-4 text-yellow-500"></i>
+          <span>History</span>
+        </a>
+        <a href="{% url 'view_sales_report' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+          <i class="fas fa-chart-line w-4 text-yellow-500"></i>
+          <span>Report</span>
+        </a>
+        <a href="{% url 'inventory_turnover' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+          <i class="fas fa-sync-alt w-4 text-yellow-500"></i>
+          <span>Inventory Turnover</span>
+        </a>
+      </div>
+    {% elif request.session.user_role == 'employee' %}
+      <div class="mb-2 px-2">
+        <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+          <i class="fas fa-boxes w-4 text-yellow-500"></i>
+          <span>Inventory</span>
+        </a>
+      </div>
+    {% elif request.session.user_role == 'cashier' %}
+      <div class="mb-2 px-2">
+        <a href="{% url 'new_sale' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+          <i class="fas fa-cash-register w-4 text-yellow-500"></i>
+          <span>Sales</span>
+        </a>
+      </div>
+    {% endif %}
+    <!-- Profile & Logout -->
+    <div class="border-t border-gray-200 mt-auto px-2 py-4">
+      <a href="{% url 'logout' %}" onclick="return confirm('Logout?');" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-red-100 hover:text-red-600 transition font-semibold text-red-500 mt-2">
+        <i class="fas fa-sign-out-alt w-4"></i>
+        <span>Logout</span>
+      </a>
+    </div>
+  </nav>
+</header>
+
+<!-- Push content so it’s not behind the sidebar -->
+<div class="mr-56 min-h-screen bg-gray-50">
+  <main class="max-w-screen-xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+    <!-- Messages -->
+    {% if messages %}
+      <div class="mb-6">
+        {% for message in messages %}
+          <div class="p-3 mb-2 rounded text-sm font-medium
+            {% if message.tags == 'success' %} bg-green-100 text-green-800
+            {% elif message.tags == 'error' %} bg-red-100 text-red-800
+            {% elif message.tags == 'warning' %} bg-yellow-100 text-yellow-800
+            {% else %} bg-gray-100 text-gray-800
+            {% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+</nav>
+<!-- Main Content -->
+<main class="container mx-auto px-6 py-12">
+  <h2 class="text-4xl font-extrabold text-gray-900 mb-10 text-center">Rice Stock Levels</h2>
+
+  <!-- Filters: Search + Price Range + Rice Type + Status -->
+  <div class="flex flex-wrap gap-4 justify-center max-w-5xl mx-auto mb-8">
+    <input
+      id="searchInput"
+      type="text"
+      placeholder="Search rice type..."
+      class="flex-grow min-w-[220px] max-w-lg p-3 border border-gray-300 rounded-md shadow-sm
+             focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
+    />
+
+    <input
+      id="minPrice"
+      type="number"
+      placeholder="Min ₱"
+      class="w-28 p-3 border border-gray-300 rounded-md shadow-sm
+             focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
+      min="0"
+    />
+
+    <input
+      id="maxPrice"
+      type="number"
+      placeholder="Max ₱"
+      class="w-28 p-3 border border-gray-300 rounded-md shadow-sm
+             focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
+      min="0"
+    />
+
+    <select
+      id="riceTypeFilter"
+      class="w-40 p-3 border border-gray-300 rounded-md shadow-sm
+             focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
+    >
+      <option value="">All Rice Types</option>
+      {% for rice in stock_data|dictsort:"rice_type" %}
+        <option value="{{ rice.rice_type|lower }}">{{ rice.rice_type }}</option>
+      {% endfor %}
+    </select>
+
+    <select
+      id="statusFilter"
+      class="w-40 p-3 border border-gray-300 rounded-md shadow-sm
+             focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
+    >
+      <option value="">All Statuses</option>
+      <option value="in stock">In Stock</option>
+      <option value="low stock">Low Stock</option>
+      <option value="out of stock">Out of Stock</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-lg">
+    <table class="min-w-full divide-y divide-gray-200 text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-6 py-3 text-left font-semibold text-gray-700">Rice Type</th>
+          <th class="px-6 py-3 text-right font-semibold text-gray-700">Current Stock (Sacks)</th>
+          <th class="px-6 py-3 text-right font-semibold text-gray-700">Stock In (Sacks)</th>
+          <th class="px-6 py-3 text-right font-semibold text-gray-700">Stock Out (Sacks)</th>
+          <th class="px-6 py-3 text-right font-semibold text-gray-700">Price/Sack (₱)</th>
+          <th class="px-6 py-3 text-center font-semibold text-gray-700">Status</th>
+          <th class="px-6 py-3 text-center font-semibold text-gray-700">Last Updated</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for rice in stock_data %}
+          <tr class="hover:bg-blue-50 transition">
+            <td class="px-6 py-3 rice-type font-medium text-gray-900">{{ rice.rice_type }}</td>
+            <td class="px-6 py-3 text-right text-gray-700">{{ rice.current_stock }}</td>
+            <td class="px-6 py-3 text-right text-gray-700">{{ rice.stock_in }}</td>
+            <td class="px-6 py-3 text-right text-gray-700">{{ rice.stock_out }}</td>
+            <td class="px-6 py-3 text-right price text-gray-700">₱{{ rice.price_per_sack|floatformat:2|intcomma }}</td>
+            <td class="px-6 py-3 text-center status">
+              {% if rice.current_stock == 0 %}
+                <span class="inline-block bg-red-100 text-red-800 text-xs font-semibold px-3 py-1 rounded-full tracking-wide">Out of Stock</span>
+              {% elif rice.current_stock <= 100 %}
+                <span class="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full tracking-wide">Low Stock</span>
+              {% else %}
+                <span class="inline-block bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full tracking-wide">In Stock</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-3 text-center text-gray-500 text-xs">{{ rice.last_updated|date:"M d, Y - g:i A" }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-10 text-gray-500 italic">No stock data available.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Script: Search + Price Filter -->
+<script>
+ const searchInput = document.getElementById("searchInput");
+const minPrice = document.getElementById("minPrice");
+const maxPrice = document.getElementById("maxPrice");
+const riceTypeFilter = document.getElementById("riceTypeFilter");
+const statusFilter = document.getElementById("statusFilter");
+
+const rows = document.querySelectorAll("tbody tr");
+
+function filterTable() {
+  const query = searchInput.value.toLowerCase();
+  const min = parseFloat(minPrice.value) || 0;
+  const max = parseFloat(maxPrice.value) || Infinity;
+  const selectedRiceType = riceTypeFilter.value.toLowerCase();
+  const selectedStatus = statusFilter.value.toLowerCase();
+
+  rows.forEach(row => {
+    const type = row.querySelector(".rice-type")?.textContent.toLowerCase() || "";
+    const priceText = row.querySelector(".price")?.textContent.replace(/[^0-9.-]+/g,"") || "0";
+    const price = parseFloat(priceText);
+    const statusText = row.querySelector(".status")?.textContent.toLowerCase() || "";
+
+    const matchesType = !selectedRiceType || type === selectedRiceType;
+    const matchesStatus = !selectedStatus || statusText.includes(selectedStatus);
+    const matchesQuery = type.includes(query);
+    const matchesPrice = price >= min && price <= max;
+
+    row.style.display = (matchesQuery && matchesPrice && matchesType && matchesStatus) ? "" : "none";
+  });
+}
+
+// Attach event listeners
+searchInput.addEventListener("input", filterTable);
+minPrice.addEventListener("input", filterTable);
+maxPrice.addEventListener("input", filterTable);
+riceTypeFilter.addEventListener("change", filterTable);
+statusFilter.addEventListener("change", filterTable);
+
+</script>
+
+</body>
+</html>

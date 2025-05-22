@@ -1,0 +1,567 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard - Dragon Ricemill</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
+  <style>
+    html { scroll-behavior: smooth; }
+    .dropdown:hover .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen font-sans leading-relaxed overflow-x-hidden">
+
+<header class="fixed top-0 right-0 h-screen w-56 bg-white shadow-lg flex flex-col z-50 border-l border-gray-200">
+  <div class="h-14 flex items-center justify-center border-b border-gray-200">
+    <a href="#" class="flex items-center space-x-2 select-none text-gray-900 font-bold text-lg tracking-wide">
+      <span class="text-yellow-500 text-2xl">🌾</span>
+      <span>Dragon Ricemill</span>
+    </a>
+  </div>
+
+  <nav class="flex-1 flex flex-col py-1 pr-1 overflow-y-auto scrollbar-hide">
+    <div class="px-2 py-1">
+      <span class="block text-1 text-gray-500 font-semibold mb-3">Welcome, {{ request.session.user_name }}!</span>
+      <a href="{% url 'dashboard' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 font-semibold hover:text-yellow-600 transition">
+        <i class="fas fa-home w-4 text-yellow-500"></i><span>Home</span>
+      </a>
+      <a href="{% url 'profile' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition text-gray-900">
+        <i class="fas fa-user-circle w-4 text-yellow-500"></i><span>Profile</span>
+      </a>
+    </div>
+
+    {% if request.session.user_role == 'admin' %}
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Users</p>
+      <a href="{% url 'add_user' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-user-plus w-4 text-yellow-500"></i><span>Add User</span>
+      </a>
+      <a href="{% url 'edituser' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-user-edit w-4 text-yellow-500"></i><span>Edit User</span>
+      </a>
+      <a href="{% url 'user_account' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-user-circle w-4 text-yellow-500"></i><span>Customer</span>
+      </a>
+      <a href="{% url 'logs' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-file-alt w-4 text-yellow-500"></i><span>User Logs</span>
+      </a>
+    </div>
+
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Settings</p>
+      <a href="{%url 'supplier_order'%}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-truck w-4 text-yellow-500"></i><span>Supplier (Order)</span>
+      </a>
+      <a href="{% url 'orders' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-clipboard-check w-4 text-yellow-500"></i><span>Order Confirmation</span>
+      </a>
+      <a href="{% url 'supplier' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-loading w-4 text-yellow-500"></i><span>Supplier Confirmation</span>
+      </a>
+    </div>
+    {% endif %}
+
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Delivery System</p>
+      <a href="{% url 'delivery-management' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Manage Deliveries</span>
+      </a>
+    </div>
+    {% endif %}
+
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Inventory</p>
+      <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-boxes w-4 text-yellow-500"></i><span>Inventory</span>
+      </a>
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
+      <a href="{% url 'viewstocklevel' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-layer-group w-4 text-yellow-500"></i><span>View Levels</span>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'cashier' %}
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
+      <a href="{% url 'new_sale' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-cart-plus w-4 text-yellow-500"></i><span>New Sale</span>
+      </a>
+      <a href="{% url 'view_sales_history' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-history w-4 text-yellow-500"></i><span>History</span>
+      </a>
+      <a href="{% url 'view_sales_report' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-chart-line w-4 text-yellow-500"></i><span>Report</span>
+      </a>
+      <a href="{% url 'inventory_turnover' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-sync-alt w-4 text-yellow-500"></i><span>Inventory Turnover</span>
+      </a>
+    </div>
+    {% endif %}
+
+    <div class="border-t border-gray-200 mt-auto px-2 py-4">
+      <a href="{% url 'logout' %}" onclick="return confirm('Logout?');" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-red-100 hover:text-red-600 transition font-semibold text-red-500 mt-2">
+        <i class="fas fa-sign-out-alt w-4"></i><span>Logout</span>
+      </a>
+    </div>
+  </nav>
+</header>
+
+
+<!-- Push content so it’s not behind the sidebar -->
+<div class="mr-56 min-h-screen bg-gray-50">
+  <main class="max-w-screen-xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+    <!-- Messages -->
+    {% if messages %}
+      <div class="mb-6">
+        {% for message in messages %}
+          <div class="p-3 mb-2 rounded text-sm font-medium
+            {% if message.tags == 'success' %} bg-green-100 text-green-800
+            {% elif message.tags == 'error' %} bg-red-100 text-red-800
+            {% elif message.tags == 'warning' %} bg-yellow-100 text-yellow-800
+            {% else %} bg-gray-100 text-gray-800
+            {% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+
+
+
+<!-- API/JS Success Banner (Simple) -->
+<div id="apiSuccessBanner" style="display:none;" class="mb-6 p-3 rounded text-sm font-medium text-center"></div>
+
+<main class="container mx-auto px-4 py-8">
+
+  <!-- Page Title -->
+  <div class="flex flex-col sm:flex-row justify-between items-center mb-10">
+    <h1 class="text-3xl font-bold text-[#1e293b] mb-4 sm:mb-0">Stock Management</h1>
+  </div>
+
+  <!-- Add New Rice Type -->
+<section class="bg-white p-6 rounded-lg shadow-md mb-8">
+  <h2 class="text-xl font-bold mb-4 text-gray-800">Add New Rice Type</h2>
+  <form id="add-rice-form" method="POST" class="space-y-4" action="{% url 'add_rice' %}">
+    {% csrf_token %}
+    <div>
+      <label for="rice_type" class="font-medium text-gray-700">Rice Type:</label>
+      <input type="text" name="rice_type" id="rice_type" required
+             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+    </div>
+    <div>
+      <label for="price_per_sack" class="font-medium text-gray-700">Price Per Sack:</label>
+      <input type="number" name="price_per_sack" id="price_per_sack" step="0.01" required
+             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+    </div>
+    <div>
+      <label for="description" class="font-medium text-gray-700">Description:</label>
+      <textarea name="description" id="description" rows="3"
+                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"></textarea>
+    </div>
+    <div>
+      <button type="submit" class="w-full bg-green-600 text-white font-semibold py-2 rounded-md hover:bg-green-700 text-sm">Add Rice Type</button>
+    </div>
+  </form>
+</section>
+
+  <!-- Add Rice Stock -->
+  <section class="bg-white p-6 rounded-lg shadow-md mb-8">
+    <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Add Rice Stock</h2>
+    <form method="POST" action="{% url 'addstock' %}" onsubmit="return confirm('Confirm adding stock?')">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 items-end">
+        <div>
+          <label for="riceType" class="block text-sm font-medium text-gray-700">Rice Type</label>
+          <select id="riceType" name="riceType" required
+                  class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm">
+            <option value="" disabled selected>-- Select --</option>
+            {% for rice in rice_data %}
+              <option value="{{ rice.riceID }}">{{ rice.rice_type }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="quantity" class="block text-sm font-medium text-gray-700">Stock In Quantity (sacks)</label>
+          <input type="number" id="quantity" name="quantity" min="1" required placeholder="e.g. 100"
+                 class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm" />
+        </div>
+        <div>
+          <button type="submit"
+                  class="w-full bg-indigo-600 text-white font-semibold py-2 rounded-md hover:bg-indigo-700 flex items-center justify-center text-sm">
+            <i class="fas fa-plus mr-2"></i> Add Stock
+          </button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- Rice Stock Table -->
+  <section class="bg-white p-6 rounded-lg shadow-md">
+    <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Rice Stock Management</h2>
+    <input type="text" id="riceFilterInput" placeholder="Filter by Rice Name"
+           class="w-full max-w-sm border border-gray-300 rounded px-4 py-2 text-sm mb-4" />
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+<thead class="bg-gray-100">
+  <<thead class="bg-gray-100">
+  <tr>
+    <th class="px-4 py-3 text-left font-medium text-gray-700">Rice Type</th>
+    <th class="px-4 py-3 text-right font-medium text-gray-700">Stock In</th>
+    <th class="px-4 py-3 text-right font-medium text-gray-700">Stock Out</th>
+    <th class="px-4 py-3 text-right font-semibold text-gray-700">Current Stock</th>
+    <th class="px-4 py-3 text-right font-medium text-gray-700">Price/Sack</th>
+    <th class="px-4 py-3 text-left font-medium text-gray-700">Description</th>
+    <th class="px-4 py-3 text-left font-medium text-gray-700">Last Updated</th>
+    <th class="px-4 py-3 text-center font-medium text-gray-700">Actions</th>
+  </tr>
+</thead>
+<tbody id="riceTableBody" class="divide-y divide-gray-200">
+  {% for stock in stock_data %}
+    <tr>
+      <td class="px-4 py-2">{{ stock.rice_type }}</td>
+      <td class="px-4 py-2 text-right">{{ stock.stock_in }}</td>
+      <td class="px-4 py-2 text-right">{{ stock.stock_out }}</td>
+      <td class="px-4 py-2 text-right font-semibold">{{ stock.current_stock }}</td>
+      <td class="px-4 py-2 text-right">
+        <span class="price-display">₱{{ stock.price_per_sack }}</span>
+        <input type="number" class="price-input hidden w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
+           value="{{ stock.price_per_sack }}" step="0.01" min="0" />
+
+          </td>
+      <td class="px-4 py-2">
+        <span class="desc-display">{{ stock.description|default:"-" }}</span>
+        <textarea class="desc-input hidden w-full border border-gray-300 rounded-md px-2 py-1 text-sm">{{ stock.description }}</textarea>
+      </td>
+       <td class="px-4 py-2 text-left">
+  {{ stock.last_updated|date:"M d, Y H:i" }}
+</td>
+      <td class="px-4 py-2 text-center flex justify-center gap-2">
+        <button onclick="toggleEdit(this)" class="edit-btn bg-yellow-400 text-white px-2 py-1 rounded">Edit</button>
+        <button onclick="saveChanges(this, '{{ stock.riceID }}')" class="save-btn hidden bg-green-500 text-white px-2 py-1 rounded">Save</button>
+        <form method="POST" action="{% url 'deletestock' stock.riceID %}" class="inline" onsubmit="return confirm('Delete this rice type?');">
+          {% csrf_token %}
+          <button type="submit" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% empty %}
+    <tr>
+      <td colspan="8" class="text-center py-4 text-gray-500">No rice types available.</td>
+    </tr>
+  {% endfor %}
+</tbody>
+      </table>
+    </div>
+  </section>
+
+
+</main>
+
+  <!-- Update Log Section -->
+  <section class="bg-white p-6 rounded-lg shadow-md mb-8">
+    <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Update Log</h2>
+    <div id="update-log-list">
+      {% if update_logs %}
+        <ul>
+          {% for log in update_logs %}
+            <li class="flex justify-between items-center border-b py-2">
+              <span>
+                {% if log.action == 'add_stock' %}
+                  Added <strong>{{ log.quantity_added }}</strong> sacks to <strong>{{ log.rice_type }}</strong> at {{ log.timestamp|date:"M d, Y H:i" }}
+                {% else %}
+                  Updated <strong>{{ log.rice_type }}</strong> (Price: ₱{{ log.old_price }} → ₱{{ log.new_price }}, Desc: "{{ log.old_desc }}" → "{{ log.new_desc }}") at {{ log.timestamp|date:"M d, Y H:i" }}
+                {% endif %}
+                {% if log.undone %}
+                  <span class="text-red-500 ml-2">(Undone)</span>
+                {% endif %}
+              </span>
+              {% if log.action == 'add_stock' and not log.undone %}
+  <button type="button"
+          class="undo-btn text-xs text-red-600 border border-red-400 rounded px-2 py-1 hover:bg-red-50 ml-2"
+          data-log-id="{{ log.id }}">
+    Undo
+  </button>
+{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-gray-500 text-center">No updates yet.</p>
+      {% endif %}
+    </div>
+  </section>
+<div id="popup-message" style="display:none; position: fixed; top: 10px; right: 10px; 
+    background-color: #f0f0f0; padding: 10px 20px; border-radius: 5px; box-shadow: 0 0 5px #ccc;">
+</div>
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+  const popup = document.getElementById('popup-message');
+
+  document.querySelectorAll('.undo-btn').forEach(button => {
+    button.addEventListener('click', function () {
+      const logId = this.dataset.logId;
+      if (!confirm('Undo this stock addition?')) return;
+
+      fetch(`/undo_update/${logId}/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      })
+      .then(response => response.json())
+      .then(data => {
+        popup.innerText = data.status === 'success' ? 'Successfully undone!' : (data.message || 'An error occurred.');
+        popup.style.display = 'block';
+        popup.style.backgroundColor = data.status === 'success' ? '#d1fae5' : '#fee2e2';
+        popup.style.color = data.status === 'success' ? '#065f46' : '#991b1b';
+
+        setTimeout(() => {
+          popup.style.display = 'none';
+          if (data.status === 'success') {
+            location.reload();
+          }
+        }, 2000);
+      })
+      .catch(() => {
+        popup.innerText = 'Something went wrong.';
+        popup.style.backgroundColor = '#fee2e2';
+        popup.style.color = '#991b1b';
+        popup.style.display = 'block';
+
+        setTimeout(() => popup.style.display = 'none', 3000);
+      });
+    });
+  });
+});
+
+// Helper function to get CSRF token cookie (required for Django POST)
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+
+  // Filter rice table by rice type name
+  document.getElementById('riceFilterInput').addEventListener('input', function () {
+    const filter = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#riceTableBody tr');
+    rows.forEach(row => {
+      const riceType = row.querySelector('td:first-child').textContent.toLowerCase();
+      row.style.display = riceType.includes(filter) ? '' : 'none';
+    });
+  });
+
+  // Toggle between display and edit mode for price and description
+  function toggleEdit(button) {
+    const row = button.closest('tr');
+    const priceDisplay = row.querySelector('.price-display');
+    const priceInput = row.querySelector('.price-input');
+    const descDisplay = row.querySelector('.desc-display');
+    const descInput = row.querySelector('.desc-input');
+    const saveBtn = row.querySelector('.save-btn');
+
+    if (priceInput.classList.contains('hidden')) {
+      // Enter edit mode
+      priceDisplay.classList.add('hidden');
+      priceInput.classList.remove('hidden');
+      descDisplay.classList.add('hidden');
+      descInput.classList.remove('hidden');
+      button.classList.add('hidden'); // hide Edit button
+      saveBtn.classList.remove('hidden'); // show Save button
+    }
+  }
+
+  // Helper to get CSRF token from cookies
+// Helper function to get CSRF token from cookie
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+async function saveChanges(button, riceID) {
+  const row = button.closest('tr');
+  const priceInput = row.querySelector('.price-input');
+  const descInput = row.querySelector('.desc-input');
+  const priceDisplay = row.querySelector('.price-display');
+  const descDisplay = row.querySelector('.desc-display');
+  const editBtn = row.querySelector('.edit-btn');
+
+  const newPrice = parseFloat(priceInput.value);
+  const newDesc = descInput.value.trim();
+
+  if (isNaN(newPrice) || newPrice < 0) {
+    alert('Please enter a valid price.');
+    return;
+  }
+
+  try {
+    const csrftoken = getCookie('csrftoken');
+
+    const response = await fetch(`/updatestock/${riceID}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken
+      },
+      body: JSON.stringify({
+        price_per_sack: newPrice,
+        description: newDesc
+      })
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+
+    if (!response.ok) {
+      // If HTTP status is error, read text and show
+      const errorText = await response.text();
+      alert(`Error updating stock: ${response.status} - ${errorText}`);
+      return;
+    }
+
+    if (contentType.includes('application/json')) {
+      const result = await response.json();
+      if (result.status === 'success') {
+        priceDisplay.textContent = `₱${newPrice.toFixed(2)}`;
+        descDisplay.textContent = newDesc || '-';
+
+        priceDisplay.classList.remove('hidden');
+        priceInput.classList.add('hidden');
+        descDisplay.classList.remove('hidden');
+        descInput.classList.add('hidden');
+
+        button.classList.add('hidden'); // hide Save
+        editBtn.classList.remove('hidden'); // show Edit
+      } else {
+        alert('Update failed: ' + (result.message || 'Unknown error'));
+      }
+    } else {
+      const text = await response.text();
+      alert('Error updating stock: Server returned invalid response:\n' + text);
+    }
+  } catch (error) {
+    alert('Error updating stock: ' + error.message);
+  }
+}
+
+
+
+  // Handle Add New Rice Type form submit via AJAX
+  document.getElementById('add-rice-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const rice_type = this.rice_type.value.trim();
+    const price_per_sack = parseFloat(this.price_per_sack.value);
+    const description = this.description.value.trim();
+
+    if (!rice_type) {
+      showApiSuccessBanner({status: 'error', message: 'Please enter a rice type.'});
+      return;
+    }
+    if (isNaN(price_per_sack) || price_per_sack <= 0) {
+      showApiSuccessBanner({status: 'error', message: 'Please enter a valid positive price.'});
+      return;
+    }
+
+    const payload = {
+      rice_type,
+      price_per_sack,
+      description
+    };
+
+    try {
+      const response = await fetch("{% url 'add_rice' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      showApiSuccessBanner(result);
+      if (result.status === 'success') {
+        this.reset();  // Clear form on success
+        setTimeout(() => location.reload(), 1500); // Optionally refresh the rice list or reload page
+      }
+    } catch (error) {
+      showApiSuccessBanner({status: 'error', message: 'Error submitting form: ' + error.message});
+    }
+  });
+
+// Simple status banner (no pretty-print)
+function showApiSuccessBanner(data) {
+  var banner = document.getElementById('apiSuccessBanner');
+  if (!banner) return;
+
+  let status = '';
+  let message = '';
+
+  if (typeof data === 'string') {
+    try { data = JSON.parse(data); } catch { message = data; }
+  }
+  if (typeof data === 'object' && data !== null) {
+    status = data.status ? data.status : '';
+    message = data.message ? data.message : '';
+  } else if (!message) {
+    message = 'Success!';
+  }
+
+  let colorClass = 'bg-green-100 text-green-800';
+  if (status === 'error') colorClass = 'bg-red-100 text-red-800';
+  else if (status === 'warning') colorClass = 'bg-yellow-100 text-yellow-800';
+
+  banner.className = `mb-6 p-3 rounded text-sm font-medium text-center ${colorClass}`;
+  // Only show the message, no status prefix if status is 'success'
+  if (status === 'success' || !status) {
+    banner.textContent = message;
+  } else {
+    banner.textContent = (status.charAt(0).toUpperCase() + status.slice(1) + ': ' + message);
+  }
+  banner.style.display = 'block';
+  setTimeout(function() { banner.style.display = 'none'; }, 4000);
+}
+</script>
+
+</body>
+</html>
+
+

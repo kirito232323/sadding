@@ -1,0 +1,572 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard - Dragon Ricemill</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
+  <style>
+    html { scroll-behavior: smooth; }
+    .dropdown:hover .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen font-sans leading-relaxed overflow-x-hidden">
+
+<header class="fixed top-0 right-0 h-screen w-56 bg-white shadow-lg flex flex-col z-50 border-l border-gray-200">
+  <div class="h-14 flex items-center justify-center border-b border-gray-200">
+    <a href="#" class="flex items-center space-x-2 select-none text-gray-900 font-bold text-lg tracking-wide">
+      <span class="text-yellow-500 text-2xl">🌾</span>
+      <span>Dragon Ricemill</span>
+    </a>
+  </div>
+
+  <nav class="flex-1 flex flex-col py-1 pr-1 overflow-y-auto scrollbar-hide">
+    <div class="px-2 py-1">
+      <span class="block text-1 text-gray-500 font-semibold mb-3">Welcome, {{ request.session.user_name }}!</span>
+      <a href="{% url 'dashboard' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 font-semibold hover:text-yellow-600 transition">
+        <i class="fas fa-home w-4 text-yellow-500"></i><span>Home</span>
+      </a>
+      <a href="{% url 'profile' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition text-gray-900">
+        <i class="fas fa-user-circle w-4 text-yellow-500"></i><span>Profile</span>
+      </a>
+    </div>
+
+    {% if request.session.user_role == 'admin' %}
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Users</p>
+      <a href="{% url 'add_user' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-user-plus w-4 text-yellow-500"></i><span>Add User</span>
+      </a>
+      <a href="{% url 'edituser' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-user-edit w-4 text-yellow-500"></i><span>Edit User</span>
+      </a>
+      <a href="{% url 'user_account' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-user-circle w-4 text-yellow-500"></i><span>Customer</span>
+      </a>
+      <a href="{% url 'logs' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-file-alt w-4 text-yellow-500"></i><span>User Logs</span>
+      </a>
+    </div>
+
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Settings</p>
+      <a href="{%url 'supplier_order'%}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-truck w-4 text-yellow-500"></i><span>Supplier (Order)</span>
+      </a>
+      <a href="{% url 'orders' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-clipboard-check w-4 text-yellow-500"></i><span>Order Confirmation</span>
+      </a>
+      <a href="{% url 'supplier' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-loading w-4 text-yellow-500"></i><span>Supplier Confirmation</span>
+      </a>
+    </div>
+    {% endif %}
+
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Delivery System</p>
+      <a href="{% url 'delivery-management' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Manage Deliveries</span>
+      </a>
+    </div>
+    {% endif %}
+
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Inventory</p>
+      <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-boxes w-4 text-yellow-500"></i><span>Inventory</span>
+      </a>
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
+      <a href="{% url 'viewstocklevel' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-layer-group w-4 text-yellow-500"></i><span>View Levels</span>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'cashier' %}
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
+      <a href="{% url 'new_sale' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-cart-plus w-4 text-yellow-500"></i><span>New Sale</span>
+      </a>
+      <a href="{% url 'view_sales_history' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-history w-4 text-yellow-500"></i><span>History</span>
+      </a>
+      <a href="{% url 'view_sales_report' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-chart-line w-4 text-yellow-500"></i><span>Report</span>
+      </a>
+      <a href="{% url 'inventory_turnover' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-sync-alt w-4 text-yellow-500"></i><span>Inventory Turnover</span>
+      </a>
+    </div>
+    {% endif %}
+
+    <div class="border-t border-gray-200 mt-auto px-2 py-4">
+      <a href="{% url 'logout' %}" onclick="return confirm('Logout?');" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-red-100 hover:text-red-600 transition font-semibold text-red-500 mt-2">
+        <i class="fas fa-sign-out-alt w-4"></i><span>Logout</span>
+      </a>
+    </div>
+  </nav>
+</header>
+
+<!-- Main Content Wrapper -->
+<div class="mr-56 min-h-screen bg-gray-50">
+  <main class="max-w-screen-xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+    <!-- Messages -->
+    {% if messages %}
+      <div class="mb-6">
+        {% for message in messages %}
+          <div
+            class="p-3 mb-2 rounded text-sm font-medium
+            {% if message.tags == 'success' %} bg-green-100 text-green-800
+            {% elif message.tags == 'error' %} bg-red-100 text-red-800
+            {% elif message.tags == 'warning' %} bg-yellow-100 text-yellow-800
+            {% else %} bg-gray-100 text-gray-800
+            {% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+  <!-- Header & Notifications -->
+  <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-10">
+    <h1 class="text-3xl font-bold text-[#1e293b] mb-4 sm:mb-0">Dashboard</h1>
+    <div class="flex items-center gap-6 text-sm sm:text-base">
+      <h3 class="text-lg font-semibold select-none">Welcome, {{ request.session.user_name }}!</h3>
+      <div class="relative">
+        <button id="notificationBtn" class="text-gray-600 hover:text-black text-xl relative focus:outline-none">
+          <i class="fas fa-bell"></i>
+          {% if notifications|length > 0 %}
+            <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1">{{ notifications|length }}</span>
+          {% endif %}
+        </button>
+        <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-64 bg-white text-gray-800 rounded-md shadow-lg z-50 max-h-80 overflow-y-auto">
+          {% if notifications %}
+            {% for notification in notifications %}
+              <div class="px-4 py-2 border-b hover:bg-gray-100 text-sm">
+                {% if "pending customer order(s) need approval" in notification.message %}
+                  <a href="{% url 'orders' %}" class="text-blue-500 hover:underline">{{ notification.message }}</a>
+                {% elif "pending supplier order(s) need approval" in notification.message %}
+                  <a href="{% url 'supplier' %}" class="text-blue-500 hover:underline">{{ notification.message }}</a>
+                {% else %}
+                  {{ notification.message }}
+                {% endif %}
+                <div class="text-xs text-gray-400">{{ notification.timestamp }}</div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="px-4 py-2 text-sm text-gray-500 text-center">No new notifications.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  
+    <!-- Metrics Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <div class="bg-white p-6 rounded-2xl shadow hover:shadow-xl">
+        <div class="flex items-center space-x-4">
+          <i class="fas fa-shopping-basket text-3xl text-blue-600"></i>
+          <div>
+            <p class="text-md font-semibold text-gray-600">Rice Types</p>
+            <p class="text-2xl font-bold">{{ total_rice_types }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white p-6 rounded-2xl shadow hover:shadow-xl">
+        <div class="flex items-center space-x-4">
+          <i class="fas fa-dollar-sign text-3xl text-green-600"></i>
+          <div>
+            <p class="text-md font-semibold text-gray-600">Sales Today</p>
+            <p class="text-2xl font-bold">₱{{ total_sales_today|default:0|floatformat:0|intcomma }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white p-6 rounded-2xl shadow hover:shadow-xl">
+        <div class="flex items-center space-x-4">
+          <i class="fas fa-box-open text-3xl text-red-600"></i>
+          <div>
+            <p class="text-md font-semibold text-gray-600">Stock Out</p>
+            <p class="text-2xl font-bold">{{ stock_out_today }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white p-6 rounded-2xl shadow hover:shadow-xl">
+        <div class="flex items-center space-x-4">
+          <i class="fas fa-exclamation-triangle text-3xl text-yellow-600"></i>
+          <div>
+            <p class="text-md font-semibold text-gray-600">Low Stock</p>
+            <p class="text-2xl font-bold">{{ low_stock_warnings }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+<!-- Button to post new announcement (admin only) -->
+{% if request.session.user_role == 'admin' %}
+  <div class="mb-4">
+    <button id="openAnnouncementBtn" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded">
+      Post Announcement
+    </button>
+  </div>
+{% endif %}
+
+<!-- Announcements Section -->
+<div class="w-full bg-white p-6 rounded-2xl shadow mb-10">
+  <h2 class="text-xl font-semibold mb-4 text-gray-800">📢 Announcements</h2>
+  {% if announcements %}
+    <ul class="space-y-4">
+      {% for announcement in announcements %}
+    <div class="mb-4 border-b pb-2">
+        <p class="text-gray-800">{{ announcement.message }}</p>
+        <p class="text-sm text-gray-500">
+            Posted by {{ announcement.created_by.FirstName }} {{ announcement.created_by.LastName }} on {{ announcement.created_at|date:"F j, Y, g:i a" }}
+        </p>
+    </div>
+
+          {% if request.session.user_role == 'admin' %}
+            <div class="mt-2 flex gap-2">
+              <button 
+                class="text-sm text-blue-600 hover:underline edit-announcement-btn" 
+                data-id="{{ announcement.announcement_id }}" 
+                data-message="{{ announcement.message|escapejs }}"
+              >
+                Edit
+              </button>
+              <form method="POST" action="{% url 'delete_announcement' announcement.announcement_id %}" class="delete-announcement-form">
+                {% csrf_token %}
+                <button type="submit" class="text-sm text-red-600 hover:underline">Delete</button>
+              </form>
+            </div>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-gray-500 italic">No announcements at the moment.</p>
+  {% endif %}
+</div>
+
+<!-- Announcement Modal (New) -->
+<div id="announcementModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative">
+    <button id="closeAnnouncementBtn" class="absolute top-3 right-3 text-gray-500 hover:text-gray-900 text-xl font-bold">&times;</button>
+    <h3 class="text-xl font-semibold mb-4">New Announcement</h3>
+    <form method="POST" action="{% url 'add_announcement' %}">
+      {% csrf_token %}
+      <textarea name="message" rows="4" required
+        class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-400"
+        placeholder="Write your announcement here..."></textarea>
+      <input type="hidden" name="created_by" value="{{ employee_id }}">
+      <div class="mt-4 flex justify-end space-x-4">
+        <button type="button" id="cancelAnnouncementBtn" class="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100">Cancel</button>
+        <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Post</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Announcement Modal -->
+<div id="editAnnouncementModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative">
+    <button id="closeEditAnnouncementBtn" class="absolute top-3 right-3 text-gray-500 hover:text-gray-900 text-xl font-bold">&times;</button>
+    <h3 class="text-xl font-semibold mb-4">Edit Announcement</h3>
+    <form id="editAnnouncementForm" method="POST">
+      {% csrf_token %}
+      <textarea id="editMessage" name="message" rows="4" required
+        class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-400"
+        placeholder="Edit your announcement here..."></textarea>
+      <div class="mt-4 flex justify-end space-x-4">
+        <button type="button" id="cancelEditAnnouncementBtn" class="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100">Cancel</button>
+        <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+    <!-- Inventory Table -->
+    <section class="bg-white rounded-2xl shadow p-6 mb-12">
+      <h2 class="text-xl font-semibold text-gray-800 mb-4">📦 Inventory Overview</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-sm text-left">
+          <thead class="bg-gray-100 text-gray-600 uppercase tracking-wider text-xs">
+            <tr>
+              <th class="px-4 py-3">Rice Type</th>
+              <th class="px-4 py-3 text-right">Current Stock (Sacks)</th>
+              <th class="px-4 py-3 text-right">Stock In (Sacks)</th>
+              <th class="px-4 py-3 text-right">Stock Out (Sacks)</th>
+              <th class="px-4 py-3 text-right">Price/Sack (₱)</th>
+              <th class="px-4 py-3 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rice in stock_data %}
+              <tr class="hover:bg-blue-50 transition">
+                <td class="px-4 py-2">{{ rice.rice_type }}</td>
+                <td class="px-4 py-2 text-right">{{ rice.current_stock }}</td>
+                <td class="px-4 py-2 text-right">{{ rice.stock_in }}</td>
+                <td class="px-4 py-2 text-right">{{ rice.stock_out }}</td>
+                <td class="px-4 py-2 text-right">₱{{ rice.price_per_sack|floatformat:2|intcomma }}</td>
+                <td class="px-4 py-2 text-center">
+                  {% if rice.current_stock == 0 %}
+                    <span class="bg-red-100 text-red-700 text-xs px-3 py-1 rounded-full">Out of Stock</span>
+                  {% elif rice.current_stock <= 100 %}
+                    <span class="bg-yellow-100 text-yellow-700 text-xs px-3 py-1 rounded-full">Low Stock</span>
+                  {% else %}
+                    <span class="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full">In Stock</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6" class="text-center py-6 text-gray-500">No stock data available.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Recent Sales Table -->
+    <section class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-xl font-semibold text-gray-800 mb-4">🛒 Recent Sales</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-sm text-left">
+          <thead class="bg-gray-100 text-gray-600 uppercase tracking-wider text-xs">
+            <tr>
+              <th class="px-4 py-3">Order ID</th>
+              <th class="px-4 py-3">Customer Name</th>
+              <th class="px-4 py-3">Rice Type</th>
+              <th class="px-4 py-3 text-right">Quantity</th>
+              <th class="px-4 py-3 text-right">Price/Sack (₱)</th>
+              <th class="px-4 py-3 text-right">Total Cost (₱)</th>
+              <th class="px-4 py-3 text-center">Payment Method</th>
+              <th class="px-4 py-3 text-center">Status</th>
+              <th class="px-4 py-3">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sale in recent_sales %}
+              <tr class="hover:bg-green-50 transition">
+                <td class="px-4 py-2">{{ sale.id }}</td>
+                <td class="px-4 py-2">{{ sale.customer_name }}</td>
+                <td class="px-4 py-2">{{ sale.rice_type.rice_type }}</td>
+                <td class="px-4 py-2 text-right">{{ sale.quantity }}</td>
+                <td class="px-4 py-2 text-right">₱{{ sale.cost_per_sack|floatformat:2|intcomma }}</td>
+                <td class="px-4 py-2 text-right font-semibold">₱{{ sale.total_cost|floatformat:2|intcomma }}</td>
+                <td class="px-4 py-2 text-center">{{ sale.payment_method }}</td>
+                <td class="px-4 py-2 text-center">
+                  {% if sale.approval_status == "Approved" %}
+                    <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">Approved</span>
+                  {% elif sale.approval_status == "Declined" %}
+                    <span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">Declined</span>
+                  {% else %}
+                    <span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full">Pending</span>
+                  {% endif %}
+                </td>
+                <td class="px-4 py-2">{{ sale.created_at|date:"M d, Y H:i" }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="9" class="text-center py-6 text-gray-500">No recent sales available.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+<script>
+  // Utility function to get CSRF token
+  function getCSRFToken() {
+    let csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    if (!csrfToken) {
+      console.error('CSRF token not found');
+    }
+    return csrfToken;
+  }
+
+  // Add CSRF token to all fetch requests
+  function fetchWithCSRF(url, options = {}) {
+    const defaultOptions = {
+      headers: {
+        'X-CSRFToken': getCSRFToken(),
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    };
+    return fetch(url, { ...defaultOptions, ...options });
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    // --- Modal open/close for Add Announcement ---
+    const openBtn = document.getElementById('openAnnouncementBtn');
+    const modal = document.getElementById('announcementModal');
+    const closeBtn = document.getElementById('closeAnnouncementBtn');
+    const cancelBtn = document.getElementById('cancelAnnouncementBtn');
+
+    if (openBtn && modal && closeBtn && cancelBtn) {
+      openBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+      closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+      cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
+      modal.addEventListener('click', e => {
+        if (e.target === modal) modal.classList.add('hidden');
+      });
+    }
+
+    // --- Modal open/close for Edit Announcement ---
+    const editModal = document.getElementById('editAnnouncementModal');
+    const editForm = document.getElementById('editAnnouncementForm');
+    const editTextarea = document.getElementById('editMessage');
+
+    document.querySelectorAll('.edit-announcement-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        const id = button.getAttribute('data-id');
+        const message = button.getAttribute('data-message');
+        if (!editForm || !editTextarea || !editModal) return;
+
+        editForm.setAttribute('data-ann-id', id);
+        editTextarea.value = message;
+        editModal.classList.remove('hidden');
+      });
+    });
+
+    ['cancelEditAnnouncementBtn', 'closeEditAnnouncementBtn'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn && editModal) {
+        btn.addEventListener('click', () => editModal.classList.add('hidden'));
+      }
+    });
+
+    if (editForm) {
+      editForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const annId = editForm.getAttribute('data-ann-id');
+        const message = editTextarea.value.trim();
+
+        if (!message) {
+          alert('Message cannot be empty.');
+          return;
+        }
+
+        fetchWithCSRF(`/announcement/edit/${annId}/`, {
+          method: 'POST',
+          body: JSON.stringify({ message })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            alert('Announcement updated!');
+
+            const announcementElem = document.getElementById(`announcement-${annId}`);
+            if (announcementElem) {
+              const messageElem = announcementElem.querySelector('.announcement-message');
+              if (messageElem) {
+                messageElem.textContent = data.updated_message;
+              }
+            }
+            editModal.classList.add('hidden');
+          } else {
+            alert(data.message || 'Failed to update announcement.');
+          }
+        })
+        .catch(() => alert('An error occurred while updating the announcement.'));
+      });
+    }
+
+    // --- Delete announcement buttons (only once) ---
+    document.querySelectorAll('.delete-announcement-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const annId = btn.getAttribute('data-id');
+        if (confirm("Are you sure you want to delete this announcement?")) {
+          fetchWithCSRF(`/announcement/delete/${annId}/`, {
+            method: 'POST'
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              const announcementElem = document.getElementById(`announcement-${annId}`);
+              if (announcementElem) announcementElem.remove();
+            } else {
+              alert(data.message || 'Failed to delete announcement.');
+            }
+          })
+          .catch(() => alert('An error occurred while deleting the announcement.'));
+        }
+      });
+    });
+
+    // --- Delete announcement forms (if you also use forms) ---
+    document.querySelectorAll('.delete-announcement-form').forEach(form => {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        if (!confirm('Delete this announcement?')) return;
+
+        const url = this.action;
+
+        fetchWithCSRF(url, {
+          method: 'POST',
+        })
+        .then(response => {
+          if (response.ok) {
+            this.closest('li').remove();
+            showToast();
+          } else {
+            alert('Failed to delete announcement.');
+          }
+        })
+        .catch(() => alert('Error deleting announcement.'));
+      });
+    });
+
+    // --- Notification dropdown toggle ---
+    const notifBtn = document.getElementById('notificationBtn');
+    const notifDropdown = document.getElementById('notificationDropdown');
+    if (notifBtn && notifDropdown) {
+      notifBtn.addEventListener('click', () => notifDropdown.classList.toggle('hidden'));
+      window.addEventListener('click', e => {
+        if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
+          notifDropdown.classList.add('hidden');
+        }
+      });
+    }
+
+    // --- Toast popup ---
+    function showToast() {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.add('opacity-0');
+        toast.classList.add('pointer-events-none');
+      }, 3000);
+    }
+
+    // --- Auto-hide flash messages after 5 seconds ---
+    document.querySelectorAll('p.success, p.error').forEach(msg => {
+      setTimeout(() => {
+        msg.style.transition = 'opacity 0.5s ease';
+        msg.style.opacity = '0';
+        setTimeout(() => msg.remove(), 500);
+      }, 5000);
+    });
+
+  });
+</script>
+</div>
+</body>
+</html>
