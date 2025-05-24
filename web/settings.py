@@ -100,15 +100,8 @@ WSGI_APPLICATION = 'web.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'dragonricemill2',         # Replace with your MySQL database name
-        'USER': 'root',         # Replace with your MySQL username
-        'PASSWORD': 'admin', # Replace with your MySQL password
-        'HOST': 'localhost',            # Or your MySQL server address
-        'PORT': '3306',                 # Default MySQL port
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
