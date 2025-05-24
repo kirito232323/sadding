@@ -1332,7 +1332,7 @@ def user_logs(request):
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT ul.id, ul.action_type, ul.timestamp,
-                   CONCAT(e.FirstName, ' ', COALESCE(e.MiddleName, ''), ' ', e.LastName, ' ', COALESCE(e.Suffix, '')) AS employee_name
+                   e.FirstName || ' ' || IFNULL(e.MiddleName, '') || ' ' || e.LastName || ' ' || IFNULL(e.Suffix, '') AS employee_name
             FROM user_logs ul
             JOIN employee e ON ul.employee_id = e.EmployeeID
             ORDER BY ul.timestamp DESC
