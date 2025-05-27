@@ -2,6 +2,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_POST, require_GET
 from .models import UserLog, Rice, Users, CustomerOrder
+from django.http import HttpResponseBadRequest
+
 
 @require_POST
 def undo_update(request, log_id):
@@ -225,61 +227,6 @@ def home(request):
 
 
 
-
-
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-
-from django.shortcuts import render, redirect
-from webapp.models import Rice  # Adjust if your app name or model path is different
-
-from django.shortcuts import render
-from .models import Rice, Announcement  # Import Announcement model
-
-def user_dashboard(request):
-    # ✅ Check if user is logged in and has role 'user'
-    if not request.session.get('user_id') or request.session.get('user_role') != 'user':
-        return render(request, 'login.html', {'error': 'Unauthorized access'})
-
-    user_name = request.session.get('user_name', 'User')
-
-    # ✅ Get rice stock data from the database
-    stock_list = Rice.objects.all()
-
-    # ✅ Get recent announcements
-    announcements = Announcement.objects.select_related('created_by').order_by('-created_at')[:5]
-
-    # ✅ Render the user dashboard template with context
-    return render(request, 'userdash.html', {
-        'user_name': user_name,
-        'stock_list': stock_list,
-        'announcements': announcements,
-    })
-
-from django.shortcuts import render
-
-
-def place_order(request):
-    username = request.user.username if request.user.is_authenticated else None
-
-    customer_info = None
-    if username:
-        try:
-            customer_info = Users.objects.get(Username=username)
-        except Users.DoesNotExist:
-            customer_info = None
-
-    rice_list = Rice.objects.all()
-
-    context = {
-        'customer_info': customer_info,
-        'rice_list': rice_list,
-    }
-    return render(request, 'userorder.html', context)
-
-
-
-
 from django.utils.timezone import now
 from django.contrib import messages
 from .models import Announcement, Employee
@@ -310,30 +257,12 @@ def add_announcement(request):
     return redirect('dashboard')
 
 
-
-from datetime import date
-from django.shortcuts import render
-from django.db.models import Sum
-from django.utils.timezone import now
-from pytz import timezone
-
-PH_TZ = timezone('Asia/Manila')
-
-from django.db.models import Sum
-from django.utils.timezone import now
-from datetime import date
-from .models import Users, Rice, CustomerOrder, Supplier, Announcement
-from pytz import timezone
-
-PH_TZ = timezone('Asia/Manila')
-
 from django.shortcuts import render
 from django.db.models import Sum
 from datetime import date
 from django.utils.timezone import now
 from .models import Rice, CustomerOrder, Supplier, Users, Announcement, Employee
 
-# Philippine timezone constant
 from pytz import timezone
 PH_TZ = timezone('Asia/Manila')
 
@@ -352,26 +281,21 @@ def dashboard_view(request):
         except Users.DoesNotExist:
             pass
 
-    # Fetch rice stock data
     stock_data = Rice.objects.all()
 
-    # Fetch recent approved sales, limit 5
     recent_sales = CustomerOrder.objects.filter(approval_status='Approved') \
         .select_related('rice_type') \
         .order_by('-created_at')[:5]
 
-    # Calculate total sales amount today
     total_sales_today = CustomerOrder.objects.filter(
         created_at__date=date.today(),
         approval_status='Approved'
     ).aggregate(total_sales=Sum('amount_paid'))['total_sales'] or 0
 
-    # Stock status counts
     stock_out_count = stock_data.filter(current_stock=0).count()
     low_stock_count = stock_data.filter(current_stock__lte=100).exclude(current_stock=0).count()
     total_rice_types = stock_data.count()
 
-    # Notifications
     notifications = []
     read_notifications = request.session.get('read_notifications', [])
     current_timestamp = now().astimezone(PH_TZ)
@@ -415,7 +339,6 @@ def dashboard_view(request):
                 "timestamp": current_timestamp,
             })
 
-    # Fetch latest 10 announcements with creator name (if available)
     announcements = Announcement.objects.select_related('created_by') \
         .order_by('-created_at')[:10]
 
@@ -440,7 +363,6 @@ from django.contrib import messages
 def edit_announcement(request, announcement_id):
     announcement = get_object_or_404(Announcement, pk=announcement_id)
 
-    # Make sure to use the same session key as in login (e.g. 'user_id')
     logged_in_employee_id = request.session.get('user_id')
     user_role = request.session.get('user_role', '').lower()
 
@@ -469,12 +391,6 @@ def edit_announcement(request, announcement_id):
     # Render the edit form for GET requests
     return render(request, 'edit_announcement.html', {'announcement': announcement})
 
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_protect
-from django.shortcuts import get_object_or_404
-from .models import Announcement  # Make sure your Announcement model matches the table
-
 @require_POST
 def delete_announcement(request, announcement_id):
     try:
@@ -502,59 +418,164 @@ def toggle_notification(request):
         request.session['read_notifications'] = read_notifications
     return JsonResponse({'status': 'ok'})
 
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from .models import UserName, UserAddress, Users  # adjust imports based on your structure
 
-from django.shortcuts import render, redirect
+@require_POST
+def add_customer(request):
+    try:
+        # Create name record
+        name = UserName.objects.create(
+            first_name=request.POST.get('first_name'),
+            middle_name=request.POST.get('middle_name'),
+            last_name=request.POST.get('last_name'),
+            suffix=request.POST.get('suffix')
+        )
+
+        # Generate Username from full name (e.g., 'JuanDelaCruz')
+        full_name_username = ''.join(filter(None, [
+            name.first_name,
+            name.middle_name or '',
+            name.last_name,
+            name.suffix or ''
+        ])).replace(' ', '')
+
+        # Create address record
+        address = UserAddress.objects.create(
+            house_unit_number=request.POST.get('house_no'),
+            street_name=request.POST.get('street'),
+            barangay=request.POST.get('barangay'),
+            city_municipality=request.POST.get('city'),
+            province=request.POST.get('province') or '',
+            zip_code=request.POST.get('zip_code') or '',
+        )
+
+        # Save to Users table (using name and address foreign keys)
+        Users.objects.create(
+            name=name,
+            address=address,
+            Username=full_name_username,
+            Customer_Mobile_Number=request.POST.get('customer_mobile_number'),
+            Receiver_Mobile_Number=request.POST.get('receiver_mobile_number')  # if you have this field
+        )
+
+        return JsonResponse({'status': 'success', 'message': 'Customer added successfully.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+from django.views.decorators.http import require_POST
 from django.http import JsonResponse
-from webapp.models import Users, Employee, Rice, CustomerOrder
-from django.shortcuts import render, redirect
-from django.http import JsonResponse
-from .models import Rice, CustomerOrder, Users, Employee
+from .models import UserName, UserAddress, Users
+
+@require_POST
+def add_customer(request):
+    try:
+        # Create UserName instance
+        name = UserName.objects.create(
+            first_name=request.POST.get('first_name'),
+            middle_name=request.POST.get('middle_name'),
+            last_name=request.POST.get('last_name'),
+            suffix=request.POST.get('suffix'),
+        )
+
+        # Create UserAddress instance
+        address = UserAddress.objects.create(
+            house_unit_number=request.POST.get('house_no'),
+            street_name=request.POST.get('street'),
+            barangay=request.POST.get('barangay'),
+            city_municipality=request.POST.get('city'),
+            province='Not specified',  # Provide a default or fetch from request.POST if needed
+            zip_code='0000'  # Provide a default or fetch from request.POST if needed
+        )
+
+        # Create Users instance
+        Users.objects.create(
+            name=name,
+            address=address,
+            Customer_Mobile_Number=request.POST.get('customer_mobile_number')
+        )
+
+        return JsonResponse({'status': 'success', 'message': 'Customer added successfully.'})
+    
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+
+from decimal import Decimal, InvalidOperation
+from .models import Rice, CustomerOrder, Users, UserName, UserAddress, Employee
 
 def new_sale_view(request):
     if request.method == 'POST':
         try:
-            # 1. Validate required POST fields
+            # 1. Validate rice type
             rice_type_id = request.POST.get('rice-type')
             if not rice_type_id:
                 return JsonResponse({'status': 'error', 'message': 'Please select a rice type.'})
 
-            customer_name = request.POST.get('customer-name')
-            if not customer_name:
-                return JsonResponse({'status': 'error', 'message': 'Customer name is required.'})
+            # 2. Validate customer name
+            first_name = request.POST.get('first_name')
+            last_name = request.POST.get('last_name')
+            if not first_name or not last_name:
+                return JsonResponse({'status': 'error', 'message': 'Customer first and last name are required.'})
 
-            # 2. Get or create the customer
-            customer, created = Users.objects.get_or_create(
-                full_Name=customer_name,
+            middle_name = request.POST.get('middle_name', '')
+            suffix = request.POST.get('suffix', '')
+
+            # 3. Get or create UserName instance
+            user_name, _ = UserName.objects.get_or_create(
+                first_name=first_name.strip(),
+                last_name=last_name.strip(),
+                middle_name=middle_name.strip() if middle_name else None,
+                suffix=suffix.strip() if suffix else None
+            )
+
+            # 4. Get or create UserAddress instance
+            address_fields = {
+                'house_unit_number': request.POST.get('house_unit_number', ''),
+                'building_name': request.POST.get('building_name', ''),
+                'street_name': request.POST.get('street_name', ''),
+                'barangay': request.POST.get('barangay', ''),
+                'city_municipality': request.POST.get('city_municipality', ''),
+                'province': request.POST.get('province', ''),
+                'zip_code': request.POST.get('zip_code', ''),
+            }
+            user_address, _ = UserAddress.objects.get_or_create(**address_fields)
+
+            # 5. Get or create Users instance
+            customer, _ = Users.objects.get_or_create(
+                name=user_name,
                 defaults={
-                    'address': request.POST.get('customer-address', ''),
-                    'contact': request.POST.get('customer-contact', ''),
-                    'Role': 'customer',  # optional: ensure default role
-                    'Acc_Status': 'active'  # optional: set status
+                    'address': user_address,
+                    'Customer_Mobile_Number': request.POST.get('customer_contact', ''),
                 }
             )
 
-            # 3. Retrieve the selected rice type
-            rice = Rice.objects.get(riceID=rice_type_id)  # ✅ CORRECT FIELD NAME
+            # 6. Get Rice object
+            try:
+                rice = Rice.objects.get(riceID=rice_type_id)
+            except Rice.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Selected rice type does not exist.'})
 
-            # 4. Retrieve employee if provided
+            # 7. Get employee
             employee = None
             employee_id = request.POST.get('employee_id')
             if employee_id:
                 employee = Employee.objects.filter(EmployeeID=employee_id).first()
 
-
-            # 5. Parse numeric/decimal fields robustly
-            from decimal import Decimal, InvalidOperation
+            # 8. Parse numeric fields
             try:
                 quantity = int(request.POST.get('quantity', 0))
             except (ValueError, TypeError):
                 return JsonResponse({'status': 'error', 'message': 'Invalid quantity.'})
 
-            def parse_decimal(val, field_name):
+            def parse_decimal(value, field):
                 try:
-                    return Decimal(str(val))
+                    return Decimal(str(value))
                 except (InvalidOperation, TypeError, ValueError):
-                    raise ValueError(f"Invalid {field_name}.")
+                    raise ValueError(f"Invalid {field}.")
 
             try:
                 cost_per_sack = parse_decimal(request.POST.get('cost_per_sack', '0'), 'cost per sack')
@@ -564,47 +585,39 @@ def new_sale_view(request):
             except ValueError as e:
                 return JsonResponse({'status': 'error', 'message': str(e)})
 
-            payment_method = request.POST.get('payment_method', '')
-            delivery_type = request.POST.get('delivery_type', 'delivery')
-
-
-            # 6. Save the new customer order
+            # 9. Create CustomerOrder
             CustomerOrder.objects.create(
                 customer=customer,
                 rice_type=rice,
                 quantity=quantity,
                 cost_per_sack=cost_per_sack,
                 total_cost=total_cost,
-                payment_method=payment_method,
+                payment_method=request.POST.get('payment_method', ''),
                 amount_paid=amount_paid,
                 amount_change=amount_change,
-                delivery_type=delivery_type,
-                approval_status='Pending',
+                delivery_type=request.POST.get('delivery_type', 'delivery'),
                 delivery_status='Pending',
-                employee=employee
+                approval_status='Pending',
+                employee=employee,
             )
 
             return redirect('view_sales_history')
 
-        except Rice.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Selected rice type does not exist.'})
         except Exception as e:
             print(f"Unexpected error: {str(e)}")
             return JsonResponse({'status': 'error', 'message': 'An unexpected error occurred. Please try again.'})
 
-    # Handle GET request
+    # GET method - display form
     rice_data = Rice.objects.all()
     cashier_admin_users = Employee.objects.filter(Role__in=['Cashier', 'Admin'], Account_Status='active')
-    customer_users = Users.objects.filter(Role__in=['customer', 'user'], Acc_Status='active')
+    customer_users = Users.objects.filter(name__isnull=False)  # optional filter
 
     return render(request, 'sales_transaction.html', {
         'rice_data': rice_data,
-        'rice_list': rice_data,  # For template compatibility
+        'rice_list': rice_data,
         'cashier_admin_users': cashier_admin_users,
         'customer_users': customer_users
     })
-
-
 
 
 def view_sales_report(request):
@@ -630,10 +643,13 @@ def supplier(request):
 
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 import json
 
+from .models import Rice, Stock
+
+@csrf_exempt  # Optional: Use only if CSRF tokens are not being sent
 @require_POST
 def updatestock(request, riceID):
     try:
@@ -643,6 +659,7 @@ def updatestock(request, riceID):
 
     price_per_sack = data.get('price_per_sack')
     description = data.get('description', '')
+    packaging = data.get('packaging', '50kg')  # You may allow the frontend to send this
 
     if price_per_sack is None:
         return JsonResponse({'status': 'error', 'message': 'Price per sack is required'}, status=400)
@@ -654,14 +671,22 @@ def updatestock(request, riceID):
     except (ValueError, TypeError):
         return JsonResponse({'status': 'error', 'message': 'Invalid price per sack'}, status=400)
 
-    # Get the rice stock object
-    stock = get_object_or_404(Rice, riceID=riceID)  # replace StockModel with your model name
+    # Get Rice and Stock object
+    rice = get_object_or_404(Rice, riceID=riceID)
 
+    # Get the correct Stock entry for this Rice and Packaging
+    stock = get_object_or_404(Stock, rice_type=rice, packaging=packaging)
+
+    # Update values
     stock.price_per_sack = price_per_sack
-    stock.description = description
     stock.save()
 
-    return JsonResponse({'status': 'success', 'message': 'Stock updated successfully'})
+    # Optionally update the description in the Rice table
+    rice.description = description
+    rice.save()
+
+    return JsonResponse({'status': 'success', 'message': 'Stock and description updated successfully'})
+
 
 def removestock(request):
     return render(request, 'removestock.html')
@@ -778,60 +803,6 @@ def edituser(request, EmployeeID=None):
     return render(request, "edituser.html", context)
 
 
-
-from django.shortcuts import render, redirect, get_object_or_404
-from webapp.models import Users, UserName, UserAddress
-
-def userprofile(request):
-    user_id = request.session.get('user_id')
-    if not user_id:
-        return redirect('login')  # or wherever you want non-logged-in users to go
-
-    user = get_object_or_404(Users, UserID=user_id)
-
-    if request.method == 'POST':
-        # Create or update related UserName
-        if user.name is None:
-            user.name = UserName.objects.create(
-                first_name='',
-                last_name=''
-            )
-        user.name.first_name = request.POST.get('first_name', '').strip()
-        user.name.middle_name = request.POST.get('middle_name', '').strip() or None
-        user.name.last_name = request.POST.get('last_name', '').strip()
-        user.name.suffix = request.POST.get('suffix', '').strip() or None
-        user.name.save()
-
-        # Create or update related UserAddress
-        if user.address is None:
-            user.address = UserAddress.objects.create()
-        user.address.house_unit_number = request.POST.get('house_unit_number', '').strip() or None
-        user.address.building_name = request.POST.get('building_name', '').strip() or None
-        user.address.street_name = request.POST.get('street_name', '').strip() or None
-        user.address.barangay = request.POST.get('barangay', '').strip() or None
-        user.address.city_municipality = request.POST.get('city_municipality', '').strip() or None
-        user.address.province = request.POST.get('province', '').strip() or None
-        user.address.zip_code = request.POST.get('zip_code', '').strip() or None
-        user.address.save()
-
-        # Update Users fields
-        user.Username = request.POST.get('username', '').strip()
-        # IMPORTANT: You should hash the password before saving!
-        user.Password = request.POST.get('password', '').strip()
-        user.Email = request.POST.get('email', '').strip()
-        user.Customer_Mobile_Number = request.POST.get('customer_mobile_number', '').strip() or None
-        user.save()
-
-        return redirect('userprofile')  # Redirect to avoid form resubmission
-
-    context = {
-        'user': user,
-        'name': user.name,
-        'address': user.address,
-    }
-    return render(request, 'userprofile.html', context)
-
-
 def profile(request):
     user_id = request.session.get('user_id') 
 
@@ -886,13 +857,6 @@ def profile(request):
     return render(request, 'profile.html', {'user': user})
 
 
-from django.shortcuts import render, redirect
-from .models import Rice
-
-from django.shortcuts import render, redirect
-from django.db import connection
-from .models import Rice
-
 def log_user_action(employee_id, action_type):
     with connection.cursor() as cursor:
         cursor.execute("""
@@ -901,17 +865,21 @@ def log_user_action(employee_id, action_type):
         """, [employee_id, action_type])
 
 
+from django.shortcuts import render, redirect
+from .models import Rice, Stock, UserLog, Users
+from django.utils import timezone
 
 def addstock(request):
     if request.method == "POST":
         rice_type_id = request.POST.get("riceType")
         quantity = request.POST.get("quantity")
-        employee_id = request.session.get('employee_id')  # Get current logged-in user
+        packaging = request.POST.get("packaging", "50kg")  # default to 50kg
+        employee_id = request.session.get('employee_id')
 
         if not rice_type_id or not quantity:
             return render(request, 'addstock.html', {
                 'rice_data': Rice.objects.all(),
-                'stock_data': Rice.objects.all(),
+                'stock_data': Stock.objects.select_related('rice_type').all(),
                 'error': 'All fields are required.'
             })
 
@@ -920,7 +888,7 @@ def addstock(request):
         except Rice.DoesNotExist:
             return render(request, 'addstock.html', {
                 'rice_data': Rice.objects.all(),
-                'stock_data': Rice.objects.all(),
+                'stock_data': Stock.objects.select_related('rice_type').all(),
                 'error': 'Selected rice type does not exist.'
             })
 
@@ -931,24 +899,33 @@ def addstock(request):
         except ValueError:
             return render(request, 'addstock.html', {
                 'rice_data': Rice.objects.all(),
-                'stock_data': Rice.objects.all(),
+                'stock_data': Stock.objects.select_related('rice_type').all(),
                 'error': 'Quantity must be a positive integer.'
             })
 
-        # Update stock_in and recalculate current_stock
-        rice.stock_in += quantity_int
-        rice.current_stock = rice.stock_in - rice.stock_out
-        rice.save()
+        # Get or create stock record
+        stock_obj, created = Stock.objects.get_or_create(
+            rice_type=rice,
+            packaging=packaging,
+            defaults={'stock_in': 0, 'stock_out': 0, 'price_per_sack': 0}
+        )
 
-        # ✅ Record log if user is logged in
+        # Update stock_in
+        stock_obj.stock_in += quantity_int
+        stock_obj.save()  # This also updates current_stock
+
+        # ✅ Record log if employee is logged in
         if employee_id:
-            action = f"Added {quantity_int} sacks to {rice.rice_type}"
-            log_user_action(employee_id, action)
+            try:
+                user = Users.objects.get(pk=employee_id)
+                action = f"Added {quantity_int} sacks to {rice.rice_type} ({packaging})"
+                UserLog.objects.create(user=user, action_type=action, timestamp=timezone.now())
+            except Users.DoesNotExist:
+                pass  # Optionally handle this case if needed
 
         return redirect('addstock')
 
-    # Fetch recent stock update logs from UserLog (only 'add_stock' actions)
-    from .models import UserLog
+    # Show logs
     logs = UserLog.objects.order_by('-timestamp')[:20]
     update_logs = []
     for log in logs:
@@ -960,7 +937,6 @@ def addstock(request):
             except Exception:
                 quantity = None
                 rice_type = log.action_type
-            # Mark as undone if log.action_type contains (Undone)
             undone = '(Undone)' in log.action_type
             update_logs.append({
                 'id': log.id,
@@ -970,11 +946,13 @@ def addstock(request):
                 'timestamp': log.timestamp,
                 'undone': undone,
             })
+
     return render(request, 'addstock.html', {
         'rice_data': Rice.objects.all(),
-        'stock_data': Rice.objects.all(),
+        'stock_data': Stock.objects.select_related('rice_type').all(),
         'update_logs': update_logs,
     })
+
 
 
 
@@ -983,30 +961,19 @@ from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
 from django.db import connection
-from .models import Rice
-
-def deletestock(request, rice_id):
+from webapp.models import Rice, Stock 
+# views.py
+def deletestock(request, stock_id):
     if request.method == 'POST':
         try:
-            rice_item = get_object_or_404(Rice, riceID=rice_id)
-            rice_type = rice_item.rice_type  # Store name before deletion
-            rice_item.delete()
-            messages.success(request, f"Rice type '{rice_type}' deleted successfully.")
-
-            # ✅ Log the deletion action
-            employee_id = request.session.get('employee_id')
-            if employee_id:
-                with connection.cursor() as cursor:
-                    cursor.execute("""
-                        INSERT INTO user_logs (employee_id, action_type, timestamp)
-                        VALUES (%s, %s, DATETIME('now'))
-                    """, [employee_id, f"Deleted rice type: {rice_type}"])
+            stock = get_object_or_404(Stock, stockID=stock_id)
+            stock.delete()
+            messages.success(request, "Stock deleted successfully.")
         except Exception as e:
-            messages.error(request, f"An error occurred while deleting: {str(e)}")
+            messages.error(request, f"An error occurred: {str(e)}")
     else:
-        messages.error(request, "Invalid request method. Please use POST to delete.")
-
-    return redirect('addstock')  # Make sure this URL name exists in your urls.py
+        messages.error(request, "Invalid request method.")
+    return redirect('addstock')
 
 def view_stock_levels(request):
     
@@ -1023,6 +990,11 @@ import json
 from django.http import JsonResponse
 from .models import Rice
 
+from django.http import JsonResponse
+from decimal import Decimal, InvalidOperation
+from .models import Rice, Stock
+import json
+
 def add_rice(request):
     if request.method == 'POST':
         try:
@@ -1030,6 +1002,7 @@ def add_rice(request):
             rice_type = data.get('rice_type')
             price_per_sack = data.get('price_per_sack')
             description = data.get('description', '')  # Optional field
+            packaging = data.get('packaging', '50kg')  # Default packaging
 
             if not rice_type or price_per_sack is None:
                 return JsonResponse({'status': 'error', 'message': 'Rice type and price are required'})
@@ -1042,25 +1015,41 @@ def add_rice(request):
             except (InvalidOperation, TypeError):
                 return JsonResponse({'status': 'error', 'message': 'Price per sack must be a positive decimal number'})
 
-            # Create new Rice object WITHOUT stock_in and stock_out fields
+            # Check if rice type already exists
+            if Rice.objects.filter(rice_type__iexact=rice_type).exists():
+                return JsonResponse({'status': 'error', 'message': 'Rice type already exists'})
+
+            # Create new Rice object
             new_rice = Rice.objects.create(
                 rice_type=rice_type,
-                price_per_sack=price,
                 description=description
             )
 
+            # Create corresponding Stock entry with default 0 stock
+            stock = Stock.objects.create(
+                rice_type=new_rice,
+                packaging=packaging,
+                price_per_sack=price,
+                stock_in=0,
+                stock_out=0
+            )
 
-            # Fetch the record again including current_stock using .values()
-            rice_with_stock = Rice.objects.filter(riceID=new_rice.riceID).values(
-                'riceID', 'rice_type', 'price_per_sack', 'description', 'stock_in', 'stock_out', 'current_stock'
-            ).first()
+            # Prepare response data
+            response_data = {
+                'riceID': new_rice.riceID,
+                'rice_type': new_rice.rice_type,
+                'description': new_rice.description,
+                'packaging': stock.packaging,
+                'price_per_sack': str(stock.price_per_sack),
+                'stock_in': stock.stock_in,
+                'stock_out': stock.stock_out,
+                'current_stock': stock.current_stock,
+            }
 
-
-            # Return response including current_stock
             return JsonResponse({
                 'status': 'success',
                 'message': 'Rice type added successfully',
-                'data': rice_with_stock  # contains current_stock from DB
+                'data': response_data
             })
 
         except json.JSONDecodeError:
@@ -1071,6 +1060,48 @@ def add_rice(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
 
+from django.http import JsonResponse
+from webapp.models import Users
+
+def get_customer_details(request):
+    customer_id = request.GET.get('customer_id')
+    if not customer_id:
+        return JsonResponse({'status': 'error', 'message': 'No customer ID provided.'})
+
+    try:
+        customer = Users.objects.get(UserID=customer_id)
+    except Users.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Customer not found.'})
+
+    # Build address string or fields
+    address = {
+        'house_no': getattr(customer, 'house_no', ''),
+        'street': getattr(customer, 'street', ''),
+        'barangay': getattr(customer, 'barangay', ''),
+        'city': getattr(customer, 'city', ''),
+        'province': getattr(customer, 'province', ''),
+        'zip_code': getattr(customer, 'zip_code', ''),
+    }
+
+    data = {
+        'first_name': customer.first_name if hasattr(customer, 'first_name') else '',
+        'middle_name': getattr(customer, 'middle_name', ''),
+        'last_name': customer.last_name if hasattr(customer, 'last_name') else '',
+        'suffix': getattr(customer, 'suffix', ''),
+        'house_no': address['house_no'],
+        'street': address['street'],
+        'barangay': address['barangay'],
+        'city': address['city'],
+        'province': address['province'],
+        'zip_code': address['zip_code'],
+        'customer_mobile_number': getattr(customer, 'mobile_number', ''),
+        'receiver_mobile_number': getattr(customer, 'receiver_mobile_number', ''),
+        # add other fields as needed
+    }
+
+    return JsonResponse({'status': 'success', 'data': data})
+
+
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
@@ -1079,64 +1110,58 @@ from webapp.models import CustomerOrder, Rice, Employee, Users
 @require_POST
 @csrf_protect
 def process_order(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
+
+    # Get POST data
     rice_type_id = request.POST.get("rice_type_id")
     customer_id = request.POST.get("customer_id")
 
+    # Validation for required fields
     if not rice_type_id:
         return JsonResponse({'status': 'error', 'message': 'Please select a rice type.'})
     if not customer_id:
         return JsonResponse({'status': 'error', 'message': 'Customer ID is required.'})
 
+    # Get rice object
     try:
         rice = Rice.objects.get(riceID=rice_type_id)
     except Rice.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Selected rice type does not exist.'})
 
+    # Get customer object
     try:
         customer = Users.objects.get(UserID=customer_id)
     except Users.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Customer not found.'})
 
+    # Optional: get employee
     employee = None
     employee_id = request.POST.get('employee_id')
     if employee_id:
         try:
-            employee = Employee.objects.get(EmployeeID=employee_id)
-        except Employee.DoesNotExist:
+            employee = Users.objects.get(UserID=employee_id, Role='employee')  # Assuming employee is also in Users table
+        except Users.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Employee not found.'})
 
-    # Auto-fill address from related UserAddress (pretty format)
+    # Generate delivery address from customer if available
     delivery_address = ""
-    if customer.address:
+    if hasattr(customer, 'address') and customer.address:
         addr = customer.address
         delivery_address = f"{addr.house_unit_number or ''} {addr.building_name or ''} {addr.street_name or ''}, {addr.barangay or ''}, {addr.city_municipality or ''}, {addr.province or ''} {addr.zip_code or ''}".strip()
 
-    from decimal import Decimal, InvalidOperation
+    # Safely parse numeric input
     try:
-        # Safely parse and validate all decimal fields
         quantity = int(request.POST.get('quantity', 0))
-        cost_per_sack = request.POST.get('cost_per_sack', '0')
-        total_cost = request.POST.get('total_cost', '0')
-        amount_paid = request.POST.get('amount_paid', '0')
-        amount_change = request.POST.get('amount_change', '0')
+        cost_per_sack = Decimal(str(request.POST.get('cost_per_sack', '0')))
+        total_cost = Decimal(str(request.POST.get('total_cost', '0')))
+        amount_paid = Decimal(str(request.POST.get('amount_paid', '0')))
+        amount_change = Decimal(str(request.POST.get('amount_change', '0')))
+    except (InvalidOperation, TypeError, ValueError):
+        return JsonResponse({'status': 'error', 'message': 'Invalid numeric input. Please check the amounts and try again.'})
 
-        try:
-            cost_per_sack = Decimal(str(cost_per_sack))
-        except (InvalidOperation, TypeError, ValueError):
-            return JsonResponse({'status': 'error', 'message': 'Invalid cost per sack.'})
-        try:
-            total_cost = Decimal(str(total_cost))
-        except (InvalidOperation, TypeError, ValueError):
-            return JsonResponse({'status': 'error', 'message': 'Invalid total cost.'})
-        try:
-            amount_paid = Decimal(str(amount_paid))
-        except (InvalidOperation, TypeError, ValueError):
-            return JsonResponse({'status': 'error', 'message': 'Invalid amount paid.'})
-        try:
-            amount_change = Decimal(str(amount_change))
-        except (InvalidOperation, TypeError, ValueError):
-            return JsonResponse({'status': 'error', 'message': 'Invalid amount change.'})
-
+    # Create the order
+    try:
         order = CustomerOrder.objects.create(
             customer=customer,
             rice_type=rice,
@@ -1152,14 +1177,13 @@ def process_order(request):
             employee=employee,
             receiver_name=request.POST.get('receiver_name', ''),
             receiver_mobile_number=request.POST.get('receiver_mobile_number', ''),
-            delivery_address=delivery_address,  # Auto-filled here
+            delivery_address=delivery_address,
             order_notes=request.POST.get('order_notes', ''),
         )
+
         return JsonResponse({'status': 'success', 'message': 'Order created successfully.'})
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)})
-
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
+        return JsonResponse({'status': 'error', 'message': f"Order creation failed: {str(e)}"})
 
 from django.core.paginator import Paginator
 
@@ -1332,7 +1356,7 @@ def user_logs(request):
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT ul.id, ul.action_type, ul.timestamp,
-                   e.FirstName || ' ' || IFNULL(e.MiddleName, '') || ' ' || e.LastName || ' ' || IFNULL(e.Suffix, '') AS employee_name
+                   CONCAT(e.FirstName, ' ', COALESCE(e.MiddleName, ''), ' ', e.LastName, ' ', COALESCE(e.Suffix, '')) AS employee_name
             FROM user_logs ul
             JOIN employee e ON ul.employee_id = e.EmployeeID
             ORDER BY ul.timestamp DESC
@@ -1366,7 +1390,6 @@ def user_logs(request):
             'employee_name': log[3].strip(),
         })
 
-    # Apply filtering
     if filter_date:
         log_entries = [log for log in log_entries if log['date'] == filter_date]
     if filter_time:
@@ -1374,7 +1397,6 @@ def user_logs(request):
     if filter_action:
         log_entries = [log for log in log_entries if filter_action in log['details'].lower() or filter_action in log['employee_name'].lower()]
 
-    # Paginate after filtering
     paginator = Paginator(log_entries, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -1391,19 +1413,16 @@ from datetime import datetime
 from .models import CustomerOrder, Users, Rice
 
 def view_sales_report(request):
-    # Default group_by is 'rice_type' and dates are empty by default
     group_by = request.GET.get('group_by', 'rice_type')
     start_date = request.GET.get('start_date', '')
     end_date = request.GET.get('end_date', '')
 
-    # Filter the orders based on the selected start_date and end_date
     filter_conditions = {}
     if start_date:
         filter_conditions['last_updated__gte'] = start_date
     if end_date:
         filter_conditions['last_updated__lte'] = end_date
 
-    # Aggregating based on the group_by filter (either rice_type or cashier)
     if group_by == 'cashier':
         report_data = CustomerOrder.objects.filter(**filter_conditions) \
             .values('employee__full_Name') \
@@ -1415,7 +1434,6 @@ def view_sales_report(request):
             .annotate(total_quantity=Sum('quantity'), total_revenue=Sum(F('quantity') * F('cost_per_sack'))) \
             .order_by('rice_type__rice_type')
 
-    # Pass the report data and group_by value to the template
     context = {
         'report_data': report_data,
         'group_by': group_by,
@@ -1425,11 +1443,6 @@ def view_sales_report(request):
 
 from django.db.models import Sum
 from datetime import datetime
-
-from datetime import datetime
-from django.db.models import Sum
-from django.shortcuts import render
-from .models import Rice, CustomerOrder
 
 def inventory_turnover_report(request):
     start_date = request.GET.get('start-date')
@@ -1964,7 +1977,9 @@ def Process_signup(request):
 
 
 # --- Customer Account Overview View ---
-from .models import CustomerOrder
+from .models import CustomerOrder, Users
+from django.shortcuts import render, redirect
+
 def user_account_view(request):
     """
     Show customer account overview: profile info and their orders.
@@ -1974,10 +1989,10 @@ def user_account_view(request):
     if not user_id or not user_role:
         return redirect('login')
 
-    # If admin, show list of all customers (active and inactive)
     if user_role == 'admin':
-        customers = Users.objects.filter(Role__iexact='customer').select_related('name').order_by('name__last_name', 'name__first_name')
-        # If a specific customer is requested (by GET param), show their details
+        # Just get all customers (all users), no role filtering since Role field doesn't exist
+        customers = Users.objects.all().order_by('name__last_name', 'name__first_name')
+
         customer_id = request.GET.get('customer_id')
         selected_customer = None
         orders = None
@@ -1991,7 +2006,6 @@ def user_account_view(request):
             'is_admin': True,
         })
 
-    # If customer, show their own info
     if user_role == 'user':
         user = Users.objects.filter(UserID=user_id).first()
         orders = CustomerOrder.objects.filter(customer_id=user_id).order_by('-created_at')
@@ -2001,5 +2015,4 @@ def user_account_view(request):
             'is_admin': False,
         })
 
-    # For any other role, redirect to dashboard
     return redirect('dashboard')

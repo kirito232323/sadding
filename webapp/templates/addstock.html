@@ -140,8 +140,6 @@
     {% endif %}
 
 
-
-
 <!-- API/JS Success Banner (Simple) -->
 <div id="apiSuccessBanner" style="display:none;" class="mb-6 p-3 rounded text-sm font-medium text-center"></div>
 
@@ -153,37 +151,37 @@
   </div>
 
   <!-- Add New Rice Type -->
-<section class="bg-white p-6 rounded-lg shadow-md mb-8">
-  <h2 class="text-xl font-bold mb-4 text-gray-800">Add New Rice Type</h2>
-  <form id="add-rice-form" method="POST" class="space-y-4" action="{% url 'add_rice' %}">
-    {% csrf_token %}
-    <div>
-      <label for="rice_type" class="font-medium text-gray-700">Rice Type:</label>
-      <input type="text" name="rice_type" id="rice_type" required
-             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
-    </div>
-    <div>
-      <label for="price_per_sack" class="font-medium text-gray-700">Price Per Sack:</label>
-      <input type="number" name="price_per_sack" id="price_per_sack" step="0.01" required
-             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
-    </div>
-    <div>
-      <label for="description" class="font-medium text-gray-700">Description:</label>
-      <textarea name="description" id="description" rows="3"
-                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"></textarea>
-    </div>
-    <div>
-      <button type="submit" class="w-full bg-green-600 text-white font-semibold py-2 rounded-md hover:bg-green-700 text-sm">Add Rice Type</button>
-    </div>
-  </form>
-</section>
+  <section class="bg-white p-6 rounded-lg shadow-md mb-8">
+    <h2 class="text-xl font-bold mb-4 text-gray-800">Add New Rice Type</h2>
+    <form id="add-rice-form" method="POST" class="space-y-4" action="{% url 'add_rice' %}">
+      {% csrf_token %}
+      <div>
+        <label for="rice_type" class="font-medium text-gray-700">Rice Type:</label>
+        <input type="text" name="rice_type" id="rice_type" required
+               class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+      </div>
+      <div>
+        <label for="price_per_sack" class="font-medium text-gray-700">Price Per Sack:</label>
+        <input type="number" name="price_per_sack" id="price_per_sack" step="0.01" required
+               class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+      </div>
+      <div>
+        <label for="description" class="font-medium text-gray-700">Description:</label>
+        <textarea name="description" id="description" rows="3"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"></textarea>
+      </div>
+      <div>
+        <button type="submit" class="w-full bg-green-600 text-white font-semibold py-2 rounded-md hover:bg-green-700 text-sm">Add Rice Type</button>
+      </div>
+    </form>
+  </section>
 
   <!-- Add Rice Stock -->
   <section class="bg-white p-6 rounded-lg shadow-md mb-8">
     <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Add Rice Stock</h2>
     <form method="POST" action="{% url 'addstock' %}" onsubmit="return confirm('Confirm adding stock?')">
       {% csrf_token %}
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 items-end">
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-6 items-end">
         <div>
           <label for="riceType" class="block text-sm font-medium text-gray-700">Rice Type</label>
           <select id="riceType" name="riceType" required
@@ -192,6 +190,16 @@
             {% for rice in rice_data %}
               <option value="{{ rice.riceID }}">{{ rice.rice_type }}</option>
             {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="packaging" class="block text-sm font-medium text-gray-700">Packaging</label>
+          <select id="packaging" name="packaging" required
+                  class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm">
+            <option value="" disabled selected>-- Select Packaging --</option>
+            <option value="25kg">25kg sacks</option>
+            <option value="50kg">50kg sacks</option>
+            <option value="Other">Other</option>
           </select>
         </div>
         <div>
@@ -209,69 +217,70 @@
     </form>
   </section>
 
-  <!-- Rice Stock Table -->
-  <section class="bg-white p-6 rounded-lg shadow-md">
-    <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Rice Stock Management</h2>
-    <input type="text" id="riceFilterInput" placeholder="Filter by Rice Name"
-           class="w-full max-w-sm border border-gray-300 rounded px-4 py-2 text-sm mb-4" />
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 text-sm">
-<thead class="bg-gray-100">
-  <<thead class="bg-gray-100">
-  <tr>
-    <th class="px-4 py-3 text-left font-medium text-gray-700">Rice Type</th>
-    <th class="px-4 py-3 text-right font-medium text-gray-700">Stock In</th>
-    <th class="px-4 py-3 text-right font-medium text-gray-700">Stock Out</th>
-    <th class="px-4 py-3 text-right font-semibold text-gray-700">Current Stock</th>
-    <th class="px-4 py-3 text-right font-medium text-gray-700">Price/Sack</th>
-    <th class="px-4 py-3 text-left font-medium text-gray-700">Description</th>
-    <th class="px-4 py-3 text-left font-medium text-gray-700">Last Updated</th>
-    <th class="px-4 py-3 text-center font-medium text-gray-700">Actions</th>
-  </tr>
-</thead>
-<tbody id="riceTableBody" class="divide-y divide-gray-200">
-  {% for stock in stock_data %}
-    <tr>
-      <td class="px-4 py-2">{{ stock.rice_type }}</td>
-      <td class="px-4 py-2 text-right">{{ stock.stock_in }}</td>
-      <td class="px-4 py-2 text-right">{{ stock.stock_out }}</td>
-      <td class="px-4 py-2 text-right font-semibold">{{ stock.current_stock }}</td>
-      <td class="px-4 py-2 text-right">
-        <span class="price-display">₱{{ stock.price_per_sack }}</span>
-        <input type="number" class="price-input hidden w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
-           value="{{ stock.price_per_sack }}" step="0.01" min="0" />
+<!-- Rice Stock Table -->
+<section class="bg-white p-6 rounded-lg shadow-md">
+  <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Rice Stock Management</h2>
+  <input type="text" id="riceFilterInput" placeholder="Filter by Rice Name or Packaging"
+         class="w-full max-w-sm border border-gray-300 rounded px-4 py-2 text-sm mb-4" />
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200 text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium text-gray-700">Rice Type</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-700">Packaging</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-700">Stock In</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-700">Stock Out</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-700">Current Stock</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-700">Price/Sack</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-700">Description</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-700">Last Updated</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-700">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="riceTableBody" class="divide-y divide-gray-200">
+        {% for stock in stock_data %}
+          <tr>
+            <td class="px-4 py-2">{{ stock.rice_name }}</td>
+            <td class="px-4 py-2">{{ stock.packaging }}</td>
+            <td class="px-4 py-2 text-right">{{ stock.stock_in }}</td>
+            <td class="px-4 py-2 text-right">{{ stock.stock_out }}</td>
+            <td class="px-4 py-2 text-right font-semibold">{{ stock.current_stock }}</td>
+            <td class="px-4 py-2 text-right">
+              <span class="price-display">₱{{ stock.price_per_sack }}</span>
+              <input type="number" class="price-input hidden w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
+                     value="{{ stock.price_per_sack }}" step="0.01" min="0" />
+            </td>
+            <td class="px-4 py-2">
+              <span class="desc-display">{{ stock.description|default:"-" }}</span>
+              <textarea class="desc-input hidden w-full border border-gray-300 rounded-md px-2 py-1 text-sm">{{ stock.description }}</textarea>
+            </td>
+            <td class="px-4 py-2 text-left">{{ stock.last_updated|date:"M d, Y H:i" }}</td>
+            <td class="px-4 py-2 text-center flex justify-center gap-2">
+              <button onclick="toggleEdit(this)" class="edit-btn bg-yellow-400 text-white px-2 py-1 rounded">Edit</button>
+              <button onclick="saveChanges(this, '{{ stock.stockID }}')" class="save-btn hidden bg-green-500 text-white px-2 py-1 rounded">Save</button>
 
-          </td>
-      <td class="px-4 py-2">
-        <span class="desc-display">{{ stock.description|default:"-" }}</span>
-        <textarea class="desc-input hidden w-full border border-gray-300 rounded-md px-2 py-1 text-sm">{{ stock.description }}</textarea>
-      </td>
-       <td class="px-4 py-2 text-left">
-  {{ stock.last_updated|date:"M d, Y H:i" }}
-</td>
-      <td class="px-4 py-2 text-center flex justify-center gap-2">
-        <button onclick="toggleEdit(this)" class="edit-btn bg-yellow-400 text-white px-2 py-1 rounded">Edit</button>
-        <button onclick="saveChanges(this, '{{ stock.riceID }}')" class="save-btn hidden bg-green-500 text-white px-2 py-1 rounded">Save</button>
-        <form method="POST" action="{% url 'deletestock' stock.riceID %}" class="inline" onsubmit="return confirm('Delete this rice type?');">
-          {% csrf_token %}
-          <button type="submit" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
-        </form>
-      </td>
-    </tr>
-  {% empty %}
-    <tr>
-      <td colspan="8" class="text-center py-4 text-gray-500">No rice types available.</td>
-    </tr>
-  {% endfor %}
-</tbody>
-      </table>
-    </div>
-  </section>
+{% if stock.stockID %}
+<form method="POST" action="{% url 'deletestock' stock.stockID %}" onsubmit="return confirm('Delete this stock?');">
+  {% csrf_token %}
+  <button type="submit" class="bg-red-600 text-white px-2 py-1 rounded">Delete</button>
+</form>
+{% endif %}
+                                {% csrf_token %}
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="9" class="text-center py-4 text-gray-500">No stock records found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
 
 
-</main>
-
-  <!-- Update Log Section -->
+<!-- Update Log Section -->
   <section class="bg-white p-6 rounded-lg shadow-md mb-8">
     <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Update Log</h2>
     <div id="update-log-list">

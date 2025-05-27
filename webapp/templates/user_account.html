@@ -150,9 +150,6 @@
     </div>
   </nav>
 </header>
-
-
-
 <body class="bg-gray-100 text-gray-700 min-h-screen font-sans">
   <div class="max-w-4xl w-full mx-auto py-8 min-h-[75vh] px-4 md:px-0" style="margin-right: 280px;">
     {% if is_admin %}
@@ -199,23 +196,13 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-4 text-sm">
               <div>
                 <span class="block text-gray-500 uppercase tracking-wide">Name</span>
-                <span class="font-semibold text-gray-800">{{ selected_customer.name.last_name }}, {{ selected_customer.name.first_name }}{% if selected_customer.name.middle_name %} {{ selected_customer.name.middle_name }}{% endif %}{% if selected_customer.name.suffix %} {{ selected_customer.name.suffix }}{% endif %}</span>
-              </div>
-              <div>
-                <span class="block text-gray-500 uppercase tracking-wide">Username</span>
-                <span class="text-gray-800">{{ selected_customer.Username }}</span>
-              </div>
-              <div>
-                <span class="block text-gray-500 uppercase tracking-wide">Email</span>
-                <span class="text-gray-800">{{ selected_customer.Email }}</span>
+                <span class="font-semibold text-gray-800">
+                  {{ selected_customer.name.last_name }}, {{ selected_customer.name.first_name }}{% if selected_customer.name.middle_name %} {{ selected_customer.name.middle_name }}{% endif %}{% if selected_customer.name.suffix %} {{ selected_customer.name.suffix }}{% endif %}
+                </span>
               </div>
               <div>
                 <span class="block text-gray-500 uppercase tracking-wide">Mobile Number</span>
                 <span class="text-gray-800">{{ selected_customer.Customer_Mobile_Number|default:'N/A' }}</span>
-              </div>
-              <div>
-                <span class="block text-gray-500 uppercase tracking-wide">Status</span>
-                <span class="inline-block px-2 py-1 rounded text-xs font-semibold {% if selected_customer.Acc_Status == 'active' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %} animate-pulse">{{ selected_customer.Acc_Status|capfirst }}</span>
               </div>
               <div class="sm:col-span-2">
                 <span class="block text-gray-500 uppercase tracking-wide">Address</span>
@@ -292,19 +279,11 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label class="block text-gray-500 uppercase tracking-wide mb-1 text-xs">Name</label>
-              <div class="font-semibold text-gray-800">{{ user.First_Name }}{% if user.Middle_Name %} {{ user.Middle_Name }}{% endif %} {{ user.Last_Name }}{% if user.Suffix %} {{ user.Suffix }}{% endif %}</div>
-            </div>
-            <div>
-              <label class="block text-gray-500 uppercase tracking-wide mb-1 text-xs">Username</label>
-              <div class="text-gray-800">{{ user.Username }}</div>
-            </div>
-            <div>
-              <label class="block text-gray-500 uppercase tracking-wide mb-1 text-xs">Email</label>
-              <div class="text-gray-800">{{ user.Email }}</div>
+              <div class="font-semibold text-gray-800">{{ user.name.first_name }}{% if user.name.middle_name %} {{ user.name.middle_name }}{% endif %} {{ user.name.last_name }}{% if user.name.suffix %} {{ user.name.suffix }}{% endif %}</div>
             </div>
             <div>
               <label class="block text-gray-500 uppercase tracking-wide mb-1 text-xs">Mobile Number</label>
-              <div class="text-gray-800">{{ user.Mobile_Number|default:"N/A" }}</div>
+              <div class="text-gray-800">{{ user.Customer_Mobile_Number|default:"N/A" }}</div>
             </div>
             <div class="sm:col-span-2">
               <label class="block text-gray-500 uppercase tracking-wide mb-1 text-xs">Address</label>
@@ -322,3 +301,4 @@
     {% endif %}
   </div>
 </body>
+

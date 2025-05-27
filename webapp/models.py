@@ -34,65 +34,69 @@ class UserAddress(models.Model):
         db_table = 'user_address'
 
 class Users(models.Model):
-    ROLE_CHOICES = [
-        ('admin', 'Admin'),
-        ('employee', 'Employee'),
-        ('cashier', 'Cashier'),
-        ('customer', 'Customer')
-    ]
-    STATUS_CHOICES = [
-        ('active', 'Active'),
-        ('inactive', 'Inactive'),
-        ('suspended', 'Suspended')
-    ]
-
     UserID = models.AutoField(primary_key=True)
     name = models.OneToOneField(UserName, on_delete=models.CASCADE, related_name='user', null=True, blank=True)
     address = models.OneToOneField(UserAddress, on_delete=models.CASCADE, related_name='user', null=True, blank=True)
-    Role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='customer')
-    Username = models.CharField(max_length=50, unique=True)
-    Password = models.CharField(max_length=128)  # For proper password hashing
-    Email = models.EmailField(unique=True)
-    Acc_Status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='inactive')
     Customer_Mobile_Number = models.CharField(max_length=20, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    is_email_verified = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.name} ({self.Username})"
+        return f"{self.name}"
 
     class Meta:
         db_table = 'webapp_users'
-        managed = True  # Allow Django to manage this table
-        constraints = [
-            models.UniqueConstraint(fields=['Username', 'Email'], name='unique_username_email')
-        ]
+        managed = True
 
+from django.db import models
 
 class Rice(models.Model):
     riceID = models.AutoField(primary_key=True)
     rice_type = models.CharField(max_length=100, unique=True)
-    price_per_sack = models.DecimalField(max_digits=10, decimal_places=2)
-    stock_in = models.PositiveIntegerField(default=0)
-    stock_out = models.PositiveIntegerField(default=0)
-    current_stock = models.PositiveIntegerField(default=0)
-    minimum_stock = models.PositiveIntegerField(default=10)
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
-    last_updated = models.DateTimeField(auto_now=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'Rice'
 
     def __str__(self):
-        return self.rice_type
+        return f"{self.rice_type} ({self.packaging})"
+
+from django.db import models
+from .models import Rice 
+
+class Stock(models.Model):
+    stockID = models.AutoField(primary_key=True)
+    rice_type = models.ForeignKey(Rice, on_delete=models.CASCADE, db_column='riceID', related_name='stocks')
+    packaging = models.CharField(max_length=50, default='50kg')  # e.g., 25kg, 50kg
+    price_per_sack = models.DecimalField(max_digits=10, decimal_places=2)
+    stock_in = models.PositiveIntegerField(default=0)
+    stock_out = models.PositiveIntegerField(default=0)
+    current_stock = models.PositiveIntegerField(default=0)
+    minimum_stock = models.PositiveIntegerField(default=10)
+    last_updated = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'Stock'
+        unique_together = ('rice_type', 'packaging')
+
+    def __str__(self):
+        return f"{self.rice_type.rice_type} - {self.packaging}"
+
+    @property
+    def rice_name(self):
+        return self.rice_type.rice_type
+
+    @property
+    def description(self):
+        return self.rice_type.description
 
     def save(self, *args, **kwargs):
-        # Always recalculate current_stock before saving
+        # Automatically compute current stock
         self.current_stock = self.stock_in - self.stock_out
         super().save(*args, **kwargs)
+
 
 
 class CustomerOrder(models.Model):
