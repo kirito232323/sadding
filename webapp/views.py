@@ -281,7 +281,9 @@ def dashboard_view(request):
         except Users.DoesNotExist:
             pass
 
-    stock_data = Rice.objects.all()
+
+    from .models import Stock
+    stock_data = Stock.objects.select_related('rice_type').all()
 
     recent_sales = CustomerOrder.objects.filter(approval_status='Approved') \
         .select_related('rice_type') \
@@ -294,7 +296,7 @@ def dashboard_view(request):
 
     stock_out_count = stock_data.filter(current_stock=0).count()
     low_stock_count = stock_data.filter(current_stock__lte=100).exclude(current_stock=0).count()
-    total_rice_types = stock_data.count()
+    total_rice_types = stock_data.values('rice_type').distinct().count()
 
     notifications = []
     read_notifications = request.session.get('read_notifications', [])
@@ -322,20 +324,20 @@ def dashboard_view(request):
                 })
 
     for item in stock_data.filter(current_stock=0):
-        notif_id = f'outofstock_{item.riceID}'
+        notif_id = f'outofstock_{item.stockID}'
         if notif_id not in read_notifications:
             notifications.append({
                 "id": notif_id,
-                "message": f"{item.rice_type} is out of stock!",
+                "message": f"{item.rice_type.rice_type} ({item.packaging}) is out of stock!",
                 "timestamp": current_timestamp,
             })
 
     for item in stock_data.filter(current_stock__lte=100).exclude(current_stock=0):
-        notif_id = f'lowstock_{item.riceID}'
+        notif_id = f'lowstock_{item.stockID}'
         if notif_id not in read_notifications:
             notifications.append({
                 "id": notif_id,
-                "message": f"{item.rice_type} is running low (only {item.current_stock} sacks left)",
+                "message": f"{item.rice_type.rice_type} ({item.packaging}) is running low (only {item.current_stock} sacks left)",
                 "timestamp": current_timestamp,
             })
 
@@ -1461,17 +1463,20 @@ def inventory_turnover_report(request):
     rice_types = Rice.objects.all()
     turnover_data = []
 
+    from .models import Stock
     for rice in rice_types:
         rice_orders = orders.filter(rice_type=rice)
         total_sales = rice_orders.aggregate(total=Sum('quantity'))['total'] or 0
-        price_per_sack = float(rice.price_per_sack or 0)
+
+        # Aggregate all stocks for this rice type
+        stocks = Stock.objects.filter(rice_type=rice)
+        beginning_stock = stocks.aggregate(total=Sum('stock_in'))['total'] or 0
+        ending_stock = stocks.aggregate(total=Sum('current_stock'))['total'] or 0
+        # Use average price_per_sack for COGS calculation (or latest, or 0 if none)
+        price_per_sack = stocks.order_by('-last_updated').first().price_per_sack if stocks.exists() else 0
 
         # Calculate COGS
-        total_cogs = total_sales * price_per_sack
-
-        # Use stock_in as beginning and current_stock as ending for turnover calc
-        beginning_stock = rice.stock_in
-        ending_stock = rice.current_stock
+        total_cogs = total_sales * float(price_per_sack)
 
         try:
             average_inventory = (beginning_stock + ending_stock) / 2
