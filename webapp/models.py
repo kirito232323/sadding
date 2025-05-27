@@ -60,7 +60,7 @@ class Rice(models.Model):
         db_table = 'Rice'
 
     def __str__(self):
-        return f"{self.rice_type} ({self.packaging})"
+        return f"{self.rice_type}"
 
 from django.db import models
 from .models import Rice 
