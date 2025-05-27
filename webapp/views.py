@@ -643,51 +643,43 @@ def supplier(request):
 
 
 
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-import json
-
-from .models import Rice, Stock
-
-@csrf_exempt  # Optional: Use only if CSRF tokens are not being sent
+@csrf_exempt  # Only use this in development
 @require_POST
-def updatestock(request, riceID):
+def updatestock(request, stockID):
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
 
     price_per_sack = data.get('price_per_sack')
-    description = data.get('description', '')
-    packaging = data.get('packaging', '50kg')  # You may allow the frontend to send this
+    description = data.get('description', '').strip()
 
-    if price_per_sack is None:
+    if not price_per_sack:
         return JsonResponse({'status': 'error', 'message': 'Price per sack is required'}, status=400)
 
     try:
-        price_per_sack = float(price_per_sack)
+        price_per_sack = Decimal(price_per_sack)
         if price_per_sack < 0:
-            raise ValueError()
-    except (ValueError, TypeError):
+            raise InvalidOperation()
+    except (InvalidOperation, TypeError, ValueError):
         return JsonResponse({'status': 'error', 'message': 'Invalid price per sack'}, status=400)
 
-    # Get Rice and Stock object
-    rice = get_object_or_404(Rice, riceID=riceID)
+    # Get the Stock object by stockID
+    try:
+        stock = Stock.objects.select_related('rice_type').get(pk=stockID)
+    except Stock.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Stock ID not found'}, status=404)
 
-    # Get the correct Stock entry for this Rice and Packaging
-    stock = get_object_or_404(Stock, rice_type=rice, packaging=packaging)
-
-    # Update values
+    # Update stock price
     stock.price_per_sack = price_per_sack
     stock.save()
 
-    # Optionally update the description in the Rice table
-    rice.description = description
-    rice.save()
+    # Update description in the Rice table
+    if description:
+        stock.rice_type.description = description
+        stock.rice_type.save()
 
-    return JsonResponse({'status': 'success', 'message': 'Stock and description updated successfully'})
+    return JsonResponse({'status': 'success', 'message': 'Stock and rice description updated successfully.'})
 
 
 def removestock(request):
@@ -982,42 +974,32 @@ def view_stock_levels(request):
     rice_data = Rice.objects.all()
     return render(request, 'viewstocklevel.html', {'rice_data': rice_data})
 
-import json
-from django.http import JsonResponse
-from decimal import Decimal, InvalidOperation
-from .models import Rice
-
 from decimal import Decimal, InvalidOperation
 import json
 from django.http import JsonResponse
-from .models import Rice
-
-from django.http import JsonResponse
-from decimal import Decimal, InvalidOperation
 from .models import Rice, Stock
-import json
 
 def add_rice(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             rice_type = data.get('rice_type')
-            price_per_sack = data.get('price_per_sack')
-            description = data.get('description', '')  # Optional field
-            packaging = data.get('packaging', '50kg')  # Default packaging
+            price_per_sack = data.get('price_per_sack')  # Optional now
+            description = data.get('description', '')    # Optional
+            packaging = data.get('packaging', '50kg')    # Default to 50kg
 
-            if not rice_type or price_per_sack is None:
-                return JsonResponse({'status': 'error', 'message': 'Rice type and price are required'})
+            if not rice_type:
+                return JsonResponse({'status': 'error', 'message': 'Rice type is required'})
 
-            # Convert price_per_sack to Decimal safely
+            # Handle optional price_per_sack, default to 0.00 if missing or empty
             try:
-                price = Decimal(price_per_sack)
-                if price <= 0:
+                price = Decimal(price_per_sack) if price_per_sack not in [None, ''] else Decimal('0.00')
+                if price < 0:
                     raise InvalidOperation
-            except (InvalidOperation, TypeError):
-                return JsonResponse({'status': 'error', 'message': 'Price per sack must be a positive decimal number'})
+            except (InvalidOperation, TypeError, ValueError):
+                return JsonResponse({'status': 'error', 'message': 'Price per sack must be a non-negative decimal number'})
 
-            # Check if rice type already exists
+            # Check for duplicate rice type
             if Rice.objects.filter(rice_type__iexact=rice_type).exists():
                 return JsonResponse({'status': 'error', 'message': 'Rice type already exists'})
 
@@ -1027,7 +1009,7 @@ def add_rice(request):
                 description=description
             )
 
-            # Create corresponding Stock entry with default 0 stock
+            # Create corresponding Stock with price defaulting to 0.00
             stock = Stock.objects.create(
                 rice_type=new_rice,
                 packaging=packaging,
@@ -1036,7 +1018,7 @@ def add_rice(request):
                 stock_out=0
             )
 
-            # Prepare response data
+            # Prepare response
             response_data = {
                 'riceID': new_rice.riceID,
                 'rice_type': new_rice.rice_type,
@@ -1050,7 +1032,7 @@ def add_rice(request):
 
             return JsonResponse({
                 'status': 'success',
-                'message': 'Rice type added successfully',
+                'message': 'Rice type successfully created',
                 'data': response_data
             })
 
@@ -1901,39 +1883,79 @@ from .models import UserName, UserAddress, Users
 
 def Process_signup(request):
     if request.method == 'POST':
-        # Get fields similar to adduser
-        username = request.POST.get('username', '').strip()
-        password = request.POST.get('password', '')
+        # Personal Info
         first_name = request.POST.get('first_name', '').strip()
         middle_name = request.POST.get('middle_name', '').strip()
         last_name = request.POST.get('last_name', '').strip()
         suffix = request.POST.get('suffix', '').strip()
-        role = 'employee'  # Default role for signup
 
-        # Validation (same as adduser)
-        if not (username and password and first_name and last_name and role):
-            return render(request, 'signup.html', {'error': 'Please fill in all required fields.'})
+        # Credentials
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+        # confirm_password = request.POST.get('confirm_password', '')  # No longer used
+        # email = request.POST.get('email', '').strip()  # No longer used
 
-        # Create the employee (inactive by default)
-        from .models import Employee
+        # Address Info
+        house_unit_number = request.POST.get('house_unit_number', '').strip()
+        building_name = request.POST.get('building_name', '').strip()
+        street_name = request.POST.get('street_name', '').strip()
+        barangay = request.POST.get('barangay', '').strip()
+        city_municipality = request.POST.get('city_municipality', '').strip()
+        province = request.POST.get('province', '').strip()
+        zip_code = request.POST.get('zip_code', '').strip()
+
+
+        # Contact Info
+        country_code = request.POST.get('country_code', '').strip()
+        mobile_number = request.POST.get('mobile_number', '').strip()
+        full_mobile_number = f"{country_code}{mobile_number}" if country_code and mobile_number else ''
+
+        # Validation (no confirm_password, no email)
+        if not username or not password or not first_name or not last_name:
+            return render(request, 'signup.html', {'error': 'All required fields must be filled.'})
+
+
         try:
-            new_employee = Employee(
-                Username=username,
-                Password=password,
+            # Create Name Object
+            name_obj = UserName.objects.create(
+                first_name=first_name,
+                middle_name=middle_name or None,
+                last_name=last_name,
+                suffix=suffix or None
+            )
+
+            # Create Address Object
+            address_obj = UserAddress.objects.create(
+                house_unit_number=house_unit_number or None,
+                building_name=building_name or None,
+                street_name=street_name or None,
+                barangay=barangay or None,
+                city_municipality=city_municipality or None,
+                province=province or None,
+                zip_code=zip_code or None
+            )
+
+            # Create User
+            # Create as Employee instead of Users
+            from .models import Employee
+            Employee.objects.create(
                 FirstName=first_name,
-                MiddleName=middle_name,
+                MiddleName=middle_name or None,
                 LastName=last_name,
-                Suffix=suffix,
-                Role=role,
+                Suffix=suffix or None,
+                Username=username,
+                Password=password,  # Not hashed
+                Role='',  # Use empty string instead of None
                 Account_Status='inactive'
             )
-            new_employee.save()
+
             return render(request, 'signup.html', {
-                'success': 'Signup successful! Your account is pending activation by an admin.'
+                'success': True
             })
-        except Exception as e:
+
+        except IntegrityError:
             return render(request, 'signup.html', {
-                'error': f'Error creating user: {str(e)}'
+                'error': 'Username already exists.'
             })
 
     return render(request, 'signup.html')

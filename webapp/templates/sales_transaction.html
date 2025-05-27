@@ -234,7 +234,7 @@
             <select name="rice_type_id" id="rice-type" class="w-full border rounded px-3 py-2" required autocomplete="off">
               <option value="" disabled hidden>Select a rice type</option>
               {% for rice in rice_data %}
-                <option value="{{ rice.riceID }}" data-price="{{ rice.price_per_sack }}" data-max-quantity="{{ rice.current_stock }}">{{ rice.rice_type }}</option>
+                <option value="{{ rice.riceID }}" data-price="{{ rice.price_per_sack }}" data-max-quantity="{{ rice.current_stock }}">{{ rice.rice_type }}{% if rice.packaging %} ({{ rice.packaging }}){% endif %}</option>
               {% endfor %}
             </select>
           </div>
@@ -377,6 +377,18 @@
   const totalCostInput = document.getElementById('total_cost');
   const amountPaidInput = document.getElementById('amount_paid');
   const amountChangeInput = document.getElementById('amount_change');
+
+
+  // Set cost per sack on page load if a rice type is pre-selected
+  document.addEventListener('DOMContentLoaded', () => {
+    const selectedOption = riceTypeSelect.options[riceTypeSelect.selectedIndex];
+    if (selectedOption && selectedOption.dataset.price) {
+      costPerSackInput.value = parseFloat(selectedOption.dataset.price).toFixed(2);
+    } else {
+      costPerSackInput.value = '';
+    }
+    updateTotalCost();
+  });
 
   riceTypeSelect.addEventListener('change', () => {
     const selectedOption = riceTypeSelect.options[riceTypeSelect.selectedIndex];

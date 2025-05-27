@@ -149,15 +149,7 @@
 <main class="flex-1 p-8 max-w-7xl mx-auto">
     
 
-    {% if messages %}
-        <div id="message" class="bg-green-100 text-green-800 p-4 rounded mb-4">
-            <ul>
-                {% for message in messages %}
-                    <li>{{ message }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-    {% endif %}
+    
 
     <!-- Role and Status Filter Form -->
     <form method="GET" class="mb-6 flex flex-wrap gap-4 items-center">

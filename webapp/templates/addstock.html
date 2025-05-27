@@ -150,26 +150,68 @@
     <h1 class="text-3xl font-bold text-[#1e293b] mb-4 sm:mb-0">Stock Management</h1>
   </div>
 
-  <!-- Add New Rice Type -->
-  <section class="bg-white p-6 rounded-lg shadow-md mb-8">
-    <h2 class="text-xl font-bold mb-4 text-gray-800">Add New Rice Type</h2>
-    <form id="add-rice-form" method="POST" class="space-y-4" action="{% url 'add_rice' %}">
-      {% csrf_token %}
-      <div>
-        <label for="rice_type" class="font-medium text-gray-700">Rice Type:</label>
-        <input type="text" name="rice_type" id="rice_type" required
-               class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
-      </div>
-      <div>
-        <label for="description" class="font-medium text-gray-700">Description:</label>
-        <textarea name="description" id="description" rows="3"
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"></textarea>
-      </div>
-      <div>
-        <button type="submit" class="w-full bg-green-600 text-white font-semibold py-2 rounded-md hover:bg-green-700 text-sm">Add Rice Type</button>
-      </div>
-    </form>
-  </section>
+ <!-- Add New Rice Type -->
+<section class="bg-white p-6 rounded-lg shadow-md mb-8">
+  <h2 class="text-xl font-bold mb-4 text-gray-800">Add New Rice Type</h2>
+  <form id="add-rice-form" class="space-y-4">
+    {% csrf_token %}
+    <div>
+      <label for="rice_type" class="font-medium text-gray-700">Rice Type:</label>
+      <input type="text" name="rice_type" id="rice_type" required
+             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+    </div>
+    <div>
+      <label for="description" class="font-medium text-gray-700">Description:</label>
+      <textarea name="description" id="description" rows="3"
+                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"></textarea>
+    </div>
+    <div>
+      <button type="submit"
+              class="w-full bg-green-600 text-white font-semibold py-2 rounded-md hover:bg-green-700 text-sm">
+        Add Rice Type
+      </button>
+    </div>
+  </form>
+  <p id="response-msg" class="text-sm mt-2"></p>
+</section>
+
+<script>
+  document.getElementById('add-rice-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const rice_type = document.getElementById('rice_type').value;
+    const description = document.getElementById('description').value;
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    const response = await fetch("{% url 'add_rice' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({
+        rice_type: rice_type,
+        description: description
+        // price_per_sack will default to 0.00 in the view
+      })
+    });
+
+    const result = await response.json();
+    const msgBox = document.getElementById('response-msg');
+
+    if (result.status === 'success') {
+      msgBox.textContent = '✅ ' + result.message;
+      msgBox.className = 'text-green-600';
+      // Optionally clear the form
+      document.getElementById('add-rice-form').reset();
+    } else {
+      msgBox.textContent = '❌ ' + result.message;
+      msgBox.className = 'text-red-600';
+    }
+  });
+</script>
+
 
   <!-- Add Rice Stock -->
   <section class="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -217,6 +259,7 @@
   <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Rice Stock Management</h2>
   <input type="text" id="riceFilterInput" placeholder="Filter by Rice Name or Packaging"
          class="w-full max-w-sm border border-gray-300 rounded px-4 py-2 text-sm mb-4" />
+
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200 text-sm">
       <thead class="bg-gray-100">
@@ -234,7 +277,7 @@
       </thead>
       <tbody id="riceTableBody" class="divide-y divide-gray-200">
         {% for stock in stock_data %}
-          <tr>
+          <tr data-stock-id="{{ stock.stockID }}">
             <td class="px-4 py-2">{{ stock.rice_name }}</td>
             <td class="px-4 py-2">{{ stock.packaging }}</td>
             <td class="px-4 py-2 text-right">{{ stock.stock_in }}</td>
@@ -252,16 +295,14 @@
             <td class="px-4 py-2 text-left">{{ stock.last_updated|date:"M d, Y H:i" }}</td>
             <td class="px-4 py-2 text-center flex justify-center gap-2">
               <button onclick="toggleEdit(this)" class="edit-btn bg-yellow-400 text-white px-2 py-1 rounded">Edit</button>
-              <button onclick="saveChanges(this, '{{ stock.stockID }}')" class="save-btn hidden bg-green-500 text-white px-2 py-1 rounded">Save</button>
+              <button onclick="saveChanges(this)" class="save-btn hidden bg-green-500 text-white px-2 py-1 rounded">Save</button>
 
-{% if stock.stockID %}
-<form method="POST" action="{% url 'deletestock' stock.stockID %}" onsubmit="return confirm('Delete this stock?');">
-  {% csrf_token %}
-  <button type="submit" class="bg-red-600 text-white px-2 py-1 rounded">Delete</button>
-</form>
-{% endif %}
-                                {% csrf_token %}
+              {% if stock.stockID %}
+              <form method="POST" action="{% url 'deletestock' stock.stockID %}" onsubmit="return confirm('Delete this stock?');">
+                {% csrf_token %}
+                <button type="submit" class="bg-red-600 text-white px-2 py-1 rounded">Delete</button>
               </form>
+              {% endif %}
             </td>
           </tr>
         {% empty %}
@@ -273,6 +314,7 @@
     </table>
   </div>
 </section>
+
 
 
 <!-- Update Log Section -->
@@ -313,10 +355,9 @@
 </div>
 
 <script>
-
 document.addEventListener('DOMContentLoaded', function () {
+  // Undo button handler
   const popup = document.getElementById('popup-message');
-
   document.querySelectorAll('.undo-btn').forEach(button => {
     button.addEventListener('click', function () {
       const logId = this.dataset.logId;
@@ -325,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function () {
       fetch(`/undo_update/${logId}/`, {
         method: 'POST',
         headers: {
-          'X-CSRFToken': '{{ csrf_token }}',
+          'X-CSRFToken': getCookie('csrftoken'),
           'X-Requested-With': 'XMLHttpRequest',
         },
       })
@@ -353,64 +394,38 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
   });
-});
-
-// Helper function to get CSRF token cookie (required for Django POST)
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            cookie = cookie.trim();
-            if (cookie.startsWith(name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-const csrftoken = getCookie('csrftoken');
 
   // Filter rice table by rice type name
-  document.getElementById('riceFilterInput').addEventListener('input', function () {
-    const filter = this.value.toLowerCase();
-    const rows = document.querySelectorAll('#riceTableBody tr');
-    rows.forEach(row => {
-      const riceType = row.querySelector('td:first-child').textContent.toLowerCase();
-      row.style.display = riceType.includes(filter) ? '' : 'none';
+  const filterInput = document.getElementById('riceFilterInput');
+  if (filterInput) {
+    filterInput.addEventListener('input', function () {
+      const filter = this.value.toLowerCase();
+      const rows = document.querySelectorAll('#riceTableBody tr');
+      rows.forEach(row => {
+        const riceType = row.querySelector('td:first-child').textContent.toLowerCase();
+        row.style.display = riceType.includes(filter) ? '' : 'none';
+      });
     });
-  });
-
-  // Toggle between display and edit mode for price and description
-  function toggleEdit(button) {
-    const row = button.closest('tr');
-    const priceDisplay = row.querySelector('.price-display');
-    const priceInput = row.querySelector('.price-input');
-    const descDisplay = row.querySelector('.desc-display');
-    const descInput = row.querySelector('.desc-input');
-    const saveBtn = row.querySelector('.save-btn');
-
-    if (priceInput.classList.contains('hidden')) {
-      // Enter edit mode
-      priceDisplay.classList.add('hidden');
-      priceInput.classList.remove('hidden');
-      descDisplay.classList.add('hidden');
-      descInput.classList.remove('hidden');
-      button.classList.add('hidden'); // hide Edit button
-      saveBtn.classList.remove('hidden'); // show Save button
-    }
   }
+});
 
-  // Helper to get CSRF token from cookies
-// Helper function to get CSRF token from cookie
+function toggleEdit(button) {
+  const row = button.closest('tr');
+  row.querySelector('.price-display').classList.toggle('hidden');
+  row.querySelector('.price-input').classList.toggle('hidden');
+  row.querySelector('.desc-display').classList.toggle('hidden');
+  row.querySelector('.desc-input').classList.toggle('hidden');
+  row.querySelector('.edit-btn').classList.toggle('hidden');
+  row.querySelector('.save-btn').classList.toggle('hidden');
+}
+
 function getCookie(name) {
   let cookieValue = null;
   if (document.cookie && document.cookie !== '') {
     const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-      cookie = cookie.trim();
-      if (cookie.startsWith(name + '=')) {
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
         break;
       }
@@ -419,121 +434,47 @@ function getCookie(name) {
   return cookieValue;
 }
 
-async function saveChanges(button, riceID) {
+
+function saveChanges(button) {
   const row = button.closest('tr');
-  const priceInput = row.querySelector('.price-input');
-  const descInput = row.querySelector('.desc-input');
-  const priceDisplay = row.querySelector('.price-display');
-  const descDisplay = row.querySelector('.desc-display');
-  const editBtn = row.querySelector('.edit-btn');
+  const stockID = row.getAttribute('data-stock-id');
+  const newPrice = row.querySelector('.price-input').value;
+  const newDesc = row.querySelector('.desc-input').value;
 
-  const newPrice = parseFloat(priceInput.value);
-  const newDesc = descInput.value.trim();
-
-  if (isNaN(newPrice) || newPrice < 0) {
-    alert('Please enter a valid price.');
-    return;
-  }
-
-  try {
-    const csrftoken = getCookie('csrftoken');
-
-    const response = await fetch(`/updatestock/${riceID}/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrftoken
-      },
-      body: JSON.stringify({
-        price_per_sack: newPrice,
-        description: newDesc
-      })
-    });
-
-    const contentType = response.headers.get('content-type') || '';
-
+  fetch(`/updatestock/${stockID}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}',
+    },
+    body: JSON.stringify({
+      price_per_sack: newPrice,
+      description: newDesc
+    })
+  })
+  .then(response => {
     if (!response.ok) {
-      // If HTTP status is error, read text and show
-      const errorText = await response.text();
-      alert(`Error updating stock: ${response.status} - ${errorText}`);
-      return;
+      return response.json().then(data => { throw data; });
     }
-
-    if (contentType.includes('application/json')) {
-      const result = await response.json();
-      if (result.status === 'success') {
-        priceDisplay.textContent = `₱${newPrice.toFixed(2)}`;
-        descDisplay.textContent = newDesc || '-';
-
-        priceDisplay.classList.remove('hidden');
-        priceInput.classList.add('hidden');
-        descDisplay.classList.remove('hidden');
-        descInput.classList.add('hidden');
-
-        button.classList.add('hidden'); // hide Save
-        editBtn.classList.remove('hidden'); // show Edit
-      } else {
-        alert('Update failed: ' + (result.message || 'Unknown error'));
-      }
-    } else {
-      const text = await response.text();
-      alert('Error updating stock: Server returned invalid response:\n' + text);
-    }
-  } catch (error) {
-    alert('Error updating stock: ' + error.message);
-  }
+    return response.json();
+  })
+  .then(data => {
+    alert('Stock updated successfully!');
+    // Update the display
+    row.querySelector('.price-display').textContent = `₱${parseFloat(newPrice).toFixed(2)}`;
+    row.querySelector('.desc-display').textContent = newDesc || '-';
+    toggleEdit(button);
+  })
+  .catch(error => {
+    console.error('Error updating stock:', error);
+    alert(`Error updating stock: ${error.message}`);
+  });
 }
 
 
-
-  // Handle Add New Rice Type form submit via AJAX
-  document.getElementById('add-rice-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-
-    const rice_type = this.rice_type.value.trim();
-    const price_per_sack = parseFloat(this.price_per_sack.value);
-    const description = this.description.value.trim();
-
-    if (!rice_type) {
-      showApiSuccessBanner({status: 'error', message: 'Please enter a rice type.'});
-      return;
-    }
-    if (isNaN(price_per_sack) || price_per_sack <= 0) {
-      showApiSuccessBanner({status: 'error', message: 'Please enter a valid positive price.'});
-      return;
-    }
-
-    const payload = {
-      rice_type,
-      price_per_sack,
-      description
-    };
-
-    try {
-      const response = await fetch("{% url 'add_rice' %}", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await response.json();
-
-      showApiSuccessBanner(result);
-      if (result.status === 'success') {
-        this.reset();  // Clear form on success
-        setTimeout(() => location.reload(), 1500); // Optionally refresh the rice list or reload page
-      }
-    } catch (error) {
-      showApiSuccessBanner({status: 'error', message: 'Error submitting form: ' + error.message});
-    }
-  });
-
-// Simple status banner (no pretty-print)
+// Optional: status banner to show success/error messages (not required but handy)
 function showApiSuccessBanner(data) {
-  var banner = document.getElementById('apiSuccessBanner');
+  const banner = document.getElementById('apiSuccessBanner');
   if (!banner) return;
 
   let status = '';
@@ -543,8 +484,8 @@ function showApiSuccessBanner(data) {
     try { data = JSON.parse(data); } catch { message = data; }
   }
   if (typeof data === 'object' && data !== null) {
-    status = data.status ? data.status : '';
-    message = data.message ? data.message : '';
+    status = data.status || '';
+    message = data.message || '';
   } else if (!message) {
     message = 'Success!';
   }
@@ -554,18 +495,8 @@ function showApiSuccessBanner(data) {
   else if (status === 'warning') colorClass = 'bg-yellow-100 text-yellow-800';
 
   banner.className = `mb-6 p-3 rounded text-sm font-medium text-center ${colorClass}`;
-  // Only show the message, no status prefix if status is 'success'
-  if (status === 'success' || !status) {
-    banner.textContent = message;
-  } else {
-    banner.textContent = (status.charAt(0).toUpperCase() + status.slice(1) + ': ' + message);
-  }
+  banner.textContent = (status === 'success' || !status) ? message : (status.charAt(0).toUpperCase() + status.slice(1) + ': ' + message);
   banner.style.display = 'block';
-  setTimeout(function() { banner.style.display = 'none'; }, 4000);
+  setTimeout(() => { banner.style.display = 'none'; }, 4000);
 }
 </script>
-
-</body>
-</html>
-
-

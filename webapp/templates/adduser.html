@@ -124,19 +124,6 @@
 <div class="mr-40 min-h-screen bg-gray-50">
   <main class="max-w-md mx-auto px-12 py-10">
     <h2 class="text-2xl font-bold text-gray-800 mb-6">Add User</h2>
-    {% if messages %}
-      <div class="mb-4">
-        {% for message in messages %}
-          <div class="p-2 rounded text-sm font-medium 
-            {% if message.tags == 'success' %}bg-green-100 text-green-800
-            {% elif message.tags == 'error' %}bg-red-100 text-red-800
-            {% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-800
-            {% else %}bg-gray-100 text-gray-800{% endif %}">
-            {{ message }}
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
     <form method="POST" class="space-y-4 bg-white p-6 shadow rounded">
       {% csrf_token %}
       <div>
@@ -166,7 +153,7 @@
       <div>
         <label for="role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
         <select name="role" id="role" class="border border-gray-300 p-2 rounded w-full" required>
-          <option value="" disabled selected>Select a role</option>
+          <option value="" selected>Select a role</option>
           <option value="admin">Admin</option>
           <option value="employee">Employee</option>
           <option value="cashier">Cashier</option>

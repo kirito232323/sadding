@@ -21,7 +21,11 @@
 
       {% if error %}
       <div class="bg-red-100 text-red-700 p-3 rounded-md text-sm text-center">
-        {{ error }}
+        {% if error == 'Role not recognized' %}
+          Invalid username, password, or your account does not have access. Please try again.
+        {% else %}
+          {{ error }}
+        {% endif %}
       </div>
       {% endif %}
 
