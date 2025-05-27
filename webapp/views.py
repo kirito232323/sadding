@@ -1901,81 +1901,39 @@ from .models import UserName, UserAddress, Users
 
 def Process_signup(request):
     if request.method == 'POST':
-        # Personal Info
+        # Get fields similar to adduser
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
         first_name = request.POST.get('first_name', '').strip()
         middle_name = request.POST.get('middle_name', '').strip()
         last_name = request.POST.get('last_name', '').strip()
         suffix = request.POST.get('suffix', '').strip()
+        role = 'employee'  # Default role for signup
 
-        # Credentials
-        username = request.POST.get('username', '').strip()
-        password = request.POST.get('password', '')
-        confirm_password = request.POST.get('confirm_password', '')
-        email = request.POST.get('email', '').strip()
+        # Validation (same as adduser)
+        if not (username and password and first_name and last_name and role):
+            return render(request, 'signup.html', {'error': 'Please fill in all required fields.'})
 
-        # Address Info
-        house_unit_number = request.POST.get('house_unit_number', '').strip()
-        building_name = request.POST.get('building_name', '').strip()
-        street_name = request.POST.get('street_name', '').strip()
-        barangay = request.POST.get('barangay', '').strip()
-        city_municipality = request.POST.get('city_municipality', '').strip()
-        province = request.POST.get('province', '').strip()
-        zip_code = request.POST.get('zip_code', '').strip()
-
-        # Contact Info
-        country_code = request.POST.get('country_code', '').strip()
-        mobile_number = request.POST.get('mobile_number', '').strip()
-        full_mobile_number = f"{country_code}{mobile_number}" if country_code and mobile_number else ''
-
-        # Validation
-        if password != confirm_password:
-            return render(request, 'signup.html', {'error': 'Passwords do not match.'})
-
-        if not username or not email or not password or not first_name or not last_name:
-            return render(request, 'signup.html', {'error': 'All required fields must be filled.'})
-
-        if '@' not in email or '.' not in email:
-            return render(request, 'signup.html', {'error': 'Please enter a valid email address.'})
-
+        # Create the employee (inactive by default)
+        from .models import Employee
         try:
-            # Create Name Object
-            name_obj = UserName.objects.create(
-                first_name=first_name,
-                middle_name=middle_name or None,
-                last_name=last_name,
-                suffix=suffix or None
-            )
-
-            # Create Address Object
-            address_obj = UserAddress.objects.create(
-                house_unit_number=house_unit_number or None,
-                building_name=building_name or None,
-                street_name=street_name or None,
-                barangay=barangay or None,
-                city_municipality=city_municipality or None,
-                province=province or None,
-                zip_code=zip_code or None
-            )
-
-            # Create User
-            Users.objects.create(
-                name=name_obj,
-                address=address_obj,
+            new_employee = Employee(
                 Username=username,
-                Password=make_password(password),
-                Email=email,
-                Role='customer',  # Matches your model default
-                Acc_Status='active',  # Activate immediately
-                Customer_Mobile_Number=full_mobile_number
+                Password=password,
+                FirstName=first_name,
+                MiddleName=middle_name,
+                LastName=last_name,
+                Suffix=suffix,
+                Role=role,
+                Account_Status='inactive'
             )
-
+            new_employee.save()
             return render(request, 'signup.html', {
-                'success': 'Signup successful! Your account is now active. You may log in.'
+                'success': 'Signup successful! Your account is pending activation by an admin.'
             })
-
-        except IntegrityError:
+        except Exception as e:
             return render(request, 'signup.html', {
-                'error': 'Username or email already exists.'
+                'error': f'Error creating user: {str(e)}'
             })
 
     return render(request, 'signup.html')

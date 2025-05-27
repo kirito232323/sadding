@@ -39,7 +39,6 @@
       </a>
     </div>
 
-    {% if request.session.user_role == 'admin' %}
     <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Users</p>
       <a href="{% url 'add_user' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
@@ -57,43 +56,22 @@
     </div>
 
     <div class="mb-2 px-2">
-      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Settings</p>
-      <a href="{%url 'supplier_order'%}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-        <i class="fas fa-truck w-4 text-yellow-500"></i><span>Supplier (Order)</span>
-      </a>
-      <a href="{% url 'orders' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-        <i class="fas fa-clipboard-check w-4 text-yellow-500"></i><span>Order Confirmation</span>
-      </a>
-      <a href="{% url 'supplier' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-        <i class="fas fa-truck-loading w-4 text-yellow-500"></i><span>Supplier Confirmation</span>
-      </a>
-    </div>
-    {% endif %}
-
-    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
-    <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Delivery System</p>
       <a href="{% url 'delivery-management' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
         <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Manage Deliveries</span>
       </a>
     </div>
-    {% endif %}
 
-    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
     <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Inventory</p>
       <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
         <i class="fas fa-boxes w-4 text-yellow-500"></i><span>Inventory</span>
       </a>
-    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
       <a href="{% url 'viewstocklevel' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
         <i class="fas fa-layer-group w-4 text-yellow-500"></i><span>View Levels</span>
       </a>
-      {% endif %}
     </div>
-    {% endif %}
 
-    {% if request.session.user_role == 'admin' or request.session.user_role == 'cashier' %}
     <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
       <a href="{% url 'new_sale' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
@@ -109,7 +87,6 @@
         <i class="fas fa-sync-alt w-4 text-yellow-500"></i><span>Inventory Turnover</span>
       </a>
     </div>
-    {% endif %}
 
     <div class="border-t border-gray-200 mt-auto px-2 py-4">
       <a href="{% url 'logout' %}" onclick="return confirm('Logout?');" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-red-100 hover:text-red-600 transition font-semibold text-red-500 mt-2">
@@ -118,6 +95,7 @@
     </div>
   </nav>
 </header>
+
 
 <!-- Main Content Wrapper -->
 <div class="mr-56 min-h-screen bg-gray-50">
@@ -295,47 +273,48 @@
   </div>
 </div>
 
-
-    <!-- Inventory Table -->
-    <section class="bg-white rounded-2xl shadow p-6 mb-12">
-      <h2 class="text-xl font-semibold text-gray-800 mb-4">📦 Inventory Overview</h2>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 text-sm text-left">
-          <thead class="bg-gray-100 text-gray-600 uppercase tracking-wider text-xs">
-            <tr>
-              <th class="px-4 py-3">Rice Type</th>
-              <th class="px-4 py-3 text-right">Current Stock (Sacks)</th>
-              <th class="px-4 py-3 text-right">Stock In (Sacks)</th>
-              <th class="px-4 py-3 text-right">Stock Out (Sacks)</th>
-              <th class="px-4 py-3 text-right">Price/Sack (₱)</th>
-              <th class="px-4 py-3 text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for rice in stock_data %}
-              <tr class="hover:bg-blue-50 transition">
-                <td class="px-4 py-2">{{ rice.rice_type }}</td>
-                <td class="px-4 py-2 text-right">{{ rice.current_stock }}</td>
-                <td class="px-4 py-2 text-right">{{ rice.stock_in }}</td>
-                <td class="px-4 py-2 text-right">{{ rice.stock_out }}</td>
-                <td class="px-4 py-2 text-right">₱{{ rice.price_per_sack|floatformat:2|intcomma }}</td>
-                <td class="px-4 py-2 text-center">
-                  {% if rice.current_stock == 0 %}
-                    <span class="bg-red-100 text-red-700 text-xs px-3 py-1 rounded-full">Out of Stock</span>
-                  {% elif rice.current_stock <= 100 %}
-                    <span class="bg-yellow-100 text-yellow-700 text-xs px-3 py-1 rounded-full">Low Stock</span>
-                  {% else %}
-                    <span class="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full">In Stock</span>
-                  {% endif %}
-                </td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="6" class="text-center py-6 text-gray-500">No stock data available.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </section>
+<!-- Inventory Table -->
+<section class="bg-white rounded-2xl shadow p-6 mb-12">
+  <h2 class="text-xl font-semibold text-gray-800 mb-4">📦 Inventory Overview</h2>
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200 text-sm text-left">
+      <thead class="bg-gray-100 text-gray-600 uppercase tracking-wider text-xs">
+        <tr>
+          <th class="px-4 py-3">Rice Type</th>
+          <th class="px-4 py-3">Packaging</th> <!-- New column -->
+          <th class="px-4 py-3 text-right">Current Stock (Sacks)</th>
+          <th class="px-4 py-3 text-right">Stock In (Sacks)</th>
+          <th class="px-4 py-3 text-right">Stock Out (Sacks)</th>
+          <th class="px-4 py-3 text-right">Price/Sack (₱)</th>
+          <th class="px-4 py-3 text-center">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rice in stock_data %}
+          <tr class="hover:bg-blue-50 transition">
+            <td class="px-4 py-2">{{ rice.rice_type }}</td>
+            <td class="px-4 py-2">{{ rice.packaging }}</td> <!-- Display packaging -->
+            <td class="px-4 py-2 text-right">{{ rice.current_stock }}</td>
+            <td class="px-4 py-2 text-right">{{ rice.stock_in }}</td>
+            <td class="px-4 py-2 text-right">{{ rice.stock_out }}</td>
+            <td class="px-4 py-2 text-right">₱{{ rice.price_per_sack|floatformat:2|intcomma }}</td>
+            <td class="px-4 py-2 text-center">
+              {% if rice.current_stock == 0 %}
+                <span class="bg-red-100 text-red-700 text-xs px-3 py-1 rounded-full">Out of Stock</span>
+              {% elif rice.current_stock <= 100 %}
+                <span class="bg-yellow-100 text-yellow-700 text-xs px-3 py-1 rounded-full">Low Stock</span>
+              {% else %}
+                <span class="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full">In Stock</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-center py-6 text-gray-500">No stock data available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
 
     <!-- Recent Sales Table -->
     <section class="bg-white rounded-2xl shadow p-6">
