@@ -37,7 +37,13 @@ SECRET_KEY = 'django-insecure-3o#nj#^$9z9$b#l58zq@u+nj&e)c)1oe#o&w&1&xv@82uig*ks
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['dragonricemilll.eu.pythonanywhere.com', 'final-sad.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = [
+    'dragonricemilll.eu.pythonanywhere.com',
+    'final-sad.onrender.com',
+    'dragon-ricemilll.onrender.com',
+    'localhost',
+    '127.0.0.1'
+]
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
