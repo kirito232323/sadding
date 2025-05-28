@@ -8,28 +8,19 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
   <style>
-    html {
-      scroll-behavior: smooth;
-    }
+    html { scroll-behavior: smooth; }
     .dropdown:hover .dropdown-menu {
       opacity: 1;
       visibility: visible;
       transform: translateY(0);
     }
-    /* Hide scrollbar */
-    .scrollbar-hide::-webkit-scrollbar {
-      display: none;
-    }
-    .scrollbar-hide {
-      -ms-overflow-style: none;  /* IE/Edge */
-      scrollbar-width: none;     /* Firefox */
-    }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen font-sans leading-relaxed overflow-x-hidden">
 
 <header class="fixed top-0 right-0 h-screen w-56 bg-white shadow-lg flex flex-col z-50 border-l border-gray-200">
-  <!-- Logo / Brand -->
   <div class="h-14 flex items-center justify-center border-b border-gray-200">
     <a href="#" class="flex items-center space-x-2 select-none text-gray-900 font-bold text-lg tracking-wide">
       <span class="text-yellow-500 text-2xl">🌾</span>
@@ -37,119 +28,73 @@
     </a>
   </div>
 
-  <!-- Navigation -->
   <nav class="flex-1 flex flex-col py-1 pr-1 overflow-y-auto scrollbar-hide">
-    {% if request.session.user_role == 'admin' %}
-      <div class="px-2 py-1">
-        <span class="block text-1 text-gray-500 font-semibold mb-3">Welcome, {{ request.session.user_name }}!</span>
-        <a href="{% url 'dashboard' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50  font-semibold hover:text-yellow-600 transition">
-          <i class="fas fa-home w-4 text-yellow-500"></i>
-          <span>Home</span>
-        </a>
-        <a href="{% url 'profile' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition text-gray-900">
-        <i class="fas fa-user-circle w-4 text-yellow-500"></i>
-        <span>Profile</span>
+    <div class="px-2 py-1">
+      <span class="block text-1 text-gray-500 font-semibold mb-3">Welcome, {{ request.session.user_name }}!</span>
+      <a href="{% url 'dashboard' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 font-semibold hover:text-yellow-600 transition">
+        <i class="fas fa-home w-4 text-yellow-500"></i><span>Home</span>
       </a>
-      </div>
-      <div class="mb-2 px-2">
-        <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Users</p>
-        <a href="{% url 'add_user' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-          <i class="fas fa-user-plus w-4 text-yellow-500"></i>
-          <span>Add User</span>
-        </a>
-        <a href="{% url 'edituser' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-          <i class="fas fa-user-edit w-4 text-yellow-500"></i>
-          <span>Edit User</span>
-        </a>
-        <a href="{% url 'user_account' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-          <i class="fas fa-user-circle w-4 text-yellow-500"></i>
-          <span>Customer</span>
-        </a>
-        <a href="{% url 'logs' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-          <i class="fas fa-file-alt w-4 text-yellow-500"></i>
-          <span>User Logs</span>
-        </a>
-      </div>
-      <div class="mb-2 px-2">
-        <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Settings</p>
-        <a href="{%url 'supplier_order'%}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-          <i class="fas fa-truck w-4 text-yellow-500"></i>
-          <span>Supplier (Order)</span>
-        </a>
-        <a href="{% url 'orders' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-          <i class="fas fa-clipboard-check w-4 text-yellow-500"></i>
-          <span>Order Confirmation</span>
-        </a>
-        <a href="{% url 'supplier' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-          <i class="fas fa-truck-loading w-4 text-yellow-500"></i>
-          <span>Supplier Confirmation</span>
-        </a>
-      </div>
-      <div class="mb-2 px-2">
-        <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Delivery System</p>
-        <a href="{% url 'delivery-management' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-          <i class="fas fa-truck-moving w-4 text-yellow-500"></i>
-          <span>Manage Deliveries</span>
-        </a>
-      </div>
-      <div class="mb-2 px-2">
-        <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Inventory</p>
-        <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-          <i class="fas fa-box-open w-4 text-yellow-500"></i>
-          <span>Add Stock</span>
-        </a>
-        <a href="{% url 'viewstocklevel' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-          <i class="fas fa-layer-group w-4 text-yellow-500"></i>
-          <span>View Levels</span>
-        </a>
-      </div>
-      <div class="mb-2 px-2">
-        <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
-        <a href="{% url 'new_sale' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-          <i class="fas fa-cart-plus w-4 text-yellow-500"></i>
-          <span>New Sale</span>
-        </a>
-        <a href="{% url 'view_sales_history' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-          <i class="fas fa-history w-4 text-yellow-500"></i>
-          <span>History</span>
-        </a>
-        <a href="{% url 'view_sales_report' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-          <i class="fas fa-chart-line w-4 text-yellow-500"></i>
-          <span>Report</span>
-        </a>
-        <a href="{% url 'inventory_turnover' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-          <i class="fas fa-sync-alt w-4 text-yellow-500"></i>
-          <span>Inventory Turnover</span>
-        </a>
-      </div>
-    {% elif request.session.user_role == 'employee' %}
-      <div class="mb-2 px-2">
-        <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-          <i class="fas fa-boxes w-4 text-yellow-500"></i>
-          <span>Inventory</span>
-        </a>
-      </div>
-    {% elif request.session.user_role == 'cashier' %}
-      <div class="mb-2 px-2">
-        <a href="{% url 'new_sale' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-          <i class="fas fa-cash-register w-4 text-yellow-500"></i>
-          <span>Sales</span>
-        </a>
-      </div>
-    {% endif %}
-    <!-- Profile & Logout -->
+      <a href="{% url 'profile' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition text-gray-900">
+        <i class="fas fa-user-circle w-4 text-yellow-500"></i><span>Profile</span>
+      </a>
+    </div>
+
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Users</p>
+      <a href="{% url 'add_user' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-user-plus w-4 text-yellow-500"></i><span>Add User</span>
+      </a>
+      <a href="{% url 'edituser' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-user-edit w-4 text-yellow-500"></i><span>Edit User</span>
+      </a>
+      <a href="{% url 'user_account' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-user-circle w-4 text-yellow-500"></i><span>Customer</span>
+      </a>
+      <a href="{% url 'logs' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-file-alt w-4 text-yellow-500"></i><span>User Logs</span>
+      </a>
+    </div>
+
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Delivery System</p>
+      <a href="{% url 'delivery-management' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Manage Deliveries</span>
+      </a>
+    </div>
+
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Inventory</p>
+      <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-boxes w-4 text-yellow-500"></i><span>Inventory</span>
+      </a>
+      <a href="{% url 'viewstocklevel' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-layer-group w-4 text-yellow-500"></i><span>View Levels</span>
+      </a>
+    </div>
+
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
+      <a href="{% url 'new_sale' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-cart-plus w-4 text-yellow-500"></i><span>New Sale</span>
+      </a>
+      <a href="{% url 'view_sales_history' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-history w-4 text-yellow-500"></i><span>History</span>
+      </a>
+      <a href="{% url 'view_sales_report' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-chart-line w-4 text-yellow-500"></i><span>Report</span>
+      </a>
+      <a href="{% url 'inventory_turnover' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-sync-alt w-4 text-yellow-500"></i><span>Inventory Turnover</span>
+      </a>
+    </div>
+
     <div class="border-t border-gray-200 mt-auto px-2 py-4">
       <a href="{% url 'logout' %}" onclick="return confirm('Logout?');" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-red-100 hover:text-red-600 transition font-semibold text-red-500 mt-2">
-        <i class="fas fa-sign-out-alt w-4"></i>
-        <span>Logout</span>
+        <i class="fas fa-sign-out-alt w-4"></i><span>Logout</span>
       </a>
     </div>
   </nav>
 </header>
-
-
-
-
 
 
 <main class="mr-60 p-6">
@@ -192,34 +137,45 @@
           ➕ Add Customer
         </button>
 
-        <!-- CUSTOMER SELECTION -->
-        <div>
-          <label for="customer_id" class="block mb-1 font-semibold">Select Customer</label>
-          <select name="customer_id" id="customer_id" class="w-full border rounded px-3 py-2" required>
-            <option value="" selected hidden>Select a customer</option>
-            {% for customer in customer_users %}
-              <option value="{{ customer.UserID }}">
-                {{ customer.name.last_name }}, {{ customer.name.first_name }}{% if customer.name.middle_name %} {{ customer.name.middle_name }}{% endif %}{% if customer.name.suffix %} {{ customer.name.suffix }}{% endif %}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
+<!-- CUSTOMER SELECTION -->
+<div>
+  <label for="customer_id" class="block mb-1 font-semibold">Select Customer</label>
+  <select name="customer_id" id="customer_id" class="w-full border rounded px-3 py-2" required>
+    <option value="" selected hidden>Select a customer</option>
+    {% for customer in customer_users %}
+      <option
+        value="{{ customer.UserID }}"
+        data-first-name="{{ customer.name.first_name|default_if_none:'' }}"
+        data-middle-name="{{ customer.name.middle_name|default_if_none:'' }}"
+        data-last-name="{{ customer.name.last_name|default_if_none:'' }}"
+        data-suffix="{{ customer.name.suffix|default_if_none:'' }}"
+        data-house-unit-number="{{ customer.address.house_unit_number|default_if_none:'' }}"
+        data-street-name="{{ customer.address.street_name|default_if_none:'' }}"
+        data-barangay="{{ customer.address.barangay|default_if_none:'' }}"
+        data-city="{{ customer.address.city_municipality|default_if_none:'' }}"
+        data-province="{{ customer.address.province|default_if_none:'' }}"
+        data-zip-code="{{ customer.address.zip_code|default_if_none:'' }}"
+        data-customer-mobile="{{ customer.Customer_Mobile_Number|default_if_none:'' }}"
+      >
+        {{ customer.name.last_name }}, {{ customer.name.first_name }}{% if customer.name.middle_name %} {{ customer.name.middle_name }}{% endif %}{% if customer.name.suffix %} {{ customer.name.suffix }}{% endif %}
+      </option>
+    {% endfor %}
+  </select>
+</div>
 
-        <!-- FULL NAME -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-          <input type="text" name="first_name" class="border p-2 rounded" placeholder="First Name" required>
-          <input type="text" name="middle_name" class="border p-2 rounded" placeholder="Middle Name">
-          <input type="text" name="last_name" class="border p-2 rounded" placeholder="Last Name" required>
-          <input type="text" name="suffix" class="border p-2 rounded" placeholder="Suffix">
-        </div>
+<!-- Customer Info Fields (to be populated via JavaScript if needed) -->
+<input type="text" name="first_name" placeholder="First Name" />
+<input type="text" name="middle_name" placeholder="Middle Name" />
+<input type="text" name="last_name" placeholder="Last Name" />
+<input type="text" name="suffix" placeholder="Suffix" />
 
-        <!-- ADDRESS -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-          <input type="text" name="house_no" class="border p-2 rounded" placeholder="House No." required>
-          <input type="text" name="street" class="border p-2 rounded" placeholder="Street" required>
-          <input type="text" name="barangay" class="border p-2 rounded" placeholder="Barangay" required>
-          <input type="text" name="city" class="border p-2 rounded" placeholder="City" required>
-        </div>
+<input type="text" name="house_unit_number" placeholder="House/Unit Number" />
+<input type="text" name="street_name" placeholder="Street Name" />
+<input type="text" name="barangay" placeholder="Barangay" />
+<input type="text" name="city" placeholder="City" />
+<input type="text" name="province" placeholder="Province" />
+<input type="text" name="zip_code" placeholder="ZIP Code" />
+<input type="text" name="customer_mobile_number" placeholder="Mobile Number" />
 
         <!-- CONTACT NUMBERS -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -227,28 +183,37 @@
           <input type="text" name="receiver_mobile_number" class="border p-2 rounded" placeholder="Receiver Mobile Number" required autocomplete="off">
         </div>
 
-        <!-- RICE TYPE AND QUANTITY -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label for="rice_type" class="block mb-1 font-semibold">Rice Type</label>
-            <select name="rice_type_id" id="rice-type" class="w-full border rounded px-3 py-2" required autocomplete="off">
-              <option value="" disabled hidden>Select a rice type</option>
-              {% for rice in rice_data %}
-                <option value="{{ rice.riceID }}" data-price="{{ rice.price_per_sack }}" data-max-quantity="{{ rice.current_stock }}">{{ rice.rice_type }}{% if rice.packaging %} ({{ rice.packaging }}){% endif %}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div>
-            <label for="quantity" class="block mb-1 font-semibold">Quantity (Sacks)</label>
-            <input type="number" min="1" name="quantity" id="quantity" required
-              class="w-full border rounded px-3 py-2" placeholder="Enter quantity" />
-          </div>
-          <div>
-            <label for="cost_per_sack" class="block mb-1 font-semibold">Cost Per Sack (₱)</label>
-            <input type="number" min="0" step="0.01" name="cost_per_sack" id="cost_per_sack" required
-              class="w-full border rounded px-3 py-2 bg-gray-100" placeholder="Cost per sack" readonly tabindex="-1" aria-readonly="true" />
-          </div>
-        </div>
+<!-- STOCK SELECTION BY RICE TYPE + PACKAGING -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  <div>
+    <label for="stock_id" class="block mb-1 font-semibold">Rice Type (with Packaging)</label>
+    <select name="stock_id" id="stock_id" class="w-full border rounded px-3 py-2" required>
+      <option value="" disabled hidden selected>Select Rice Type & Packaging</option>
+      {% for stock in stock_data %}
+        <option 
+          value="{{ stock.stockID }}"
+          data-price="{{ stock.price_per_sack }}"
+          data-max-quantity="{{ stock.current_stock }}"
+        >
+          {{ stock.rice_type.rice_type }} - {{ stock.packaging }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+</div>
+
+  <div>
+    <label for="quantity" class="block mb-1 font-semibold">Quantity (Sacks)</label>
+    <input type="number" min="1" name="quantity" id="quantity" required
+      class="w-full border rounded px-3 py-2" placeholder="Enter quantity" />
+  </div>
+
+  <div>
+    <label for="cost_per_sack" class="block mb-1 font-semibold">Cost Per Sack (₱)</label>
+    <input type="number" min="0" step="0.01" name="cost_per_sack" id="cost_per_sack" required
+      class="w-full border rounded px-3 py-2 bg-gray-100" placeholder="Cost per sack" readonly />
+  </div>
+</div>
 
         <!-- TOTAL COST AND AMOUNT PAID -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -257,6 +222,15 @@
             <input type="text" id="total_cost" name="total_cost" readonly
               class="w-full border rounded bg-gray-100 px-3 py-2" placeholder="Total cost" />
           </div>
+
+          <!-- DISCOUNT -->
+        <div>
+          <label for="discount" class="block mb-1 font-semibold">Discount (₱)</label>
+          <input type="text" id="discount" name="discount" readonly
+            class="w-full border rounded bg-gray-100 px-3 py-2" placeholder="Discount" />
+        </div>
+
+
           <div>
             <label for="amount_paid" class="block mb-1 font-semibold">Amount Paid (₱)</label>
             <input type="number" min="0" step="0.01" name="amount_paid" id="amount_paid" required
@@ -301,414 +275,180 @@
         </div>
       </form>
 
-      <!-- ADD CUSTOMER MODAL -->
-<div id="addCustomerModal" class="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50 hidden">
-  <div class="bg-white p-6 rounded shadow-md w-full max-w-3xl relative overflow-y-auto max-h-[90vh]">
-    <button id="closeAddCustomerModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-    <h2 class="text-xl font-bold mb-4">Add New Customer</h2>
+ <!-- Modal Background -->
+<div id="addCustomerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+  <!-- Modal Content -->
+  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl relative">
+    <h2 class="text-xl font-semibold mb-4">Add Customer</h2>
 
-    <!-- SEPARATE FORM FOR ADDING CUSTOMER -->
+    <!-- Close Button -->
+    <button id="closeAddCustomerModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">
+      &times;
+    </button>
+
+    <!-- Your Form Goes Here -->
     <form method="POST" action="{% url 'add_customer' %}" id="addCustomerForm">
       {% csrf_token %}
 
-      <!-- Full Name Section -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <input type="text" name="first_name" class="border p-2 rounded" placeholder="First Name" required>
-        <input type="text" name="middle_name" class="border p-2 rounded" placeholder="Middle Name">
-        <input type="text" name="last_name" class="border p-2 rounded" placeholder="Last Name" required>
-        <input type="text" name="suffix" class="border p-2 rounded" placeholder="Suffix">
-      </div>
+     <!-- Full Name Section -->
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+  <input type="text" name="first_name" class="border p-2 rounded" placeholder="First Name" required>
+  <input type="text" name="middle_name" class="border p-2 rounded" placeholder="Middle Name">
+  <input type="text" name="last_name" class="border p-2 rounded" placeholder="Last Name" required>
+  <input type="text" name="suffix" class="border p-2 rounded" placeholder="Suffix">
+</div>
 
-      <!-- Address Section -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <input type="text" name="house_no" class="border p-2 rounded" placeholder="House No." required>
-        <input type="text" name="street" class="border p-2 rounded" placeholder="Street" required>
-        <input type="text" name="barangay" class="border p-2 rounded" placeholder="Barangay" required>
-        <input type="text" name="city" class="border p-2 rounded" placeholder="City" required>
-      </div>
+<!-- Address Section -->
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+  <input type="text" name="house_no" class="border p-2 rounded" placeholder="House No." required>
+  <input type="text" name="street" class="border p-2 rounded" placeholder="Street"> <!-- NOT required -->
+  <input type="text" name="barangay" class="border p-2 rounded" placeholder="Barangay" required>
+  <input type="text" name="city" class="border p-2 rounded" placeholder="City" required>
+</div>
 
-      <!-- Contact Numbers -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-        <input type="text" name="customer_mobile_number" class="border p-2 rounded" placeholder="Customer Mobile Number" required autocomplete="tel">
-        <input type="text" name="receiver_mobile_number" class="border p-2 rounded" placeholder="Receiver Mobile Number" required autocomplete="off">
-      </div>
-     
-      <div class="flex justify-end gap-3">
-        <button type="button" id="cancelAddCustomer" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancel</button>
-        <button type="submit" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">Add Customer</button>
-      </div>
-    </form>
-  </div>
+<!-- Province and Zip Code -->
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+  <input type="text" name="province" class="border p-2 rounded" placeholder="Province" required>
+  <input type="text" name="zip_code" class="border p-2 rounded" placeholder="ZIP Code" required>
+  <div></div><div></div>
+</div>
+
+<!-- Contact Numbers -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+  <input type="text" name="customer_mobile_number" class="border p-2 rounded" placeholder="Customer Mobile Number" required>
+</div>
+
+<!-- Buttons -->
+<div class="flex justify-end gap-3">
+  <button type="button" id="cancelAddCustomer" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancel</button>
+  <button type="submit" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">Add Customer</button>
 </div>
 
 
-</main>
 
 <script>
-  // Modal open and close logic
   const openModalBtn = document.getElementById('openAddCustomerModal');
-  const modal = document.getElementById('addCustomerModal');
   const closeModalBtn = document.getElementById('closeAddCustomerModal');
-  const cancelAddCustomerBtn = document.getElementById('cancelAddCustomer');
+  const cancelModalBtn = document.getElementById('cancelAddCustomer');
+  const modal = document.getElementById('addCustomerModal');
+  const form = document.getElementById('addCustomerForm');
 
+  // Show modal
   openModalBtn.addEventListener('click', () => {
+    // Make sure street input is optional (ensure in HTML: no 'required' attribute)
+    const streetInput = form.querySelector('input[name="street"]');
+    if (streetInput) {
+      streetInput.removeAttribute('required');
+    }
+
+    // Remove 'receiver number' input if it exists before submitting
+    const receiverInput = form.querySelector('input[name="receiver_number"]');
+    if (receiverInput) {
+      receiverInput.remove();
+    }
+
     modal.classList.remove('hidden');
   });
 
-  closeModalBtn.addEventListener('click', () => {
+  // Hide modal
+  function closeModal() {
     modal.classList.add('hidden');
-  });
+    form.reset(); // Optional: clear form on close
+  }
 
-  cancelAddCustomerBtn.addEventListener('click', () => {
-    modal.classList.add('hidden');
-  });
+  closeModalBtn.addEventListener('click', closeModal);
+  cancelModalBtn.addEventListener('click', closeModal);
 
-  // Close modal on clicking outside modal content
-  window.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.classList.add('hidden');
+  // Confirm before submit
+  form.addEventListener('submit', (e) => {
+    const confirmSubmit = confirm("Are you sure you want to add this customer?");
+    if (!confirmSubmit) {
+      e.preventDefault();
     }
   });
 
-  // Update Cost Per Sack and Total Cost dynamically
-  const riceTypeSelect = document.getElementById('rice-type');
+
+  const customerSelect = document.getElementById('customer_id');
+
+  customerSelect.addEventListener('change', () => {
+    const selected = customerSelect.options[customerSelect.selectedIndex];
+    
+    // Fill name fields
+    document.querySelector('input[name="first_name"]').value = selected.dataset.firstName || '';
+    document.querySelector('input[name="middle_name"]').value = selected.dataset.middleName || '';
+    document.querySelector('input[name="last_name"]').value = selected.dataset.lastName || '';
+    document.querySelector('input[name="suffix"]').value = selected.dataset.suffix || '';
+
+    // Fill address fields
+    document.querySelector('input[name="house_unit_number"]').value = selected.dataset.houseUnitNumber || '';
+    document.querySelector('input[name="building_name"]').value = selected.dataset.buildingName || '';
+    document.querySelector('input[name="street_name"]').value = selected.dataset.streetName || '';
+    document.querySelector('input[name="barangay"]').value = selected.dataset.barangay || '';
+    document.querySelector('input[name="city_municipality"]').value = selected.dataset.cityMunicipality || '';
+    document.querySelector('input[name="province"]').value = selected.dataset.province || '';
+    document.querySelector('input[name="zip_code"]').value = selected.dataset.zipCode || '';
+
+    // Fill mobile number
+    document.querySelector('input[name="customer_mobile_number"]').value = selected.dataset.customerMobile || '';
+  });
+
+document.addEventListener('DOMContentLoaded', () => {
+  const stockSelect = document.getElementById('stock_id');
   const quantityInput = document.getElementById('quantity');
   const costPerSackInput = document.getElementById('cost_per_sack');
   const totalCostInput = document.getElementById('total_cost');
   const amountPaidInput = document.getElementById('amount_paid');
   const amountChangeInput = document.getElementById('amount_change');
+  const discountInput = document.getElementById('discount');
+  const customerSelect = document.getElementById('customer_id'); // Assuming this select exists
 
-
-  // Set cost per sack on page load if a rice type is pre-selected
-  document.addEventListener('DOMContentLoaded', () => {
-    const selectedOption = riceTypeSelect.options[riceTypeSelect.selectedIndex];
-    if (selectedOption && selectedOption.dataset.price) {
-      costPerSackInput.value = parseFloat(selectedOption.dataset.price).toFixed(2);
-    } else {
-      costPerSackInput.value = '';
-    }
-    updateTotalCost();
-  });
-
-  riceTypeSelect.addEventListener('change', () => {
-    const selectedOption = riceTypeSelect.options[riceTypeSelect.selectedIndex];
-    const price = selectedOption ? parseFloat(selectedOption.dataset.price) : 0;
-    costPerSackInput.value = price.toFixed(2);
-    updateTotalCost();
-  });
-
-  quantityInput.addEventListener('input', updateTotalCost);
-  costPerSackInput.addEventListener('input', updateTotalCost);
-  amountPaidInput.addEventListener('input', updateAmountChange);
-
-  function updateTotalCost() {
+  function calculateCosts() {
     const quantity = parseFloat(quantityInput.value) || 0;
     const costPerSack = parseFloat(costPerSackInput.value) || 0;
-    const total = quantity * costPerSack;
-    totalCostInput.value = total.toFixed(2);
-    updateAmountChange();
-  }
-
-  function updateAmountChange() {
     const amountPaid = parseFloat(amountPaidInput.value) || 0;
-    const totalCost = parseFloat(totalCostInput.value) || 0;
-    const change = amountPaid - totalCost;
+
+    const totalCost = quantity * costPerSack;
+
+    // Check if customer is loyal
+    let isLoyal = false;
+    if (customerSelect) {
+      const selectedCustomer = customerSelect.options[customerSelect.selectedIndex];
+      isLoyal = selectedCustomer?.dataset.loyal === 'true';
+    }
+
+    // Calculate discount
+    let discountPercent = 0;
+    if (quantity >= 50) discountPercent += 5;
+    if (isLoyal) discountPercent += 5;
+
+    const discount = (discountPercent / 100) * totalCost;
+
+    const finalCost = totalCost - discount;
+    const change = amountPaid - finalCost;
+
+    totalCostInput.value = finalCost.toFixed(2);
+    discountInput.value = discount.toFixed(2);
     amountChangeInput.value = change >= 0 ? change.toFixed(2) : '0.00';
   }
 
-  document.getElementById('addCustomerForm').addEventListener('submit', function(e) {
-  e.preventDefault();
-  const form = e.target;
-  const formData = new FormData(form);
+  stockSelect.addEventListener('change', () => {
+    const selectedOption = stockSelect.options[stockSelect.selectedIndex];
+    const price = parseFloat(selectedOption.dataset.price) || 0;
+    costPerSackInput.value = price.toFixed(2);
+    calculateCosts();
+  });
 
-  fetch("{% url 'add_customer' %}", {
-    method: 'POST',
-    body: formData,
-    headers: {
-      'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.status === 'success') {
-      alert(data.message);
-      document.getElementById('addCustomerModal').classList.add('hidden');
-      form.reset();
-      location.reload();  // Reload to update the customer dropdown
-    } else {
-      alert("Error: " + data.message);
-    }
-  })
-  .catch(error => alert("Something went wrong."));
+  quantityInput.addEventListener('input', calculateCosts);
+  amountPaidInput.addEventListener('input', calculateCosts);
+
+  if (customerSelect) {
+    customerSelect.addEventListener('change', calculateCosts);
+  }
+
+  // Initial calculation
+  calculateCosts();
 });
 
-function getCSRFToken() {
-    let csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    if (!csrfToken) {
-      console.error('CSRF token not found');
-    }
-    return csrfToken;
-  }
-
-  // Add CSRF token to all fetch requests
-  function fetchWithCSRF(url, options = {}) {
-    const defaultOptions = {
-      headers: {
-        'X-CSRFToken': getCSRFToken(),
-        'Content-Type': 'application/json'
-      },
-      credentials: 'same-origin'
-    };
-    return fetch(url, { ...defaultOptions, ...options });
-  }
-
-document.addEventListener("DOMContentLoaded", () => {
-  const customerSelect = document.getElementById("customer_id");
-  if (!customerSelect) return;
-
-  customerSelect.addEventListener("change", () => {
-    const customerId = customerSelect.value;
-    const fields = [
-      'first_name', 'middle_name', 'last_name', 'suffix',
-      'house_no', 'street', 'barangay', 'city',
-      'customer_mobile_number', 'receiver_mobile_number'
-    ];
-
-    // Clear all fields if no customer selected
-    if (!customerId) {
-      fields.forEach(field => {
-        const input = document.querySelector(`[name="${field}"]`);
-        if (input) input.value = "";
-      });
-      const histDiv = document.getElementById('customer-order-history');
-      if (histDiv) histDiv.innerHTML = '';
-      return;
-    }
-
-    // Fetch customer details (GET doesn't require CSRF token, but no harm)
-    const csrfTokenElem = document.querySelector('[name=csrfmiddlewaretoken]');
-    const csrfToken = csrfTokenElem ? csrfTokenElem.value : '';
-
-    fetch(`/ajax/get-customer-details/?customer_id=${customerId}`, {
-      method: 'GET',
-      headers: {
-        'X-CSRFToken': csrfToken,
-        'Accept': 'application/json'
-      },
-      credentials: 'same-origin'
-    })
-    .then(res => {
-      if (!res.ok) throw new Error(`Network error: ${res.status}`);
-      return res.json();
-    })
-    .then(data => {
-      if (data.status === "success") {
-        const d = data.data;
-
-        fields.forEach(field => {
-          const input = document.querySelector(`[name="${field}"]`);
-          if (input) input.value = d[field] || "";
-        });
-
-        // Highlight customer_mobile_number briefly to show autofill
-        const custMobileInput = document.querySelector('[name="customer_mobile_number"]');
-        if (custMobileInput) {
-          custMobileInput.style.backgroundColor = '#fff3cd';
-          setTimeout(() => custMobileInput.style.backgroundColor = '', 1000);
-        }
-
-        // Focus first empty field
-        for (const field of fields) {
-          const input = document.querySelector(`[name="${field}"]`);
-          if (input && !input.value) {
-            input.focus();
-            break;
-          }
-        }
-
-        // Show order history
-        let histDiv = document.getElementById('customer-order-history');
-        if (!histDiv) {
-          const form = document.getElementById('orderForm');
-          if (form) {
-            histDiv = document.createElement('div');
-            histDiv.id = 'customer-order-history';
-            histDiv.className = 'mt-8 mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded shadow-sm';
-            form.parentNode.appendChild(histDiv);
-          }
-        }
-        if (histDiv && Array.isArray(d.order_history)) {
-          if (d.order_history.length) {
-            let html = '<ul class="list-disc pl-5">';
-            d.order_history.forEach(o => {
-              html += `<li><b>${o.date}</b>: ${o.rice_type} - ${o.quantity} sack(s), ₱${o.total_cost} <span class="ml-2 px-2 py-1 rounded bg-gray-200 text-xs">Delivery: ${o.delivery_status || "N/A"}</span></li>`;
-            });
-            html += '</ul>';
-            histDiv.innerHTML = `<div class="mb-2 text-base font-semibold text-yellow-700"><i class="fas fa-history mr-1"></i>Recent Orders:</div>${html}`;
-          } else {
-            histDiv.innerHTML = '<em>No recent orders.</em>';
-          }
-        }
-      } else {
-        console.error("Failed to fetch customer details:", data.message);
-      }
-    })
-    .catch(err => {
-      console.error("Error fetching customer details:", err);
-    });
-  });
-
-    // -----------------------------------------
-    // Shared Message Display
-    // -----------------------------------------
-    function showMessage(type, text = "") {
-      if (!messageBox) return;
-
-      messageBox.classList.remove("hidden", "bg-green-500", "bg-red-500");
-
-      if (type === "success") {
-        messageBox.classList.add("bg-green-500");
-      } else {
-        messageBox.classList.add("bg-red-500");
-      }
-
-      messageBox.textContent = text;
-
-      setTimeout(() => {
-        messageBox.classList.add("hidden");
-        messageBox.textContent = "";
-      }, 5000);
-    }
-
-    const orderForm = document.getElementById("orderForm");
-    if (orderForm) {
-      // Use the correct id for rice type select
-      const riceTypeSelect = document.getElementById("rice-type");
-      const costPerSackInput = document.getElementById("cost_per_sack");
-      const quantityInput = document.getElementById("quantity");
-      const totalCostInput = document.getElementById("total_cost");
-      const amountPaidInput = document.getElementById("amount_paid");
-      const amountChangeInput = document.getElementById("amount_change");
-
-      function calculateTotalCost() {
-        const price = parseFloat(costPerSackInput.value) || 0;
-        const quantity = parseFloat(quantityInput.value) || 0;
-        totalCostInput.value = (price * quantity).toFixed(2);
-        calculateAmountChange();
-      }
-
-      function calculateAmountChange() {
-        const total = parseFloat(totalCostInput.value) || 0;
-        const paid = parseFloat(amountPaidInput.value) || 0;
-        const change = paid - total;
-        // Allow negative change to be displayed
-        amountChangeInput.value = change.toFixed(2);
-      }
-
-      riceTypeSelect.addEventListener("change", function () {
-        const selected = riceTypeSelect.options[riceTypeSelect.selectedIndex];
-        const price = selected.getAttribute("data-price") || "0";
-        const maxQuantity = selected.getAttribute("data-max-quantity") || "100";
-
-        costPerSackInput.value = price;
-        quantityInput.setAttribute("max", maxQuantity);
-
-        if (parseInt(quantityInput.value || 0) > parseInt(maxQuantity)) {
-          quantityInput.value = maxQuantity;
-        }
-
-        calculateTotalCost();
-      });
-
-      quantityInput.addEventListener("input", function () {
-        const selected = riceTypeSelect.options[riceTypeSelect.selectedIndex];
-        const maxQuantity = parseInt(selected.getAttribute("data-max-quantity") || "100");
-
-        let currentValue = parseInt(quantityInput.value) || 0;
-        if (currentValue > maxQuantity) {
-          quantityInput.value = maxQuantity;
-        }
-
-        calculateTotalCost();
-      });
-
-      amountPaidInput.addEventListener("input", calculateAmountChange);
-
-      orderForm.addEventListener("submit", async function (event) {
-        event.preventDefault();
-        // Validate rice type selection
-        if (!riceTypeSelect.value) {
-          showMessage("error", "Please select a rice type.");
-          riceTypeSelect.focus();
-          return;
-        }
-        // Validate required numeric fields
-        if (!quantityInput.value || parseInt(quantityInput.value) <= 0) {
-          showMessage("error", "Please enter a valid quantity.");
-          quantityInput.focus();
-          return;
-        }
-        if (!amountPaidInput.value || parseFloat(amountPaidInput.value) < 0) {
-          showMessage("error", "Please enter a valid amount paid.");
-          amountPaidInput.focus();
-          return;
-        }
-        // Set receiver_name before submit
-        const receiverNameInput = document.querySelector('input[name="receiver_name"]');
-        receiverNameInput.value = [
-          document.querySelector('input[name="first_name"]').value,
-          document.querySelector('input[name="middle_name"]').value,
-          document.querySelector('input[name="last_name"]').value,
-          document.querySelector('input[name="suffix"]').value
-        ].filter(Boolean).join(' ');
-
-        const formData = new FormData(orderForm);
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-        try {
-          const response = await fetch("{% url 'process_order' %}", {
-            method: "POST",
-            headers: {
-              "X-CSRFToken": csrfToken,
-            },
-            body: formData,
-          });
-
-          if (!response.ok) {
-            let errorMsg = "Server error. Please try again later.";
-            try {
-              const errData = await response.json();
-              if (errData && errData.message) errorMsg = errData.message;
-            } catch {}
-            throw new Error(errorMsg);
-          }
-
-          const contentType = response.headers.get("content-type");
-          if (!contentType || !contentType.includes("application/json")) {
-            throw new Error("Unexpected server response.");
-          }
-
-          const data = await response.json();
-
-          if (data.status === "success") {
-            showMessage("success", data.message || "Customer order created successfully!");
-            orderForm.reset();
-            riceTypeSelect.selectedIndex = 0;
-            costPerSackInput.value = "0.00";
-            quantityInput.value = "";
-            totalCostInput.value = "0.00";
-            amountPaidInput.value = "";
-            amountChangeInput.value = "0.00";
-          } else {
-            showMessage("error", data.message || "An error occurred.");
-          }
-        } catch (err) {
-          console.error("Order form error:", err);
-          showMessage("error", err.message || "Network error. Please try again.");
-        }
-      });
-    }
-  });
 </script>
 
 </body>

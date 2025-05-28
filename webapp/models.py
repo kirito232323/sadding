@@ -97,7 +97,8 @@ class Stock(models.Model):
         self.current_stock = self.stock_in - self.stock_out
         super().save(*args, **kwargs)
 
-
+from decimal import Decimal
+from django.db import models
 
 class CustomerOrder(models.Model):
     STATUS_CHOICES = [
@@ -116,16 +117,21 @@ class CustomerOrder(models.Model):
         ('credit_card', 'Credit Card')
     ]
 
+
     order_id = models.AutoField(primary_key=True)
     customer = models.ForeignKey('Users', on_delete=models.PROTECT)
     rice_type = models.ForeignKey('Rice', on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
     cost_per_sack = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+
+    # 🔹 New: Discount in percentage
+    discount = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))  # e.g., 10.00 = 10%
+
     total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     amount_change = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    approval_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    approval_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Approved')
     delivery_type = models.CharField(max_length=20, choices=DELIVERY_CHOICES)
     delivery_status = models.CharField(max_length=20, default='pending')
     receiver_name = models.CharField(max_length=100)
@@ -133,6 +139,7 @@ class CustomerOrder(models.Model):
     delivery_address = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
     handled_by = models.ForeignKey(
         'Employee',
         null=True,
@@ -147,14 +154,13 @@ class CustomerOrder(models.Model):
         related_name='assigned_orders'
     )
 
+    # 🔻 Removed supplier field
+    # supplier = models.ForeignKey('Supplier', ...)
 
-    # New: Link to Supplier (nullable, optional)
-    supplier = models.ForeignKey('Supplier', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
     order_notes = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
 
     def customer_name(self):
-        # Use the related UserName object for name fields
         if self.customer and self.customer.name:
             n = self.customer.name
             return f"{n.first_name} {n.middle_name or ''} {n.last_name} {n.suffix or ''}".strip()

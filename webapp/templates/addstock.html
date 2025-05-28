@@ -39,7 +39,6 @@
       </a>
     </div>
 
-    {% if request.session.user_role == 'admin' %}
     <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Users</p>
       <a href="{% url 'add_user' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
@@ -57,43 +56,22 @@
     </div>
 
     <div class="mb-2 px-2">
-      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Settings</p>
-      <a href="{%url 'supplier_order'%}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-        <i class="fas fa-truck w-4 text-yellow-500"></i><span>Supplier (Order)</span>
-      </a>
-      <a href="{% url 'orders' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-        <i class="fas fa-clipboard-check w-4 text-yellow-500"></i><span>Order Confirmation</span>
-      </a>
-      <a href="{% url 'supplier' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-        <i class="fas fa-truck-loading w-4 text-yellow-500"></i><span>Supplier Confirmation</span>
-      </a>
-    </div>
-    {% endif %}
-
-    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
-    <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Delivery System</p>
       <a href="{% url 'delivery-management' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
         <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Manage Deliveries</span>
       </a>
     </div>
-    {% endif %}
 
-    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
     <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Inventory</p>
       <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
         <i class="fas fa-boxes w-4 text-yellow-500"></i><span>Inventory</span>
       </a>
-    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
       <a href="{% url 'viewstocklevel' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
         <i class="fas fa-layer-group w-4 text-yellow-500"></i><span>View Levels</span>
       </a>
-      {% endif %}
     </div>
-    {% endif %}
 
-    {% if request.session.user_role == 'admin' or request.session.user_role == 'cashier' %}
     <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
       <a href="{% url 'new_sale' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
@@ -109,7 +87,6 @@
         <i class="fas fa-sync-alt w-4 text-yellow-500"></i><span>Inventory Turnover</span>
       </a>
     </div>
-    {% endif %}
 
     <div class="border-t border-gray-200 mt-auto px-2 py-4">
       <a href="{% url 'logout' %}" onclick="return confirm('Logout?');" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-red-100 hover:text-red-600 transition font-semibold text-red-500 mt-2">
@@ -188,7 +165,7 @@
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRFToken': csrfToken
+        'X-CSRFToken': getCookie('csrftoken'),
       },
       body: JSON.stringify({
         rice_type: rice_type,
@@ -257,8 +234,23 @@
 <!-- Rice Stock Table -->
 <section class="bg-white p-6 rounded-lg shadow-md">
   <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Rice Stock Management</h2>
-  <input type="text" id="riceFilterInput" placeholder="Filter by Rice Name or Packaging"
-         class="w-full max-w-sm border border-gray-300 rounded px-4 py-2 text-sm mb-4" />
+
+  <!-- Search and Filter in One Row -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+    <!-- Search Input -->
+    <input type="text" id="riceFilterInput" placeholder="Filter by Rice Name or Packaging"
+           class="w-full sm:w-1/2 border border-gray-300 rounded px-4 py-2 text-sm" />
+
+    <!-- Packaging Filter Dropdown -->
+    <select id="packagingFilter" name="packaging"
+            class="w-full sm:w-1/2 border border-gray-300 rounded-md px-2 py-2 text-sm">
+      <option value="" selected> All Packaging </option>
+      <option value="25kg">25kg sacks</option>
+      <option value="50kg">50kg sacks</option>
+      <option value="Other">Other</option>
+    </select>
+  </div>
+
 
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200 text-sm">
@@ -316,48 +308,75 @@
 </section>
 
 
-
 <!-- Update Log Section -->
-  <section class="bg-white p-6 rounded-lg shadow-md mb-8">
-    <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Update Log</h2>
-    <div id="update-log-list">
-      {% if update_logs %}
-        <ul>
-          {% for log in update_logs %}
-            <li class="flex justify-between items-center border-b py-2">
-              <span>
-                {% if log.action == 'add_stock' %}
-                  Added <strong>{{ log.quantity_added }}</strong> sacks to <strong>{{ log.rice_type }}</strong> at {{ log.timestamp|date:"M d, Y H:i" }}
-                {% else %}
-                  Updated <strong>{{ log.rice_type }}</strong> (Price: ₱{{ log.old_price }} → ₱{{ log.new_price }}, Desc: "{{ log.old_desc }}" → "{{ log.new_desc }}") at {{ log.timestamp|date:"M d, Y H:i" }}
-                {% endif %}
-                {% if log.undone %}
-                  <span class="text-red-500 ml-2">(Undone)</span>
-                {% endif %}
-              </span>
-              {% if log.action == 'add_stock' and not log.undone %}
-  <button type="button"
-          class="undo-btn text-xs text-red-600 border border-red-400 rounded px-2 py-1 hover:bg-red-50 ml-2"
-          data-log-id="{{ log.id }}">
-    Undo
-  </button>
-{% endif %}
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p class="text-gray-500 text-center">No updates yet.</p>
-      {% endif %}
-    </div>
-  </section>
+<section class="bg-white p-6 rounded-lg shadow-md mb-8">
+  <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Update Log</h2>
+  <div id="update-log-list">
+    {% if update_logs %}
+      <ul>
+        {% for log in update_logs %}
+          <li class="flex justify-between items-center border-b py-2">
+            <span class="text-sm text-gray-700">
+              <span class="font-medium">{{ log.employee.full_name }}</span>
+              (<span class="italic text-gray-500">{{ log.employee.role }}</span>) — 
+              {% if "Added" in log.action_type %}
+                {{ log.action_type }} at {{ log.timestamp|date:"M d, Y H:i" }}
+              {% else %}
+                {{ log.action_type }} at {{ log.timestamp|date:"M d, Y H:i" }}
+              {% endif %}
+              {% if "(Undone)" in log.action_type %}
+                <span class="text-red-500 ml-2">(Undone)</span>
+              {% endif %}
+            </span>
+            {% if "Added" in log.action_type and "(Undone)" not in log.action_type %}
+              <button type="button"
+                      class="undo-btn text-xs text-red-600 border border-red-400 rounded px-2 py-1 hover:bg-red-50 ml-2"
+                      data-log-id="{{ log.id }}">
+                Undo
+              </button>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-gray-500 text-center">No updates yet.</p>
+    {% endif %}
+  </div>
+</section>
+
+<!-- Popup Message -->
 <div id="popup-message" style="display:none; position: fixed; top: 10px; right: 10px; 
-    background-color: #f0f0f0; padding: 10px 20px; border-radius: 5px; box-shadow: 0 0 5px #ccc;">
+  background-color: #f0f0f0; padding: 10px 20px; border-radius: 5px; box-shadow: 0 0 5px #ccc;">
 </div>
 
 <script>
+
+
+   document.getElementById('packagingFilter').addEventListener('change', function() {
+    const selectedPackaging = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#riceTableBody tr');
+
+    rows.forEach(row => {
+      const packaging = row.cells[1].textContent.toLowerCase();
+      if (selectedPackaging === "" || packaging === selectedPackaging) {
+        row.style.display = '';
+      } else if (selectedPackaging === "other") {
+        // Show rows where packaging is NOT 25kg or 50kg
+        if (packaging !== '25kg' && packaging !== '50kg') {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  });
+
 document.addEventListener('DOMContentLoaded', function () {
-  // Undo button handler
   const popup = document.getElementById('popup-message');
+
+  // Undo button handler
   document.querySelectorAll('.undo-btn').forEach(button => {
     button.addEventListener('click', function () {
       const logId = this.dataset.logId;
@@ -370,7 +389,7 @@ document.addEventListener('DOMContentLoaded', function () {
           'X-Requested-With': 'XMLHttpRequest',
         },
       })
-      .then(response => response.json())
+      .then(checkJsonResponse)
       .then(data => {
         popup.innerText = data.status === 'success' ? 'Successfully undone!' : (data.message || 'An error occurred.');
         popup.style.display = 'block';
@@ -384,12 +403,11 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         }, 2000);
       })
-      .catch(() => {
-        popup.innerText = 'Something went wrong.';
+      .catch((error) => {
+        popup.innerText = error.message || 'Something went wrong.';
         popup.style.backgroundColor = '#fee2e2';
         popup.style.color = '#991b1b';
         popup.style.display = 'block';
-
         setTimeout(() => popup.style.display = 'none', 3000);
       });
     });
@@ -409,6 +427,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
+// Toggle edit mode in table row
 function toggleEdit(button) {
   const row = button.closest('tr');
   row.querySelector('.price-display').classList.toggle('hidden');
@@ -419,6 +438,7 @@ function toggleEdit(button) {
   row.querySelector('.save-btn').classList.toggle('hidden');
 }
 
+// Get CSRF token from cookie
 function getCookie(name) {
   let cookieValue = null;
   if (document.cookie && document.cookie !== '') {
@@ -434,6 +454,17 @@ function getCookie(name) {
   return cookieValue;
 }
 
+// Check JSON response or throw if HTML or invalid
+function checkJsonResponse(response) {
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    return response.json();
+  } else {
+    return response.text().then(text => {
+      throw new Error('Unexpected response: ' + text.substring(0, 100));
+    });
+  }
+}
 
 function saveChanges(button) {
   const row = button.closest('tr');
@@ -445,22 +476,17 @@ function saveChanges(button) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-CSRFToken': '{{ csrf_token }}',
+      'X-CSRFToken': getCookie('csrftoken'),
     },
     body: JSON.stringify({
       price_per_sack: newPrice,
       description: newDesc
     })
   })
-  .then(response => {
-    if (!response.ok) {
-      return response.json().then(data => { throw data; });
-    }
-    return response.json();
-  })
+  .then(checkJsonResponse)
   .then(data => {
+    if (data.status !== 'success') throw new Error(data.message || 'Update failed.');
     alert('Stock updated successfully!');
-    // Update the display
     row.querySelector('.price-display').textContent = `₱${parseFloat(newPrice).toFixed(2)}`;
     row.querySelector('.desc-display').textContent = newDesc || '-';
     toggleEdit(button);
@@ -471,8 +497,7 @@ function saveChanges(button) {
   });
 }
 
-
-// Optional: status banner to show success/error messages (not required but handy)
+// Optional: Show API success or error banners
 function showApiSuccessBanner(data) {
   const banner = document.getElementById('apiSuccessBanner');
   if (!banner) return;

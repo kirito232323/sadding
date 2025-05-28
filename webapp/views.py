@@ -3,51 +3,52 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_POST, require_GET
 from .models import UserLog, Rice, Users, CustomerOrder
 from django.http import HttpResponseBadRequest
-
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse, HttpResponseBadRequest
+from django.shortcuts import get_object_or_404
+from .models import UserLog, Rice, Stock
 
 @require_POST
 def undo_update(request, log_id):
-    if not request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return HttpResponseBadRequest("Invalid request method.")
+    if request.headers.get('x-requested-with') != 'XMLHttpRequest':
+        return HttpResponseBadRequest("Invalid request.")
+
     log = get_object_or_404(UserLog, id=log_id)
 
-    # Only allow undo for add_stock actions
-    if not (log.action_type.startswith('Added') and 'sacks to' in log.action_type):
+    # Only proceed if the log is an "add stock" entry and not yet undone
+    if not log.action_type.startswith('Added') or 'sacks to' not in log.action_type:
         return JsonResponse({'status': 'error', 'message': 'Undo not allowed for this action.'}, status=400)
+
+    if '(Undone)' in log.action_type:
+        return JsonResponse({'status': 'error', 'message': 'This action has already been undone.'}, status=400)
 
     try:
         parts = log.action_type.split()
         quantity = int(parts[1])
-        rice_type = ' '.join(parts[4:])
+        rice_type = ' '.join(parts[4:]).strip()
     except Exception:
         return JsonResponse({'status': 'error', 'message': 'Malformed log entry.'}, status=400)
 
-    # Try to match rice_type exactly, fallback to case-insensitive match if not found
-    rice = Rice.objects.filter(rice_type=rice_type).first()
+    # Try to find the rice
+    rice = Rice.objects.filter(rice_type__iexact=rice_type.replace('(Undone)', '').strip()).first()
     if not rice:
-        rice = Rice.objects.filter(rice_type__iexact=rice_type.strip()).first()
-    if not rice:
-        rice_type_clean = rice_type.replace('(Undone)', '').strip()
-        rice = Rice.objects.filter(rice_type=rice_type_clean).first() or Rice.objects.filter(rice_type__iexact=rice_type_clean).first()
+        return JsonResponse({'status': 'error', 'message': f'Rice type not found: {rice_type}'}, status=404)
 
-    if not rice:
-        return JsonResponse({'status': 'error', 'message': f'Rice type not found: {rice_type}.'}, status=404)
+    # Get stock (assumes default packaging is 50kg)
+    stock = Stock.objects.filter(rice_type=rice, packaging='50kg').first()
+    if not stock:
+        return JsonResponse({'status': 'error', 'message': 'Stock record not found.'}, status=404)
 
-    # Prevent double-undo
-    if getattr(log, 'undone', False):
-        return JsonResponse({'status': 'error', 'message': 'Already undone.'}, status=400)
+    # Perform undo: subtract stock_in
+    stock.stock_in = max(0, stock.stock_in - quantity)
+    stock.current_stock = max(0, stock.stock_in - stock.stock_out)
+    stock.save()
 
-    # Subtract the added stock
-    rice.stock_in = max(0, rice.stock_in - quantity)
-    rice.current_stock = rice.stock_in - rice.stock_out
-    rice.save()
-
-    # Mark log as undone (consider adding a BooleanField 'undone' to UserLog for persistence)
-    log.action_type += ' (Undone)'
-    log.undone = True  # Make sure your model has this field!
+    # Append "(Undone)" to log.action_type to visually indicate it, but no field is used
+    log.action_type = f"{log.action_type} (Undone)"
     log.save()
 
-    return JsonResponse({'status': 'success', 'message': 'Stock undo successful.'})
+    return JsonResponse({'status': 'success', 'message': 'Undo successful.'})
 
 
 @require_GET
@@ -507,7 +508,9 @@ def add_customer(request):
 
 
 from decimal import Decimal, InvalidOperation
-from .models import Rice, CustomerOrder, Users, UserName, UserAddress, Employee
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from .models import Rice, Stock, CustomerOrder, Users, UserName, UserAddress, Employee
 
 def new_sale_view(request):
     if request.method == 'POST':
@@ -568,18 +571,17 @@ def new_sale_view(request):
                 employee = Employee.objects.filter(EmployeeID=employee_id).first()
 
             # 8. Parse numeric fields
-            try:
-                quantity = int(request.POST.get('quantity', 0))
-            except (ValueError, TypeError):
-                return JsonResponse({'status': 'error', 'message': 'Invalid quantity.'})
-
-            def parse_decimal(value, field):
+            def parse_decimal(value, field_name):
                 try:
                     return Decimal(str(value))
                 except (InvalidOperation, TypeError, ValueError):
-                    raise ValueError(f"Invalid {field}.")
+                    raise ValueError(f"Invalid {field_name}.")
 
             try:
+                quantity = int(request.POST.get('quantity', 0))
+                if quantity <= 0:
+                    return JsonResponse({'status': 'error', 'message': 'Quantity must be greater than 0.'})
+
                 cost_per_sack = parse_decimal(request.POST.get('cost_per_sack', '0'), 'cost per sack')
                 total_cost = parse_decimal(request.POST.get('total_cost', '0'), 'total cost')
                 amount_paid = parse_decimal(request.POST.get('amount_paid', '0'), 'amount paid')
@@ -587,7 +589,7 @@ def new_sale_view(request):
             except ValueError as e:
                 return JsonResponse({'status': 'error', 'message': str(e)})
 
-            # 9. Create CustomerOrder
+            # 9. Create the CustomerOrder
             CustomerOrder.objects.create(
                 customer=customer,
                 rice_type=rice,
@@ -609,17 +611,17 @@ def new_sale_view(request):
             print(f"Unexpected error: {str(e)}")
             return JsonResponse({'status': 'error', 'message': 'An unexpected error occurred. Please try again.'})
 
-    # GET method - display form
-    rice_data = Rice.objects.all()
+    # GET method – show form with related stock and rice data
+    stock_data = Stock.objects.select_related('rice_type').all()
     cashier_admin_users = Employee.objects.filter(Role__in=['Cashier', 'Admin'], Account_Status='active')
-    customer_users = Users.objects.filter(name__isnull=False)  # optional filter
+    customer_users = Users.objects.filter(name__isnull=False)
 
     return render(request, 'sales_transaction.html', {
-        'rice_data': rice_data,
-        'rice_list': rice_data,
+        'stock_data': stock_data,
         'cashier_admin_users': cashier_admin_users,
-        'customer_users': customer_users
+        'customer_users': customer_users,
     })
+
 
 
 def view_sales_report(request):
@@ -642,44 +644,34 @@ def supplier(request):
     return render(request, 'Supplier.html', context)
 
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from webapp.models import Stock
+import json
 
-@csrf_exempt  # Only use this in development
-@require_POST
-def updatestock(request, stockID):
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+def update_stock(request, stockID):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            price = data.get('price_per_sack')
+            desc = data.get('description')
 
-    price_per_sack = data.get('price_per_sack')
-    description = data.get('description', '').strip()
+            stock = Stock.objects.get(pk=stockID)
+            stock.price_per_sack = price
 
-    if not price_per_sack:
-        return JsonResponse({'status': 'error', 'message': 'Price per sack is required'}, status=400)
+            if desc is not None:
+                # Update description on related Rice model, NOT Stock
+                rice = stock.rice_type
+                rice.description = desc
+                rice.save()
 
-    try:
-        price_per_sack = Decimal(price_per_sack)
-        if price_per_sack < 0:
-            raise InvalidOperation()
-    except (InvalidOperation, TypeError, ValueError):
-        return JsonResponse({'status': 'error', 'message': 'Invalid price per sack'}, status=400)
+            stock.save()
 
-    # Get the Stock object by stockID
-    try:
-        stock = Stock.objects.select_related('rice_type').get(pk=stockID)
-    except Stock.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Stock ID not found'}, status=404)
-
-    # Update stock price
-    stock.price_per_sack = price_per_sack
-    stock.save()
-
-    # Update description in the Rice table
-    if description:
-        stock.rice_type.description = description
-        stock.rice_type.save()
-
-    return JsonResponse({'status': 'success', 'message': 'Stock and rice description updated successfully.'})
+            return JsonResponse({'status': 'success', 'message': 'Stock updated successfully!'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
 
 
 def removestock(request):
@@ -920,14 +912,14 @@ def addstock(request):
         return redirect('addstock')
 
     # Show logs
-    logs = UserLog.objects.order_by('-timestamp')[:20]
+    logs = UserLog.objects.select_related('employee').order_by('-timestamp')[:20]
     update_logs = []
     for log in logs:
         if log.action_type.startswith('Added') and 'sacks to' in log.action_type:
             try:
                 parts = log.action_type.split()
                 quantity = int(parts[1])
-                rice_type = ' '.join(parts[4:])
+                rice_type = ' '.join(parts[4:])  # e.g., "Dinorado (50kg)"
             except Exception:
                 quantity = None
                 rice_type = log.action_type
@@ -939,6 +931,8 @@ def addstock(request):
                 'rice_type': rice_type,
                 'timestamp': log.timestamp,
                 'undone': undone,
+                'user_full_name': log.user.full_Name,
+                'user_role': log.user.Role,
             })
 
     return render(request, 'addstock.html', {
@@ -946,6 +940,7 @@ def addstock(request):
         'stock_data': Stock.objects.select_related('rice_type').all(),
         'update_logs': update_logs,
     })
+
 
 
 
@@ -1340,7 +1335,8 @@ def user_logs(request):
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT ul.id, ul.action_type, ul.timestamp,
-                   CONCAT(e.FirstName, ' ', COALESCE(e.MiddleName, ''), ' ', e.LastName, ' ', COALESCE(e.Suffix, '')) AS employee_name
+                   CONCAT(e.FirstName, ' ', COALESCE(e.MiddleName, ''), ' ', e.LastName, ' ', COALESCE(e.Suffix, '')) AS employee_name,
+                   e.Role
             FROM user_logs ul
             JOIN employee e ON ul.employee_id = e.EmployeeID
             ORDER BY ul.timestamp DESC
@@ -1372,14 +1368,16 @@ def user_logs(request):
             'date': date_str,
             'time': time_str,
             'employee_name': log[3].strip(),
+            'role': log[4] or 'N/A',
         })
 
+    # Filter BEFORE pagination
     if filter_date:
         log_entries = [log for log in log_entries if log['date'] == filter_date]
     if filter_time:
         log_entries = [log for log in log_entries if log['time'] == filter_time]
     if filter_action:
-        log_entries = [log for log in log_entries if filter_action in log['details'].lower() or filter_action in log['employee_name'].lower()]
+        log_entries = [log for log in log_entries if filter_action in log['details'].lower() or filter_action in log['employee_name'].lower() or filter_action in log['role'].lower()]
 
     paginator = Paginator(log_entries, 10)
     page_number = request.GET.get('page')
@@ -1387,8 +1385,9 @@ def user_logs(request):
 
     return render(request, 'logs.html', {
         'logs': page_obj,
-        'page_obj': page_obj
+        'page_obj': page_obj,
     })
+
 
 
 
