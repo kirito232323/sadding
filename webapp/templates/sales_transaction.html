@@ -137,6 +137,7 @@
           ➕ Add Customer
         </button>
 
+
 <!-- CUSTOMER SELECTION -->
 <div>
   <label for="customer_id" class="block mb-1 font-semibold">Select Customer</label>
@@ -150,11 +151,12 @@
         data-last-name="{{ customer.name.last_name|default_if_none:'' }}"
         data-suffix="{{ customer.name.suffix|default_if_none:'' }}"
         data-house-unit-number="{{ customer.address.house_unit_number|default_if_none:'' }}"
+        data-building-name="{{ customer.address.building_name|default_if_none:'' }}"
         data-street-name="{{ customer.address.street_name|default_if_none:'' }}"
         data-barangay="{{ customer.address.barangay|default_if_none:'' }}"
-        data-city="{{ customer.address.city_municipality|default_if_none:'' }}"
-        data-province="{{ customer.address.province|default_if_none:'' }}"
-        data-zip-code="{{ customer.address.zip_code|default_if_none:'' }}"
+        data-city-municipality="{{ customer.address.city_municipality|default_if_none:'' }}"
+  data-province="{{ customer.address.province|default_if_none:'' }}"
+  data-zip-code="{{ customer.address.zip_code|default_if_none:'' }}"
         data-customer-mobile="{{ customer.Customer_Mobile_Number|default_if_none:'' }}"
       >
         {{ customer.name.last_name }}, {{ customer.name.first_name }}{% if customer.name.middle_name %} {{ customer.name.middle_name }}{% endif %}{% if customer.name.suffix %} {{ customer.name.suffix }}{% endif %}
@@ -163,23 +165,24 @@
   </select>
 </div>
 
-<!-- Customer Info Fields (to be populated via JavaScript if needed) -->
 <input type="text" name="first_name" placeholder="First Name" />
 <input type="text" name="middle_name" placeholder="Middle Name" />
 <input type="text" name="last_name" placeholder="Last Name" />
 <input type="text" name="suffix" placeholder="Suffix" />
 
 <input type="text" name="house_unit_number" placeholder="House/Unit Number" />
+<input type="text" name="building_name" placeholder="Building Name" />
 <input type="text" name="street_name" placeholder="Street Name" />
 <input type="text" name="barangay" placeholder="Barangay" />
-<input type="text" name="city" placeholder="City" />
+<input type="text" name="city_municipality" placeholder="City/Municipality" />
 <input type="text" name="province" placeholder="Province" />
-<input type="text" name="zip_code" placeholder="ZIP Code" />
+<input type="text" name="zip_code" placeholder="Zip Code" />
+
 <input type="text" name="customer_mobile_number" placeholder="Mobile Number" />
+
 
         <!-- CONTACT NUMBERS -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input type="text" name="customer_mobile_number" class="border p-2 rounded" placeholder="Customer Mobile Number" required autocomplete="tel">
           <input type="text" name="receiver_mobile_number" class="border p-2 rounded" placeholder="Receiver Mobile Number" required autocomplete="off">
         </div>
 
@@ -301,16 +304,17 @@
 <!-- Address Section -->
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
   <input type="text" name="house_no" class="border p-2 rounded" placeholder="House No." required>
+  <input type="text" name="building_name" class="border p-2 rounded" placeholder="Building Name (Optional)"> <!-- NEW FIELD -->
   <input type="text" name="street" class="border p-2 rounded" placeholder="Street"> <!-- NOT required -->
   <input type="text" name="barangay" class="border p-2 rounded" placeholder="Barangay" required>
-  <input type="text" name="city" class="border p-2 rounded" placeholder="City" required>
 </div>
 
-<!-- Province and Zip Code -->
+<!-- City, Province and Zip Code -->
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+  <input type="text" name="city" class="border p-2 rounded" placeholder="City" required>
   <input type="text" name="province" class="border p-2 rounded" placeholder="Province" required>
   <input type="text" name="zip_code" class="border p-2 rounded" placeholder="ZIP Code" required>
-  <div></div><div></div>
+  <div></div>
 </div>
 
 <!-- Contact Numbers -->

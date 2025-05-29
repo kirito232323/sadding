@@ -108,6 +108,7 @@ from .models import UserName, UserAddress
 from django.http import JsonResponse
 from django.contrib import messages
 from django.db import connection
+from django.db import transaction
 from django.db.models import Case, When, Value, Sum, Q, CharField, BooleanField
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -423,49 +424,57 @@ def toggle_notification(request):
 
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
-from .models import UserName, UserAddress, Users  # adjust imports based on your structure
+from .models import UserName, UserAddress, Users  # adjust if model names/locations differ
+from django.views.decorators.csrf import csrf_exempt
 
+@csrf_exempt
 @require_POST
 def add_customer(request):
     try:
-        # Create name record
-        name = UserName.objects.create(
-            first_name=request.POST.get('first_name'),
-            middle_name=request.POST.get('middle_name'),
-            last_name=request.POST.get('last_name'),
-            suffix=request.POST.get('suffix')
-        )
+        # Use transaction.atomic() to ensure all database operations are atomic
+        with transaction.atomic():
+            # Create UserName record
+            name = UserName.objects.create(
+                first_name=request.POST.get('first_name', '').strip(),
+                middle_name=request.POST.get('middle_name', '').strip(),
+                last_name=request.POST.get('last_name', '').strip(),
+                suffix=request.POST.get('suffix', '').strip()
+            )
 
-        # Generate Username from full name (e.g., 'JuanDelaCruz')
-        full_name_username = ''.join(filter(None, [
-            name.first_name,
-            name.middle_name or '',
-            name.last_name,
-            name.suffix or ''
-        ])).replace(' ', '')
+            # Generate username from full name
+            full_name_username = ''.join(filter(None, [
+                name.first_name,
+                name.middle_name,
+                name.last_name,
+                name.suffix
+            ])).replace(' ', '')
 
-        # Create address record
-        address = UserAddress.objects.create(
-            house_unit_number=request.POST.get('house_no'),
-            street_name=request.POST.get('street'),
-            barangay=request.POST.get('barangay'),
-            city_municipality=request.POST.get('city'),
-            province=request.POST.get('province') or '',
-            zip_code=request.POST.get('zip_code') or '',
-        )
+            # Create UserAddress record
+            address = UserAddress.objects.create(
+                house_unit_number=request.POST.get('house_no', '').strip(),
+                building_name=request.POST.get('building_name', '').strip(),  # Optional field
+                street_name=request.POST.get('street', '').strip(),  # Optional
+                barangay=request.POST.get('barangay', '').strip(),
+                city_municipality=request.POST.get('city', '').strip(),
+                province=request.POST.get('province', '').strip(),
+                zip_code=request.POST.get('zip_code', '').strip(),
+            )
 
-        # Save to Users table (using name and address foreign keys)
-        Users.objects.create(
-            name=name,
-            address=address,
-            Username=full_name_username,
-            Customer_Mobile_Number=request.POST.get('customer_mobile_number'),
-            Receiver_Mobile_Number=request.POST.get('receiver_mobile_number')  # if you have this field
-        )
+            # Create User record
+            Users.objects.create(
+                name=name,
+                address=address,
+                Username=full_name_username,
+                Customer_Mobile_Number=request.POST.get('customer_mobile_number', '').strip()
+            )
 
+        # If the transaction is successful, return success response
         return JsonResponse({'status': 'success', 'message': 'Customer added successfully.'})
+
     except Exception as e:
+        # If any error occurs within the transaction, it will be caught here
         return JsonResponse({'status': 'error', 'message': str(e)})
+
 
 
 from django.views.decorators.http import require_POST
@@ -1080,59 +1089,56 @@ def get_customer_details(request):
 
     return JsonResponse({'status': 'success', 'data': data})
 
-
-from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
-from webapp.models import CustomerOrder, Rice, Employee, Users
+from decimal import Decimal, InvalidOperation
+from webapp.models import CustomerOrder, Users, Employee, Stock  # Use Stock not Rice
 
 @require_POST
 @csrf_protect
 def process_order(request):
-    if request.method != 'POST':
-        return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
-
     # Get POST data
-    rice_type_id = request.POST.get("rice_type_id")
+    stock_id = request.POST.get("stock_id")
     customer_id = request.POST.get("customer_id")
 
-    # Validation for required fields
-    if not rice_type_id:
+    if not stock_id:
         return JsonResponse({'status': 'error', 'message': 'Please select a rice type.'})
     if not customer_id:
         return JsonResponse({'status': 'error', 'message': 'Customer ID is required.'})
 
-    # Get rice object
+    # Validate stock
     try:
-        rice = Rice.objects.get(riceID=rice_type_id)
-    except Rice.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Selected rice type does not exist.'})
+        stock = Stock.objects.select_related('rice_type').get(stockID=stock_id)
+    except Stock.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Selected stock does not exist.'})
 
-    # Get customer object
+    # Validate customer
     try:
-        customer = Users.objects.get(UserID=customer_id)
+        customer = Users.objects.select_related('address').get(UserID=customer_id)
     except Users.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Customer not found.'})
 
-    # Optional: get employee
+    # Optional: Get employee
     employee = None
     employee_id = request.POST.get('employee_id')
     if employee_id:
         try:
-            employee = Users.objects.get(UserID=employee_id, Role='employee')  # Assuming employee is also in Users table
-        except Users.DoesNotExist:
+            employee = Employee.objects.get(EmployeeID=employee_id)
+        except Employee.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Employee not found.'})
 
-    # Generate delivery address from customer if available
+    # Format delivery address
     delivery_address = ""
-    if hasattr(customer, 'address') and customer.address:
+    if customer.address:
         addr = customer.address
         delivery_address = f"{addr.house_unit_number or ''} {addr.building_name or ''} {addr.street_name or ''}, {addr.barangay or ''}, {addr.city_municipality or ''}, {addr.province or ''} {addr.zip_code or ''}".strip()
 
-    # Safely parse numeric input
+    # Parse numeric values safely
     try:
         quantity = int(request.POST.get('quantity', 0))
         cost_per_sack = Decimal(str(request.POST.get('cost_per_sack', '0')))
+        discount = Decimal(str(request.POST.get('discount', '0')))
         total_cost = Decimal(str(request.POST.get('total_cost', '0')))
         amount_paid = Decimal(str(request.POST.get('amount_paid', '0')))
         amount_change = Decimal(str(request.POST.get('amount_change', '0')))
@@ -1143,26 +1149,28 @@ def process_order(request):
     try:
         order = CustomerOrder.objects.create(
             customer=customer,
-            rice_type=rice,
+            rice_type=stock.rice_type,  # Pull from Stock
             quantity=quantity,
             cost_per_sack=cost_per_sack,
+            discount=discount,
             total_cost=total_cost,
-            payment_method=request.POST.get('payment_method'),
+            payment_method=request.POST.get('payment_method', 'cash'),
             amount_paid=amount_paid,
             amount_change=amount_change,
             delivery_type=request.POST.get('delivery_type', 'delivery'),
-            delivery_status=request.POST.get('delivery_status', 'Pending'),
-            approval_status=request.POST.get('approval_status', 'Pending'),
+            delivery_status=request.POST.get('delivery_status', 'pending'),
+            approval_status=request.POST.get('approval_status', 'Approved'),
             employee=employee,
+            handled_by=employee,
             receiver_name=request.POST.get('receiver_name', ''),
             receiver_mobile_number=request.POST.get('receiver_mobile_number', ''),
             delivery_address=delivery_address,
             order_notes=request.POST.get('order_notes', ''),
         )
-
         return JsonResponse({'status': 'success', 'message': 'Order created successfully.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f"Order creation failed: {str(e)}"})
+
 
 from django.core.paginator import Paginator
 
