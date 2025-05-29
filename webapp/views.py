@@ -431,49 +431,40 @@ from django.views.decorators.csrf import csrf_exempt
 @require_POST
 def add_customer(request):
     try:
-        # Use transaction.atomic() to ensure all database operations are atomic
         with transaction.atomic():
-            # Create UserName record
             name = UserName.objects.create(
                 first_name=request.POST.get('first_name', '').strip(),
                 middle_name=request.POST.get('middle_name', '').strip(),
                 last_name=request.POST.get('last_name', '').strip(),
                 suffix=request.POST.get('suffix', '').strip()
             )
-
-            # Generate username from full name
             full_name_username = ''.join(filter(None, [
                 name.first_name,
                 name.middle_name,
                 name.last_name,
                 name.suffix
             ])).replace(' ', '')
-
-            # Create UserAddress record
             address = UserAddress.objects.create(
-                house_unit_number=request.POST.get('house_no', '').strip(),
-                building_name=request.POST.get('building_name', '').strip(),  # Optional field
-                street_name=request.POST.get('street', '').strip(),  # Optional
+                house_unit_number=request.POST.get('house_unit_number', '').strip(),
+                building_name=request.POST.get('building_name', '').strip(),
+                street_name=request.POST.get('street_name', '').strip(),
                 barangay=request.POST.get('barangay', '').strip(),
-                city_municipality=request.POST.get('city', '').strip(),
+                city_municipality=request.POST.get('city_municipality', '').strip(),
                 province=request.POST.get('province', '').strip(),
                 zip_code=request.POST.get('zip_code', '').strip(),
             )
-
-            # Create User record
             Users.objects.create(
                 name=name,
                 address=address,
                 Username=full_name_username,
                 Customer_Mobile_Number=request.POST.get('customer_mobile_number', '').strip()
             )
-
-        # If the transaction is successful, return success response
         return JsonResponse({'status': 'success', 'message': 'Customer added successfully.'})
-
     except Exception as e:
-        # If any error occurs within the transaction, it will be caught here
-        return JsonResponse({'status': 'error', 'message': str(e)})
+        import traceback
+        print('DATABASE LOCKED ERROR:', str(e))
+        print(traceback.format_exc())
+        return JsonResponse({'status': 'error', 'message': 'Database is locked. Please ensure no other process is using the database and try again.'})
 
 
 
@@ -912,10 +903,10 @@ def addstock(request):
         # ✅ Record log if employee is logged in
         if employee_id:
             try:
-                user = Users.objects.get(pk=employee_id)
+                employee_obj = Employee.objects.get(pk=employee_id)
                 action = f"Added {quantity_int} sacks to {rice.rice_type} ({packaging})"
-                UserLog.objects.create(user=user, action_type=action, timestamp=timezone.now())
-            except Users.DoesNotExist:
+                UserLog.objects.create(employee=employee_obj, action_type=action, timestamp=timezone.now())
+            except Employee.DoesNotExist:
                 pass  # Optionally handle this case if needed
 
         return redirect('addstock')
@@ -940,8 +931,8 @@ def addstock(request):
                 'rice_type': rice_type,
                 'timestamp': log.timestamp,
                 'undone': undone,
-                'user_full_name': log.user.full_Name,
-                'user_role': log.user.Role,
+                'user_full_name': log.employee.__str__() if log.employee else '',
+                'user_role': log.employee.Role if log.employee else '',
             })
 
     return render(request, 'addstock.html', {
@@ -1944,7 +1935,6 @@ def Process_signup(request):
 
             # Create User
             # Create as Employee instead of Users
-            from .models import Employee
             Employee.objects.create(
                 FirstName=first_name,
                 MiddleName=middle_name or None,
