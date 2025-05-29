@@ -97,7 +97,8 @@ class Stock(models.Model):
         self.current_stock = self.stock_in - self.stock_out
         super().save(*args, **kwargs)
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+
 from django.db import models
 
 class CustomerOrder(models.Model):
@@ -154,12 +155,10 @@ class CustomerOrder(models.Model):
         related_name='assigned_orders'
     )
 
-    # 🔻 Removed supplier field
-    # supplier = models.ForeignKey('Supplier', ...)
-
     order_notes = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
 
+    
     def customer_name(self):
         if self.customer and self.customer.name:
             n = self.customer.name
@@ -171,6 +170,36 @@ class CustomerOrder(models.Model):
             n = self.customer.name
             return f"Order #{self.order_id} by {n.first_name} {n.last_name} ({self.created_at.date()})"
         return f"Order #{self.order_id} by Unknown ({self.created_at.date()})"
+
+
+    def save(self, *args, **kwargs):
+        # Sanitize and convert decimal fields safely
+        for field_name in ['cost_per_sack', 'discount', 'total_cost', 'amount_paid', 'amount_change']:
+            val = getattr(self, field_name)
+            if val in [None, '', ' ']:
+                setattr(self, field_name, Decimal('0.00'))
+            else:
+                try:
+                    setattr(self, field_name, Decimal(val))
+                except (InvalidOperation, TypeError):
+                    setattr(self, field_name, Decimal('0.00'))
+
+        # Calculate total_cost after discount
+        try:
+            quantity_decimal = Decimal(self.quantity)
+            discount_decimal = self.discount / Decimal('100')
+            cost = self.cost_per_sack * quantity_decimal * (Decimal('1') - discount_decimal)
+            self.total_cost = cost.quantize(Decimal('0.01'))
+        except Exception:
+            self.total_cost = Decimal('0.00')
+
+        # Calculate amount_change
+        try:
+            self.amount_change = (self.amount_paid - self.total_cost).quantize(Decimal('0.01'))
+        except Exception:
+            self.amount_change = Decimal('0.00')
+
+        super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'webapp_customerorder'

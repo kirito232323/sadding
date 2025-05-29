@@ -155,8 +155,8 @@
         data-street-name="{{ customer.address.street_name|default_if_none:'' }}"
         data-barangay="{{ customer.address.barangay|default_if_none:'' }}"
         data-city-municipality="{{ customer.address.city_municipality|default_if_none:'' }}"
-  data-province="{{ customer.address.province|default_if_none:'' }}"
-  data-zip-code="{{ customer.address.zip_code|default_if_none:'' }}"
+        data-province="{{ customer.address.province|default_if_none:'' }}"
+        data-zip-code="{{ customer.address.zip_code|default_if_none:'' }}"
         data-customer-mobile="{{ customer.Customer_Mobile_Number|default_if_none:'' }}"
       >
         {{ customer.name.last_name }}, {{ customer.name.first_name }}{% if customer.name.middle_name %} {{ customer.name.middle_name }}{% endif %}{% if customer.name.suffix %} {{ customer.name.suffix }}{% endif %}
@@ -303,15 +303,15 @@
 
 <!-- Address Section -->
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-  <input type="text" name="house_no" class="border p-2 rounded" placeholder="House No." required>
-  <input type="text" name="building_name" class="border p-2 rounded" placeholder="Building Name (Optional)"> <!-- NEW FIELD -->
-  <input type="text" name="street" class="border p-2 rounded" placeholder="Street"> <!-- NOT required -->
+  <input type="text" name="house_unit_number" class="border p-2 rounded" placeholder="House/Unit Number" required>
+  <input type="text" name="building_name" class="border p-2 rounded" placeholder="Building Name (Optional)">
+  <input type="text" name="street_name" class="border p-2 rounded" placeholder="Street Name">
   <input type="text" name="barangay" class="border p-2 rounded" placeholder="Barangay" required>
 </div>
 
 <!-- City, Province and Zip Code -->
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-  <input type="text" name="city" class="border p-2 rounded" placeholder="City" required>
+  <input type="text" name="city_municipality" class="border p-2 rounded" placeholder="City/Municipality" required>
   <input type="text" name="province" class="border p-2 rounded" placeholder="Province" required>
   <input type="text" name="zip_code" class="border p-2 rounded" placeholder="ZIP Code" required>
   <div></div>
@@ -331,128 +331,64 @@
 
 
 <script>
+  // --- BEGIN JS CLEANUP AND AUTO-SELECT LOGIC ---
+
+  // Modal logic (unchanged)
   const openModalBtn = document.getElementById('openAddCustomerModal');
   const closeModalBtn = document.getElementById('closeAddCustomerModal');
   const cancelModalBtn = document.getElementById('cancelAddCustomer');
   const modal = document.getElementById('addCustomerModal');
   const form = document.getElementById('addCustomerForm');
 
-  // Show modal
   openModalBtn.addEventListener('click', () => {
-    // Make sure street input is optional (ensure in HTML: no 'required' attribute)
     const streetInput = form.querySelector('input[name="street"]');
-    if (streetInput) {
-      streetInput.removeAttribute('required');
-    }
-
-    // Remove 'receiver number' input if it exists before submitting
+    if (streetInput) streetInput.removeAttribute('required');
     const receiverInput = form.querySelector('input[name="receiver_number"]');
-    if (receiverInput) {
-      receiverInput.remove();
-    }
-
+    if (receiverInput) receiverInput.remove();
     modal.classList.remove('hidden');
   });
-
-  // Hide modal
   function closeModal() {
     modal.classList.add('hidden');
-    form.reset(); // Optional: clear form on close
+    form.reset();
   }
-
   closeModalBtn.addEventListener('click', closeModal);
   cancelModalBtn.addEventListener('click', closeModal);
-
-  // Confirm before submit
   form.addEventListener('submit', (e) => {
     const confirmSubmit = confirm("Are you sure you want to add this customer?");
-    if (!confirmSubmit) {
-      e.preventDefault();
-    }
+    if (!confirmSubmit) e.preventDefault();
   });
 
-
+  // Main form customer select logic
   const customerSelect = document.getElementById('customer_id');
-
-  customerSelect.addEventListener('change', () => {
-    const selected = customerSelect.options[customerSelect.selectedIndex];
-    
-    // Fill name fields
-    document.querySelector('input[name="first_name"]').value = selected.dataset.firstName || '';
-    document.querySelector('input[name="middle_name"]').value = selected.dataset.middleName || '';
-    document.querySelector('input[name="last_name"]').value = selected.dataset.lastName || '';
-    document.querySelector('input[name="suffix"]').value = selected.dataset.suffix || '';
-
-    // Fill address fields
-    document.querySelector('input[name="house_unit_number"]').value = selected.dataset.houseUnitNumber || '';
-    document.querySelector('input[name="building_name"]').value = selected.dataset.buildingName || '';
-    document.querySelector('input[name="street_name"]').value = selected.dataset.streetName || '';
-    document.querySelector('input[name="barangay"]').value = selected.dataset.barangay || '';
-    document.querySelector('input[name="city_municipality"]').value = selected.dataset.cityMunicipality || '';
-    document.querySelector('input[name="province"]').value = selected.dataset.province || '';
-    document.querySelector('input[name="zip_code"]').value = selected.dataset.zipCode || '';
-
-    // Fill mobile number
-    document.querySelector('input[name="customer_mobile_number"]').value = selected.dataset.customerMobile || '';
-  });
-
-document.addEventListener('DOMContentLoaded', () => {
-  const stockSelect = document.getElementById('stock_id');
-  const quantityInput = document.getElementById('quantity');
-  const costPerSackInput = document.getElementById('cost_per_sack');
-  const totalCostInput = document.getElementById('total_cost');
-  const amountPaidInput = document.getElementById('amount_paid');
-  const amountChangeInput = document.getElementById('amount_change');
-  const discountInput = document.getElementById('discount');
-  const customerSelect = document.getElementById('customer_id'); // Assuming this select exists
-
-  function calculateCosts() {
-    const quantity = parseFloat(quantityInput.value) || 0;
-    const costPerSack = parseFloat(costPerSackInput.value) || 0;
-    const amountPaid = parseFloat(amountPaidInput.value) || 0;
-
-    const totalCost = quantity * costPerSack;
-
-    // Check if customer is loyal
-    let isLoyal = false;
-    if (customerSelect) {
-      const selectedCustomer = customerSelect.options[customerSelect.selectedIndex];
-      isLoyal = selectedCustomer?.dataset.loyal === 'true';
-    }
-
-    // Calculate discount
-    let discountPercent = 0;
-    if (quantity >= 50) discountPercent += 5;
-    if (isLoyal) discountPercent += 5;
-
-    const discount = (discountPercent / 100) * totalCost;
-
-    const finalCost = totalCost - discount;
-    const change = amountPaid - finalCost;
-
-    totalCostInput.value = finalCost.toFixed(2);
-    discountInput.value = discount.toFixed(2);
-    amountChangeInput.value = change >= 0 ? change.toFixed(2) : '0.00';
-  }
-
-  stockSelect.addEventListener('change', () => {
-    const selectedOption = stockSelect.options[stockSelect.selectedIndex];
-    const price = parseFloat(selectedOption.dataset.price) || 0;
-    costPerSackInput.value = price.toFixed(2);
-    calculateCosts();
-  });
-
-  quantityInput.addEventListener('input', calculateCosts);
-  amountPaidInput.addEventListener('input', calculateCosts);
-
   if (customerSelect) {
-    customerSelect.addEventListener('change', calculateCosts);
+    customerSelect.addEventListener('change', () => {
+      const selected = customerSelect.options[customerSelect.selectedIndex];
+      document.querySelector('input[name="first_name"]').value = selected.getAttribute('data-first-name') || '';
+      document.querySelector('input[name="middle_name"]').value = selected.getAttribute('data-middle-name') || '';
+      document.querySelector('input[name="last_name"]').value = selected.getAttribute('data-last-name') || '';
+      document.querySelector('input[name="suffix"]').value = selected.getAttribute('data-suffix') || '';
+      document.querySelector('input[name="house_unit_number"]').value = selected.getAttribute('data-house-unit-number') || '';
+      document.querySelector('input[name="building_name"]').value = selected.getAttribute('data-building-name') || '';
+      document.querySelector('input[name="street_name"]').value = selected.getAttribute('data-street-name') || '';
+      document.querySelector('input[name="barangay"]').value = selected.getAttribute('data-barangay') || '';
+      document.querySelector('input[name="city_municipality"]').value = selected.getAttribute('data-city-municipality') || '';
+      document.querySelector('input[name="province"]').value = selected.getAttribute('data-province') || '';
+      document.querySelector('input[name="zip_code"]').value = selected.getAttribute('data-zip-code') || '';
+      document.querySelector('input[name="customer_mobile_number"]').value = selected.getAttribute('data-customer-mobile') || '';
+    });
   }
 
-  // Initial calculation
-  calculateCosts();
-});
-
+  // --- Auto-select new customer if redirected with ?new_customer_id=...
+  document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const newCustomerId = urlParams.get('new_customer_id');
+    if (newCustomerId && customerSelect) {
+      customerSelect.value = newCustomerId;
+      const event = new Event('change', { bubbles: true });
+      customerSelect.dispatchEvent(event);
+    }
+  });
+  // --- END JS CLEANUP ---
 </script>
 
 </body>

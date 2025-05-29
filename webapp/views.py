@@ -8,6 +8,43 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from .models import UserLog, Rice, Stock
 
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from django.utils import timezone
+from decimal import Decimal, InvalidOperation
+from .models import CustomerOrder
+from django.shortcuts import render, get_object_or_404
+from .models import CustomerOrder  # or whatever your order model is named
+from django.views.decorators.csrf import csrf_exempt
+
+from decimal import Decimal, InvalidOperation
+from django.shortcuts import render, get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from webapp.models import CustomerOrder
+
+
+from decimal import Decimal, InvalidOperation
+from django.shortcuts import render
+from .models import CustomerOrder
+
+def invoice_view(request):
+    orders = CustomerOrder.objects.all()
+
+    for order in orders:
+        try:
+            order.safe_cost_per_sack = Decimal(order.cost_per_sack or 0)
+            order.safe_quantity = Decimal(order.quantity or 0)
+            order.safe_total = order.safe_cost_per_sack * order.safe_quantity
+        except (InvalidOperation, TypeError):
+            order.safe_cost_per_sack = Decimal(0)
+            order.safe_quantity = Decimal(0)
+            order.safe_total = Decimal(0)
+
+    return render(request, 'invoice.html', {'orders': orders})
+
+
 @require_POST
 def undo_update(request, log_id):
     if request.headers.get('x-requested-with') != 'XMLHttpRequest':
@@ -424,47 +461,45 @@ def toggle_notification(request):
 
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
-from .models import UserName, UserAddress, Users  # adjust if model names/locations differ
+from webapp.models import UserName, UserAddress, Users  # adjust if model names/locations differ
 from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
 @require_POST
 def add_customer(request):
     try:
-        with transaction.atomic():
-            name = UserName.objects.create(
-                first_name=request.POST.get('first_name', '').strip(),
-                middle_name=request.POST.get('middle_name', '').strip(),
-                last_name=request.POST.get('last_name', '').strip(),
-                suffix=request.POST.get('suffix', '').strip()
-            )
-            full_name_username = ''.join(filter(None, [
-                name.first_name,
-                name.middle_name,
-                name.last_name,
-                name.suffix
-            ])).replace(' ', '')
-            address = UserAddress.objects.create(
-                house_unit_number=request.POST.get('house_unit_number', '').strip(),
-                building_name=request.POST.get('building_name', '').strip(),
-                street_name=request.POST.get('street_name', '').strip(),
-                barangay=request.POST.get('barangay', '').strip(),
-                city_municipality=request.POST.get('city_municipality', '').strip(),
-                province=request.POST.get('province', '').strip(),
-                zip_code=request.POST.get('zip_code', '').strip(),
-            )
-            Users.objects.create(
-                name=name,
-                address=address,
-                Username=full_name_username,
-                Customer_Mobile_Number=request.POST.get('customer_mobile_number', '').strip()
-            )
-        return JsonResponse({'status': 'success', 'message': 'Customer added successfully.'})
+        # Create UserName instance
+        name = UserName.objects.create(
+            first_name=request.POST.get('first_name', '').strip(),
+            middle_name=request.POST.get('middle_name', '').strip(),
+            last_name=request.POST.get('last_name', '').strip(),
+            suffix=request.POST.get('suffix', '').strip(),
+        )
+
+        # Create UserAddress instance with correct field names from form
+        address = UserAddress.objects.create(
+            house_unit_number=request.POST.get('house_unit_number', '').strip(),
+            building_name=request.POST.get('building_name', '').strip(),
+            street_name=request.POST.get('street_name', '').strip(),
+            barangay=request.POST.get('barangay', '').strip(),
+            city_municipality=request.POST.get('city_municipality', '').strip(),
+            province=request.POST.get('province', '').strip(),
+            zip_code=request.POST.get('zip_code', '').strip(),
+        )
+
+        # Create Users instance
+        user = Users.objects.create(
+            name=name,
+            address=address,
+            Customer_Mobile_Number=request.POST.get('customer_mobile_number', '').strip()
+        )
+
+        # Redirect to new_sale with new_customer_id for auto-select
+        return redirect(f"{reverse('new_sale')}?new_customer_id={user.UserID}")
     except Exception as e:
-        import traceback
-        print('DATABASE LOCKED ERROR:', str(e))
-        print(traceback.format_exc())
-        return JsonResponse({'status': 'error', 'message': 'Database is locked. Please ensure no other process is using the database and try again.'})
+        from django.contrib import messages
+        messages.error(request, f"Failed to add customer: {str(e)}")
+        return redirect(reverse('new_sale'))
 
 
 
@@ -625,7 +660,7 @@ def new_sale_view(request):
 
 
 def view_sales_report(request):
-    return render(request, 'view_sales_report.html')
+    return render(request, 'view_sales_report.html', {})
 
 def inventory_turnover(request):
     return render(request, 'Inventory_Turnover_Report.html')
@@ -678,9 +713,9 @@ def removestock(request):
     return render(request, 'removestock.html')
 
 def viewstocklevel(request):
-    rice_data = Rice.objects.all()
+    stock_data = Stock.objects.select_related('rice_type').all()
     return render(request, "viewstocklevel.html", {
-        'stock_data': rice_data
+        'stock_data': stock_data
     })
 
 def logout_view(request):
@@ -940,8 +975,6 @@ def addstock(request):
         'stock_data': Stock.objects.select_related('rice_type').all(),
         'update_logs': update_logs,
     })
-
-
 
 
 
@@ -1512,7 +1545,7 @@ def view_sales_his(request):
     cashiers = Users.objects.all()
     return render(request, 'view_sales_history.html', {'customer_orders': orders, 'cashiers': cashiers})
 
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from .models import CustomerOrder
 
 def delivery_management(request):
@@ -1998,3 +2031,19 @@ def user_account_view(request):
         })
 
     return redirect('dashboard')
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.views.decorators.http import require_http_methods
+from .models import Users
+
+@require_http_methods(["GET", "POST"])
+def delete_customer(request, user_id):
+    customers = Users.objects.all().select_related('name')
+    if user_id == 0:
+        # Show selection form only
+        return render(request, 'delete_customer.html', {'customers': customers})
+    customer = get_object_or_404(Users, UserID=user_id)
+    if request.method == "POST":
+        customer.delete()
+        return redirect('user_account')
+    return render(request, 'delete_customer.html', {'customer': customer, 'customers': customers})

@@ -52,7 +52,9 @@ urlpatterns = [
     path('supplier-order/', views.supplier_order, name='supplier_order'),
     path('add_customer/', views.add_customer, name='add_customer'),
     path('ajax/get-customer-details/', views.get_customer_details, name='get_customer_details'),
+    path('invoice/', views.invoice_view, name='invoice'),
+    path('delete_customer/<int:user_id>/', views.delete_customer, name='delete_customer'),
 
 ]
-    
+
 

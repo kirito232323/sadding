@@ -1,0 +1,99 @@
+{% load safedecimal %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Invoice</title>
+
+  {% if not export_mode %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      function autoSubmit() {
+        document.getElementById("invoiceForm").submit();
+      }
+    </script>
+  {% else %}
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 12pt; margin: 20px; }
+      h1 { text-align: center; font-size: 18pt; margin-bottom: 20px; }
+      .field { margin-bottom: 10px; }
+      strong { display: inline-block; width: 140px; }
+    </style>
+  {% endif %}
+</head>
+
+<body class="{% if not export_mode %}bg-gray-100 p-6{% endif %}">
+  <div class="{% if not export_mode %}max-w-2xl mx-auto bg-white p-6 rounded shadow{% endif %}">
+    <h1 class="{% if not export_mode %}text-2xl{% endif %} font-bold mb-4 text-center">Invoice</h1>
+
+    <form id="invoiceForm" method="POST">
+      {% csrf_token %}
+
+      <!-- Invoice Number -->
+      <div class="mb-4">
+        <label class="block font-semibold">Invoice Number:</label>
+        <input
+          type="text"
+          name="invoice_number"
+          value="{{ invoice_number }}"
+          readonly
+          class="w-full p-2 border rounded bg-gray-100"
+        />
+      </div>
+
+      <!-- Order Dropdown -->
+      {% if not export_mode %}
+        <div class="mb-4">
+          <label class="block font-semibold">Select Order:</label>
+          <select name="order_id" class="w-full p-2 border rounded" onchange="autoSubmit()">
+            <option value="">-- Select Order --</option>
+            {% for o in orders %}
+ <option value="{{ o.order_id }}" {% if order and o.order_id == o.order_id %}selected{% endif %}>
+  Order #{{ o.order_id }} - {{ o.customer.name|default:"No Customer" }}
+</option>
+
+            {% endfor %}
+          </select>
+        </div>
+      {% endif %}
+
+      <!-- Order Details -->
+      {% if order %}
+        <div class="{% if not export_mode %}mt-4 border-t pt-4{% endif %}">
+          <p class="field"><strong>Customer:</strong> {{ order.customer.name|default:"N/A" }}</p>
+
+          <p class="field"><strong>Address:</strong>
+            {% if order.customer.address %}
+              {{ order.customer.address.house_unit_number|default:'' }} {{ order.customer.address.building_name|default:'' }} {{ order.customer.address.street_name|default:'' }},
+              {{ order.customer.address.barangay|default:'' }}, {{ order.customer.address.city_municipality|default:'' }},
+              {{ order.customer.address.province|default:'' }} {{ order.customer.address.zip_code|default:'' }}
+            {% else %}
+              No address available
+            {% endif %}
+          </p>
+
+          <p class="field"><strong>Rice Type:</strong> {{ order.rice_type.rice_type|default:"N/A" }}</p>
+          <p class="field"><strong>Quantity:</strong> {{ order.quantity }}</p>
+          <p class="field"><strong>Cost per Sack:</strong> ₱{{ order.cost_per_sack|safedecimal }}</p>
+          <p class="field"><strong>Discount:</strong> {{ order.discount|safedecimal }}%</p>
+          <p class="field"><strong>Total Cost:</strong> ₱{{ order.total_cost|safedecimal }}</p>
+          <p class="field"><strong>Payment Method:</strong> {{ order.payment_method|capfirst }}</p>
+          <p class="field"><strong>Amount Paid:</strong> ₱{{ order.amount_paid|safedecimal }}</p>
+          <p class="field"><strong>Amount Change:</strong> ₱{{ order.amount_change|safedecimal }}</p>
+          <p class="field"><strong>Date:</strong> {{ order.created_at|date:"F d, Y h:i A" }}</p>
+
+          {% if not export_mode %}
+            <button
+              type="submit"
+              name="export_pdf"
+              class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Export as PDF
+            </button>
+          {% endif %}
+        </div>
+      {% endif %}
+    </form>
+  </div>
+</body>
+</html>

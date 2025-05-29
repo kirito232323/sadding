@@ -178,6 +178,7 @@
       <thead class="bg-gray-100">
         <tr>
           <th class="px-6 py-3 text-left font-semibold text-gray-700">Rice Type</th>
+          <th class="px-6 py-3 text-right font-semibold text-gray-700">Packaging</th>
           <th class="px-6 py-3 text-right font-semibold text-gray-700">Current Stock (Sacks)</th>
           <th class="px-6 py-3 text-right font-semibold text-gray-700">Stock In (Sacks)</th>
           <th class="px-6 py-3 text-right font-semibold text-gray-700">Stock Out (Sacks)</th>
@@ -190,6 +191,7 @@
         {% for rice in stock_data %}
           <tr class="hover:bg-blue-50 transition">
             <td class="px-6 py-3 rice-type font-medium text-gray-900">{{ rice.rice_type }}</td>
+            <td class="px-6 py-3 text-right text-gray-700">{{ rice.packaging }}</td>
             <td class="px-6 py-3 text-right text-gray-700">{{ rice.current_stock }}</td>
             <td class="px-6 py-3 text-right text-gray-700">{{ rice.stock_in }}</td>
             <td class="px-6 py-3 text-right text-gray-700">{{ rice.stock_out }}</td>
@@ -207,7 +209,7 @@
           </tr>
         {% empty %}
           <tr>
-            <td colspan="7" class="text-center py-10 text-gray-500 italic">No stock data available.</td>
+            <td colspan="8" class="text-center py-10 text-gray-500 italic">No stock data available.</td>
           </tr>
         {% endfor %}
       </tbody>

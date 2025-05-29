@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Customer</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Delete Customer</h2>
+        <form id="select-customer-form" method="get" action="">
+            <label for="customer_select"><strong>Select Customer to Delete:</strong></label>
+            <select id="customer_select" name="user_id" required>
+                <option value="" disabled selected>Select a customer</option>
+                {% for customer in customers %}
+                    <option value="{{ customer.UserID }}" {% if customer and customer.UserID == customer.UserID %}selected{% endif %}>
+                        {{ customer.name.last_name }}, {{ customer.name.first_name }}{% if customer.name.middle_name %} {{ customer.name.middle_name }}{% endif %}{% if customer.name.suffix %} {{ customer.name.suffix }}{% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Select</button>
+        </form>
+        <script>
+        document.getElementById('select-customer-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var userId = document.getElementById('customer_select').value;
+            if (userId) {
+                window.location.href = '/delete_customer/' + userId + '/';
+            }
+        });
+        </script>
+        {% if customer %}
+        <form method="post" action="" style="margin-top:2em;">
+            {% csrf_token %}
+            <p>Are you sure you want to delete the following customer?</p>
+            <ul>
+                <li><strong>Name:</strong> {{ customer.name }}</li>
+                <li><strong>Mobile Number:</strong> {{ customer.Customer_Mobile_Number }}</li>
+                <li><strong>Address:</strong> {{ customer.address }}</li>
+            </ul>
+            <button type="submit" class="btn btn-danger" onclick="return confirm('This will permanently delete the customer. Are you sure?');">Delete</button>
+            <a href="{% url 'user_account' %}" class="btn btn-secondary">Cancel</a>
+        </form>
+        <script>
+        document.querySelector('form[method="post"]').addEventListener('submit', function(e) {
+            if(!confirm('This action is permanent and cannot be undone. Continue?')) {
+                e.preventDefault();
+            }
+        });
+        </script>
+        {% endif %}
+    </div>
+</body>
+</html>
