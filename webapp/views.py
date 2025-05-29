@@ -137,23 +137,48 @@ def money_fmt(amount):
     """Format Decimal as currency string. Adjust as needed."""
     return f"₱{amount:,.2f}"
 
+from decimal import Decimal, InvalidOperation
+from django.shortcuts import render
+from django.http import HttpResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+from .models import CustomerOrder
+
+
+# --- Utility Functions ---
+def safe_decimal(value):
+    try:
+        return Decimal(str(value)).quantize(Decimal("0.01"))
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal("0.00")
+
+def money_fmt(value):
+    return f"₱{safe_decimal(value):,.2f}"
+
+
+# --- Invoice View ---
 def invoice_view(request):
     orders = CustomerOrder.objects.all().order_by('-created_at')
     selected_order = None
-
     order_id = request.POST.get('order_id') or request.GET.get('order_id')
+
     if order_id:
         try:
             selected_order = CustomerOrder.objects.get(order_id=order_id)
-            # Safely convert fields to Decimal
+
+            # Calculate safe values for display and PDF
             selected_order.safe_cost_per_sack = safe_decimal(selected_order.cost_per_sack)
             selected_order.safe_quantity = safe_decimal(selected_order.quantity)
             selected_order.safe_discount = safe_decimal(getattr(selected_order, 'discount', 0))
-            selected_order.safe_total = (selected_order.safe_cost_per_sack * selected_order.safe_quantity) - selected_order.safe_discount
+
+            discount_ratio = selected_order.safe_discount / Decimal("100")
+            discounted_total = selected_order.safe_cost_per_sack * selected_order.safe_quantity * (1 - discount_ratio)
+            selected_order.safe_total = discounted_total.quantize(Decimal("0.01"))
+
         except CustomerOrder.DoesNotExist:
             selected_order = None
 
-    # Handle PDF export
+    # --- Handle PDF Export ---
     if request.method == "POST" and "export_pdf" in request.POST and selected_order:
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename=receipt_{order_id}.pdf'
@@ -166,7 +191,7 @@ def invoice_view(request):
         p = canvas.Canvas(response, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
         p.setFont("Helvetica", 11)
 
-        y = PAGE_HEIGHT - 20  # start near top
+        y = PAGE_HEIGHT - 20
 
         def line(text='', gap=LINE_HEIGHT, bold=False, align_right=False, value=None):
             nonlocal y
@@ -185,17 +210,17 @@ def invoice_view(request):
         line("Dragon Ricemill Receipt", bold=True)
         line()
         line(f"Invoice Number: INV-{order_id}", bold=True)
-        line(f"Customer: {selected_order.customer.name}")
-        line(f"Address: {selected_order.customer.address}")
+        line(f"Customer: {getattr(selected_order.customer, 'name', 'Unknown')}")
+        line(f"Address: {getattr(selected_order.customer, 'address', 'Unknown')}")
         line()
         line(f"Rice Type: {selected_order.rice_type.rice_type}")
         line(f"Quantity: {selected_order.quantity} sack(s)")
         line(f"Cost Per Sack: {money_fmt(selected_order.safe_cost_per_sack)}")
-        line(f"Discount: {money_fmt(selected_order.safe_discount)}")
+        line(f"Discount: {selected_order.discount}%")
         line(f"Total Cost: {money_fmt(selected_order.safe_total)}")
         line(f"Payment Method: {selected_order.payment_method}")
-        line(f"Amount Paid: {money_fmt(safe_decimal(selected_order.amount_paid))}")
-        line(f"Change: {money_fmt(safe_decimal(selected_order.amount_change))}")
+        line(f"Amount Paid: {money_fmt(selected_order.amount_paid)}")
+        line(f"Change: {money_fmt(selected_order.amount_change)}")
         line()
         line("Thank you for your purchase!", bold=True)
 
@@ -203,24 +228,24 @@ def invoice_view(request):
         p.save()
         return response
 
-    # Render invoice HTML page (for print)
+    # --- Render Invoice Print Preview ---
     if order_id and selected_order and request.method == "GET":
-        formatted_discount = money_fmt(safe_decimal(getattr(selected_order, 'discount', 0)))
         context = {
             'order': selected_order,
             'invoice_number': f'INV-{order_id}',
-            'formatted_discount': formatted_discount,
-            'money_fmt': money_fmt,  # pass helper function if needed in template
+            'formatted_discount': f"{selected_order.discount}%",
+            'money_fmt': money_fmt,
         }
         return render(request, 'invoice_print.html', context)
 
-    # Default render with order selection form
+    # --- Render Invoice Selector Page ---
     context = {
         'orders': orders,
         'order': selected_order,
         'invoice_number': f'INV-{order_id or "N/A"}',
     }
     return render(request, 'invoice.html', context)
+
 
 
 @require_POST
