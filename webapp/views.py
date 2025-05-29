@@ -43,6 +43,9 @@ from .models import Users, CustomerOrder, CustomerLedger
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_protect
+
 def customer_ledger_create(request):
     if request.method == 'POST':
         customer_id = request.POST.get('customer')
@@ -116,6 +119,24 @@ def money_fmt(val):
     """Format Decimal as pesos with commas and 2 decimals."""
     return f"₱{format(val, ',.2f')}"
 
+from decimal import Decimal, InvalidOperation
+from django.http import HttpResponse
+from django.shortcuts import render
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+from .models import CustomerOrder
+
+def safe_decimal(value, default=Decimal('0.00')):
+    """Safely convert value to Decimal, return default if invalid."""
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return default
+
+def money_fmt(amount):
+    """Format Decimal as currency string. Adjust as needed."""
+    return f"₱{amount:,.2f}"
+
 def invoice_view(request):
     orders = CustomerOrder.objects.all().order_by('-created_at')
     selected_order = None
@@ -124,14 +145,15 @@ def invoice_view(request):
     if order_id:
         try:
             selected_order = CustomerOrder.objects.get(order_id=order_id)
-            # Convert to Decimal safely
-            selected_order.safe_cost_per_sack = Decimal(selected_order.cost_per_sack or 0)
-            selected_order.safe_quantity = Decimal(selected_order.quantity or 0)
-            selected_order.safe_discount = Decimal(selected_order.discount or 0)  # Assuming discount field exists
+            # Safely convert fields to Decimal
+            selected_order.safe_cost_per_sack = safe_decimal(selected_order.cost_per_sack)
+            selected_order.safe_quantity = safe_decimal(selected_order.quantity)
+            selected_order.safe_discount = safe_decimal(getattr(selected_order, 'discount', 0))
             selected_order.safe_total = (selected_order.safe_cost_per_sack * selected_order.safe_quantity) - selected_order.safe_discount
-        except (CustomerOrder.DoesNotExist, InvalidOperation, TypeError):
+        except CustomerOrder.DoesNotExist:
             selected_order = None
 
+    # Handle PDF export
     if request.method == "POST" and "export_pdf" in request.POST and selected_order:
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename=receipt_{order_id}.pdf'
@@ -172,8 +194,8 @@ def invoice_view(request):
         line(f"Discount: {money_fmt(selected_order.safe_discount)}")
         line(f"Total Cost: {money_fmt(selected_order.safe_total)}")
         line(f"Payment Method: {selected_order.payment_method}")
-        line(f"Amount Paid: {money_fmt(Decimal(selected_order.amount_paid or 0))}")
-        line(f"Change: {money_fmt(Decimal(selected_order.amount_change or 0))}")
+        line(f"Amount Paid: {money_fmt(safe_decimal(selected_order.amount_paid))}")
+        line(f"Change: {money_fmt(safe_decimal(selected_order.amount_change))}")
         line()
         line("Thank you for your purchase!", bold=True)
 
@@ -183,7 +205,7 @@ def invoice_view(request):
 
     # Render invoice HTML page (for print)
     if order_id and selected_order and request.method == "GET":
-        formatted_discount = money_fmt(Decimal(selected_order.discount or 0))
+        formatted_discount = money_fmt(safe_decimal(getattr(selected_order, 'discount', 0)))
         context = {
             'order': selected_order,
             'invoice_number': f'INV-{order_id}',
@@ -199,6 +221,7 @@ def invoice_view(request):
         'invoice_number': f'INV-{order_id or "N/A"}',
     }
     return render(request, 'invoice.html', context)
+
 
 @require_POST
 def undo_update(request, log_id):
@@ -1235,14 +1258,10 @@ def get_customer_details(request):
 
     return JsonResponse({'status': 'success', 'data': data})
 
-from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.http import require_POST
-from django.http import JsonResponse
 from decimal import Decimal, InvalidOperation
-from webapp.models import CustomerOrder, Users, Employee, Stock  # Use Stock not Rice
+from django.http import JsonResponse
+from .models import Stock, Users, CustomerOrder, Employee
 
-@require_POST
-@csrf_protect
 def process_order(request):
     # Get POST data
     stock_id = request.POST.get("stock_id")
@@ -1291,11 +1310,16 @@ def process_order(request):
     except (InvalidOperation, TypeError, ValueError):
         return JsonResponse({'status': 'error', 'message': 'Invalid numeric input. Please check the amounts and try again.'})
 
+    # Get reference code (optional, user-provided)
+    reference_code = request.POST.get('reference_code', None)
+    if reference_code == '':
+        reference_code = None
+
     # Create the order
     try:
         order = CustomerOrder.objects.create(
             customer=customer,
-            rice_type=stock.rice_type,  # Pull from Stock
+            rice_type=stock.rice_type,  # Pulled from Stock
             quantity=quantity,
             cost_per_sack=cost_per_sack,
             discount=discount,
@@ -1311,12 +1335,12 @@ def process_order(request):
             receiver_name=request.POST.get('receiver_name', ''),
             receiver_mobile_number=request.POST.get('receiver_mobile_number', ''),
             delivery_address=delivery_address,
+            reference_code=reference_code,  # ✅ User-provided and optional
             order_notes=request.POST.get('order_notes', ''),
         )
         return JsonResponse({'status': 'success', 'message': 'Order created successfully.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f"Order creation failed: {str(e)}"})
-
 
 from django.core.paginator import Paginator
 
@@ -1347,6 +1371,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404
 from webapp.models import CustomerOrder  # adjust import if needed
+from django.views.decorators.csrf import csrf_protect
 
 
 from django.views.decorators.csrf import csrf_exempt
@@ -2174,33 +2199,65 @@ def allorder_history(request):
     # TODO: Replace with real order data
     return render(request, 'allorder_history.html', {'orders': []})
 
-def payment_confirmation(request, order_id):
-    # TODO: Replace with real order data
-    return render(request, 'payment_confirmation.html', {
-        'order': {
-            'id': order_id,
-            'customer_name': '',
-            'payment_method': '',
-            'total_cost': 0,
-            'items': [],
-            'discount': 0,
-            'amount_paid': 0,
-            'amount_change': 0
-        }
-    })
+import logging
+logger = logging.getLogger(__name__)
 
-def delivery_confirmation(request, order_id):
-    # TODO: Replace with real order data
-    return render(request, 'delivery_confirmation.html', {
-        'order': {
-            'id': order_id,
-            'customer_name': '',
-            'delivery_type': '',
-            'delivery_address': '',
-            'items': [],
-            'total_cost': 0,
-            'discount': 0,
-            'amount_paid': 0,
-            'amount_change': 0
-        }
-    })
+def payment_confirmation(request, order_id):
+    logger.info(f"Fetching order with ID: {order_id}")
+    try:
+        order = CustomerOrder.objects.get(order_id=order_id)
+
+        if order.delivery_type == 'pickup':
+            if order.payment_method in ['gcash', 'credit_card']:
+                # Stay in payment confirmation
+                return render(request, 'payment_confirmation.html', {'order': order})
+            elif order.payment_method == 'cash':
+                # Redirect to history
+                return redirect('allorder_history')
+
+        elif order.delivery_type == 'delivery':
+            if order.payment_method == 'cash':
+                # Validate order_id before redirecting
+                if order_id <= 0 or not CustomerOrder.objects.filter(order_id=order_id).exists():
+                    logger.error("Invalid order ID provided for redirect to delivery_confirmation.")
+                    return HttpResponseBadRequest("Invalid order ID for redirect")
+                # Redirect to delivery confirmation, then history
+                return redirect('delivery_confirmation', order_id=order_id)
+            elif order.payment_method in ['gcash', 'credit_card']:
+                # Validate order_id before redirecting
+                if order_id <= 0 or not CustomerOrder.objects.filter(order_id=order_id).exists():
+                    logger.error("Invalid order ID provided for redirect to payment_confirmation.")
+                    return HttpResponseBadRequest("Invalid order ID for redirect")
+                # Redirect to payment confirmation, then delivery confirmation, then history
+                return redirect('payment_confirmation', order_id=order_id)
+
+        return HttpResponseBadRequest("Invalid order flow")
+
+    except CustomerOrder.DoesNotExist:
+        logger.error(f"Order with ID {order_id} does not exist.")
+        return HttpResponseBadRequest("Order does not exist")
+
+def delivery_confirmation(request, order_id=None):
+    logger.info(f"Fetching orders. Specific order ID: {order_id}")
+
+    if order_id is not None and order_id <= 0:
+        logger.error("Invalid order ID provided.")
+        return HttpResponseBadRequest("Invalid order ID")
+
+    try:
+        if order_id:
+            # Fetch a specific order
+            orders = CustomerOrder.objects.filter(order_id=order_id, delivery_type='delivery')
+        else:
+            # Fetch all delivery orders
+            orders = CustomerOrder.objects.filter(delivery_type='delivery')
+
+        if not orders.exists():
+            logger.warning("No delivery orders found.")
+
+        # Render delivery confirmation with all or specific orders
+        return render(request, 'delivery_confirmation.html', {'orders': orders})
+
+    except Exception as e:
+        logger.error(f"Error fetching delivery orders: {e}")
+        return HttpResponseBadRequest("An error occurred while fetching delivery orders.")

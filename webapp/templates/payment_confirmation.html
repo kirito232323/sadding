@@ -1,5 +1,4 @@
-{% block content %}
-{% load safedecimal %}
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -62,17 +61,10 @@
         <i class="fas fa-file-alt w-4 text-yellow-500"></i><span>User Logs</span>
       </a>
       <!-- Delete Customer link (no user_id, so go to selection page) -->
-      <a href="{% url 'delete_customer' 0 %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-        <i class="fas fa-user-times w-4 text-yellow-500"></i><span>Delete Customer</span>
-      </a>
+      
     </div>
 
-    <div class="mb-2 px-2">
-      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Delivery System</p>
-      <a href="{% url 'delivery-management' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Manage Deliveries</span>
-      </a>
-    </div>
+    
 
     <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Transaction</p>
@@ -82,7 +74,7 @@
       <a href="{% url 'payment_confirmation' 0 %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
         <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Payment Confirmation</span>
       </a>
-      <a href="{% url 'delivery_confirmation' 0 %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+      <a href="{% url 'delivery_confirmation' order.order_id %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
         <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Delivery Confirmation</span>
       </a>
     </div>
@@ -126,8 +118,6 @@
   </nav>
 </header>
 
-
-
 <main class="max-w-7xl mx-auto p-6">
   <div class="flex justify-between items-center mb-4">
     <h2 class="text-2xl font-bold">Payment Orders</h2>
@@ -167,14 +157,14 @@
         <tbody>
           {% for order in orders %}
           <tr class="hover:bg-gray-50 transition {% cycle 'bg-white' 'bg-gray-50' %}">
-            <td class="py-2 px-3 border-b text-center">{{ order.id }}</td>
+            <td class="py-2 px-3 border-b text-center">{{ order.order_id }}</td>
             <td class="py-2 px-3 border-b text-center">{{ order.customer_name }}</td>
-            <td class="py-2 px-3 border-b text-center">{{ order.date|date:'Y-m-d' }}</td>
+            <td class="py-2 px-3 border-b text-center">{{ order.created_at|date:"Y-m-d" }}</td>
             <td class="py-2 px-3 border-b text-center">{{ order.payment_method|title }}</td>
-            <td class="py-2 px-3 border-b text-center">₱{{ order.total_cost|safedecimal }}</td>
-            <td class="py-2 px-3 border-b text-center">{{ order.status }}</td>
+            <td class="py-2 px-3 border-b text-center">₱{{ order.total_cost }}</td>
+            <td class="py-2 px-3 border-b text-center">{{ order.approval_status|title }}</td>
             <td class="py-2 px-3 border-b text-center">
-              <form method="post" action="{% url 'payment_confirmation' order.id %}">
+              <form method="post" action="{% url 'payment_confirmation' order.order_id %}">
                 {% csrf_token %}
                 <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Confirm Payment</button>
               </form>
@@ -188,4 +178,3 @@
     </div>
   </section>
 </main>
-{% endblock %}
