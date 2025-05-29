@@ -3,3 +3,4 @@ pymysql
 mysqlclient
 gunicorn
 pytz
+xhtml2pdf
