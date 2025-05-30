@@ -50,15 +50,32 @@
       <a href="{% url 'user_account' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
         <i class="fas fa-user-circle w-4 text-yellow-500"></i><span>Customer</span>
       </a>
+
+      
+  <!-- New Create Customer Ledger Link -->
+  <a href="{% url 'customer_ledger_create' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+    <i class="fas fa-book w-4 text-yellow-500"></i><span>Create Customer Ledger</span>
+  </a>
+
       <a href="{% url 'logs' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
         <i class="fas fa-file-alt w-4 text-yellow-500"></i><span>User Logs</span>
       </a>
+      <!-- Delete Customer link (no user_id, so go to selection page) -->
+      
     </div>
 
+    
+
     <div class="mb-2 px-2">
-      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Delivery System</p>
-      <a href="{% url 'delivery-management' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Manage Deliveries</span>
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Transaction</p>
+      <a href="#" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>All Orders History</span>
+      </a>
+      <a href="#" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Payment Confirmation</span>
+      </a>
+      <a href="#" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Delivery Confirmation</span>
       </a>
     </div>
 
@@ -72,26 +89,31 @@
       </a>
     </div>
 
-    <div class="mb-2 px-2">
-      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
-      <a href="{% url 'new_sale' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-        <i class="fas fa-cart-plus w-4 text-yellow-500"></i><span>New Sale</span>
-      </a>
-      <a href="{% url 'view_sales_history' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-        <i class="fas fa-history w-4 text-yellow-500"></i><span>History</span>
-      </a>
-      <a href="{% url 'view_sales_report' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-        <i class="fas fa-chart-line w-4 text-yellow-500"></i><span>Report</span>
-      </a>
-      <a href="{% url 'inventory_turnover' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-        <i class="fas fa-sync-alt w-4 text-yellow-500"></i><span>Inventory Turnover</span>
-      </a>
-    </div>
+<div class="mb-2 px-2">
+  <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
+  <a href="{% url 'new_sale' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+    <i class="fas fa-cart-plus w-4 text-yellow-500"></i><span>New Sale</span>
+  </a>
+  <a href="{% url 'invoice' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+    <i class="fas fa-file-invoice w-4 text-yellow-500"></i><span>Create Invoice</span>
+  </a>
+  <a href="{% url 'view_sales_history' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+    <i class="fas fa-history w-4 text-yellow-500"></i><span>History</span>
+  </a>
+  <a href="{% url 'view_sales_report' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+    <i class="fas fa-chart-line w-4 text-yellow-500"></i><span>Report</span>
+  </a>
+  <a href="{% url 'inventory_turnover' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+    <i class="fas fa-sync-alt w-4 text-yellow-500"></i><span>Inventory Turnover</span>
+  </a>
+</div>
+
 
     <div class="border-t border-gray-200 mt-auto px-2 py-4">
       <a href="{% url 'logout' %}" onclick="return confirm('Logout?');" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-red-100 hover:text-red-600 transition font-semibold text-red-500 mt-2">
         <i class="fas fa-sign-out-alt w-4"></i><span>Logout</span>
       </a>
+    
     </div>
   </nav>
 </header>
@@ -186,14 +208,24 @@
 
 <input type="text" name="customer_mobile_number" placeholder="Mobile Number" />
 
+<!-- RECEIVER NAME & MOBILE -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+  <div>
+    <label for="receiver_name" class="block text-sm font-medium text-gray-700">Receiver Name</label>
+    <input type="text" id="receiver_name" name="receiver_name" required
+           class="mt-1 p-2 block w-full border rounded-md focus:ring-blue-500 focus:border-blue-500"
+           placeholder="Enter receiver's full name">
+  </div>
+  <div>
+    <label for="receiver_mobile_number" class="block text-sm font-medium text-gray-700">Receiver Mobile Number</label>
+    <input type="text" name="receiver_mobile_number" id="receiver_mobile_number" required
+           class="mt-1 p-2 block w-full border rounded-md"
+           placeholder="11-digit mobile number" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" />
+  </div>
+</div>
 
-        <!-- CONTACT NUMBERS -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input type="text" name="receiver_mobile_number" class="border p-2 rounded" placeholder="Receiver Mobile Number" required autocomplete="off" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" />
-        </div>
-
-<!-- STOCK SELECTION BY RICE TYPE + PACKAGING -->
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<!-- RICE TYPE + QUANTITY + COST -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
   <div>
     <label for="stock_id" class="block mb-1 font-semibold">Rice Type (with Packaging)</label>
     <select name="stock_id" id="stock_id" class="w-full border rounded px-3 py-2" required>
@@ -209,80 +241,95 @@
       {% endfor %}
     </select>
   </div>
-</div>
-
   <div>
     <label for="quantity" class="block mb-1 font-semibold">Quantity (Sacks)</label>
     <input type="number" min="1" name="quantity" id="quantity" required
-      class="w-full border rounded px-3 py-2" placeholder="Enter quantity" />
+           class="w-full border rounded px-3 py-2" placeholder="Enter quantity" />
   </div>
-
   <div>
     <label for="cost_per_sack" class="block mb-1 font-semibold">Cost Per Sack (₱)</label>
     <input type="number" min="0" step="0.01" name="cost_per_sack" id="cost_per_sack" required
-      class="w-full border rounded px-3 py-2 bg-gray-100" placeholder="Cost per sack" readonly />
+           class="w-full border rounded px-3 py-2 bg-gray-100" placeholder="Cost per sack" readonly />
   </div>
 </div>
 
-        <!-- TOTAL COST AND AMOUNT PAID -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label for="total_cost" class="block mb-1 font-semibold">Total Cost (₱)</label>
-            <input type="text" id="total_cost" name="total_cost" readonly
-              class="w-full border rounded bg-gray-100 px-3 py-2" placeholder="Total cost" />
-          </div>
+<!-- TOTAL, DISCOUNT, AMOUNT PAID -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+  <div>
+    <label for="total_cost" class="block mb-1 font-semibold">Total Cost (₱)</label>
+    <input type="text" id="total_cost" name="total_cost" readonly
+           class="w-full border rounded bg-gray-100 px-3 py-2" placeholder="Total cost" />
+  </div>
+  <div>
+    <label for="discount" class="block mb-1 font-semibold">Discount (₱)</label>
+    <input type="text" id="discount" name="discount" readonly
+           class="w-full border rounded bg-gray-100 px-3 py-2" placeholder="Discount" />
+  </div>
+  <div>
+    <label for="amount_paid" class="block mb-1 font-semibold">Amount Paid (₱)</label>
+    <input type="number" min="0" step="0.01" name="amount_paid" id="amount_paid" required
+           class="w-full border rounded px-3 py-2" placeholder="Amount paid" />
+  </div>
+</div>
 
-          <!-- DISCOUNT -->
-        <div>
-          <label for="discount" class="block mb-1 font-semibold">Discount (₱)</label>
-          <input type="text" id="discount" name="discount" readonly
-            class="w-full border rounded bg-gray-100 px-3 py-2" placeholder="Discount" />
-        </div>
+<!-- LOYAL CUSTOMER CHECKBOX -->
+<div class="mb-4">
+  <label class="inline-flex items-center">
+    <input type="checkbox" id="loyalCustomerCheckbox" class="mr-2">
+    Loyal Customer
+  </label>
+</div>
 
+<!-- AMOUNT CHANGE -->
+<div class="mb-4">
+  <label for="amount_change" class="block mb-1 font-semibold">Amount Change (₱)</label>
+  <input type="text" id="amount_change" name="amount_change" readonly
+         class="w-full border rounded bg-gray-100 px-3 py-2" placeholder="Change" />
+</div>
 
-          <div>
-            <label for="amount_paid" class="block mb-1 font-semibold">Amount Paid (₱)</label>
-            <input type="number" min="0" step="0.01" name="amount_paid" id="amount_paid" required
-              class="w-full border rounded px-3 py-2" placeholder="Amount paid" />
-          </div>
-        </div>
+<!-- DELIVERY TYPE AND PAYMENT METHOD -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+  <div>
+    <label for="delivery_type_bottom" class="block mb-1 font-semibold">Delivery Type</label>
+    <select name="delivery_type" id="delivery_type_bottom" class="w-full border rounded px-3 py-2" required>
+      <option value="delivery" selected>Delivery</option>
+      <option value="pickup">Pick Up</option>
+    </select>
+  </div>
+  <div>
+    <label for="payment_method_bottom" class="block mb-1 font-semibold">Payment Method</label>
+    <select id="payment_method_bottom" name="payment_method" required
+            class="w-full border rounded px-3 py-2">
+      <option value="" disabled selected>Select Payment Method</option>
+      <option value="cash">Cash</option>
+      <option value="gcash">GCash</option>
+      <option value="bank">Bank</option>
+    </select>
+  </div>
+</div>
 
-        <!-- AMOUNT CHANGE -->
-        <div>
-          <label for="amount_change" class="block mb-1 font-semibold">Amount Change (₱)</label>
-          <input type="text" id="amount_change" name="amount_change" readonly
-            class="w-full border rounded bg-gray-100 px-3 py-2" placeholder="Change" />
-        </div>
+<!-- REFERENCE CODE BOX (Hidden by default) -->
+<div id="referenceCodeGroup" class="mb-4 hidden">
+  <label for="reference_code" class="block mb-1 font-semibold">Reference Code</label>
+  <input type="text" id="reference_code" name="reference_code"
+         class="w-full border rounded px-3 py-2" placeholder="Enter reference code" />
+</div>
 
-        <!-- DELIVERY TYPE AND PAYMENT METHOD -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-          <div>
-            <label for="delivery_type_bottom" class="block mb-1 font-semibold">Delivery Type</label>
-            <select name="delivery_type" id="delivery_type_bottom" class="w-full border rounded px-3 py-2" required>
-              <option value="delivery" selected>Delivery</option>
-              <option value="pickup">Pick Up</option>
-            </select>
-          </div>
-          <div>
-            <label for="payment_method_bottom" class="block mb-1 font-semibold">Payment Method</label>
-            <select id="payment_method_bottom" name="payment_method" required
-              class="w-full border rounded px-3 py-2">
-              <option value="" disabled selected>Select Payment Method</option>
-              <option value="cash">Cash</option>
-              <option value="gcash">GCash</option>
-              <option value="credit_card">Credit Card</option>
-            </select>
-          </div>
-        </div>
+<form id="orderForm" method="POST" action="{% url 'process_order' %}">
+  {% csrf_token %}
 
-        <!-- SUBMIT BUTTON -->
-        <div class="pt-4">
-          <button type="submit"
+  <!-- form fields go here -->
+
+  <!-- SUBMIT BUTTON -->
+  <div class="pt-4">
+    <button type="submit"
             class="w-full bg-yellow-500 text-white font-semibold py-3 rounded hover:bg-yellow-600 transition duration-200">
-            Submit Order
-          </button>
-        </div>
-      </form>
+      Submit Order
+    </button>
+  </div>
+</form>
+
+
 
 <!-- Modal Background -->
 <div id="addCustomerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
@@ -339,8 +386,23 @@
 
 <!-- Modal Script -->
 <script>
-
 document.addEventListener("DOMContentLoaded", function () {
+  const paymentMethod = document.getElementById("payment_method_bottom");
+  const referenceGroup = document.getElementById("referenceCodeGroup");
+
+  if (paymentMethod && referenceGroup) {
+    paymentMethod.addEventListener("change", function () {
+      const method = paymentMethod.value.toLowerCase(); // ensure lowercase
+      if (method === "gcash" || method === "bank") {
+        referenceGroup.classList.remove("hidden");
+      } else {
+        referenceGroup.classList.add("hidden");
+      }
+    });
+  }
+
+
+  // --- ORDER FORM CALCULATIONS ---
   const stockSelect = document.getElementById("stock_id");
   const quantityInput = document.getElementById("quantity");
   const costPerSackInput = document.getElementById("cost_per_sack");
@@ -348,86 +410,99 @@ document.addEventListener("DOMContentLoaded", function () {
   const discountInput = document.getElementById("discount");
   const amountPaidInput = document.getElementById("amount_paid");
   const amountChangeInput = document.getElementById("amount_change");
+  const loyalCustomerCheckbox = document.getElementById("loyalCustomerCheckbox");
 
   function calculateTotal() {
-    const quantity = parseFloat(quantityInput.value) || 0;
-    const costPerSack = parseFloat(costPerSackInput.value) || 0;
+    const quantity = parseFloat(quantityInput?.value) || 0;
+    const costPerSack = parseFloat(costPerSackInput?.value) || 0;
+    const isLoyalCustomer = loyalCustomerCheckbox?.checked || false;
 
     const totalCost = quantity * costPerSack;
-
-    // Example discount logic: ₱20 discount for orders over ₱5000
     let discount = 0;
-    if (totalCost >= 5000) {
-      discount = 20;
-    }
+
+    if (quantity >= 50) discount += totalCost * 0.05;
+    if (isLoyalCustomer) discount += totalCost * 0.05;
 
     const finalTotal = totalCost - discount;
-    const amountPaid = parseFloat(amountPaidInput.value) || 0;
+    const amountPaid = parseFloat(amountPaidInput?.value) || 0;
     const amountChange = amountPaid - finalTotal;
 
-    totalCostInput.value = totalCost.toFixed(2);
-    discountInput.value = discount.toFixed(2);
-    amountChangeInput.value = amountChange >= 0 ? amountChange.toFixed(2) : "0.00";
+    if (totalCostInput) totalCostInput.value = totalCost.toFixed(2);
+    if (discountInput) discountInput.value = discount.toFixed(2);
+    if (amountChangeInput) amountChangeInput.value = amountChange >= 0 ? amountChange.toFixed(2) : "0.00";
   }
 
-  // Auto-fill cost per sack when rice type is selected
-  stockSelect.addEventListener("change", function () {
-    const selectedOption = stockSelect.options[stockSelect.selectedIndex];
-    const price = selectedOption.getAttribute("data-price");
-    const maxQuantity = selectedOption.getAttribute("data-max-quantity");
+  if (stockSelect) {
+    stockSelect.addEventListener("change", function () {
+      const selectedOption = stockSelect.options[stockSelect.selectedIndex];
+      const price = selectedOption.getAttribute("data-price");
+      const maxQuantity = selectedOption.getAttribute("data-max-quantity");
 
-    costPerSackInput.value = parseFloat(price || 0).toFixed(2);
-    if (maxQuantity) {
-      quantityInput.max = maxQuantity;
-    } else {
-      quantityInput.removeAttribute('max');
-    }
-    calculateTotal();
-  });
+      if (costPerSackInput) costPerSackInput.value = parseFloat(price || 0).toFixed(2);
+      if (quantityInput) {
+        if (maxQuantity) {
+          quantityInput.max = maxQuantity;
+        } else {
+          quantityInput.removeAttribute("max");
+        }
+      }
 
-  // Prevent entering quantity greater than available stock
-  quantityInput.addEventListener("input", function () {
-    const max = parseInt(quantityInput.max, 10);
-    let value = parseInt(quantityInput.value, 10);
-    if (!isNaN(max) && value > max) {
-      quantityInput.value = max;
-      value = max;
-    }
-    calculateTotal();
-  });
+      calculateTotal();
+    });
+  }
 
-  // Recalculate on cost and amount paid input
+  if (quantityInput) {
+    quantityInput.addEventListener("input", function () {
+      const max = parseInt(quantityInput.max, 10);
+      let value = parseInt(quantityInput.value, 10);
+
+      if (!isNaN(max) && value > max) {
+        quantityInput.value = max;
+      }
+
+      calculateTotal();
+    });
+  }
+
   [costPerSackInput, amountPaidInput].forEach(input => {
-    input.addEventListener("input", calculateTotal);
+    input?.addEventListener("input", calculateTotal);
   });
-});
 
-  // Modal logic (unchanged)
+  if (loyalCustomerCheckbox) {
+    loyalCustomerCheckbox.addEventListener("change", calculateTotal);
+  }
+
+  // --- ADD CUSTOMER MODAL ---
   const openModalBtn = document.getElementById('openAddCustomerModal');
   const closeModalBtn = document.getElementById('closeAddCustomerModal');
   const cancelModalBtn = document.getElementById('cancelAddCustomer');
   const modal = document.getElementById('addCustomerModal');
   const form = document.getElementById('addCustomerForm');
 
-  openModalBtn.addEventListener('click', () => {
-    const streetInput = form.querySelector('input[name="street"]');
-    if (streetInput) streetInput.removeAttribute('required');
-    const receiverInput = form.querySelector('input[name="receiver_number"]');
-    if (receiverInput) receiverInput.remove();
-    modal.classList.remove('hidden');
-  });
-  function closeModal() {
-    modal.classList.add('hidden');
-    form.reset();
-  }
-  closeModalBtn.addEventListener('click', closeModal);
-  cancelModalBtn.addEventListener('click', closeModal);
-  form.addEventListener('submit', (e) => {
-    const confirmSubmit = confirm("Are you sure you want to add this customer?");
-    if (!confirmSubmit) e.preventDefault();
-  });
+  if (openModalBtn && modal && form) {
+    openModalBtn.addEventListener('click', () => {
+      const streetInput = form.querySelector('input[name="street"]');
+      if (streetInput) streetInput.removeAttribute('required');
+      const receiverInput = form.querySelector('input[name="receiver_number"]');
+      if (receiverInput) receiverInput.remove();
+      modal.classList.remove('hidden');
+    });
 
-  // Main form customer select logic
+    function closeModal() {
+      modal.classList.add('hidden');
+      form.reset();
+    }
+
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+    if (cancelModalBtn) cancelModalBtn.addEventListener('click', closeModal);
+
+    form.addEventListener('submit', (e) => {
+      const confirmSubmit = confirm("Are you sure you want to add this customer?");
+      if (!confirmSubmit) e.preventDefault();
+    });
+  }
+
+  // --- CUSTOMER SELECT AUTO-FILL ---
   const customerSelect = document.getElementById('customer_id');
   if (customerSelect) {
     customerSelect.addEventListener('change', () => {
@@ -445,33 +520,26 @@ document.addEventListener("DOMContentLoaded", function () {
       document.querySelector('input[name="zip_code"]').value = selected.getAttribute('data-zip-code') || '';
       document.querySelector('input[name="customer_mobile_number"]').value = selected.getAttribute('data-customer-mobile') || '';
     });
-  }
 
-  // --- Auto-select new customer if redirected with ?new_customer_id=...
-  document.addEventListener('DOMContentLoaded', () => {
+    // --- Auto-select newly added customer from URL param ---
     const urlParams = new URLSearchParams(window.location.search);
     const newCustomerId = urlParams.get('new_customer_id');
-    if (newCustomerId && customerSelect) {
+    if (newCustomerId) {
       customerSelect.value = newCustomerId;
       const event = new Event('change', { bubbles: true });
       customerSelect.dispatchEvent(event);
     }
-  });
-  // --- END JS CLEANUP ---
+  }
 
-  // Add JS to enforce only numbers and max length 11
+  // --- Receiver mobile validation ---
   const receiverMobileInput = document.querySelector('input[name="receiver_mobile_number"]');
   if (receiverMobileInput) {
     receiverMobileInput.addEventListener('input', function () {
-      // Remove non-numeric characters
       this.value = this.value.replace(/[^0-9]/g, '');
-      // Limit to 11 digits
       if (this.value.length > 11) {
         this.value = this.value.slice(0, 11);
       }
     });
   }
+});
 </script>
-
-</body>
-</html>

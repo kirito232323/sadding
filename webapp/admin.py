@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Users, Employee, Rice, CustomerOrder, Supplier, Announcement, AuditLog, UserName, UserAddress, UserLog, Stock
+from .models import Users, Employee, Rice, CustomerOrder, Supplier, Announcement, AuditLog, UserName, UserAddress, UserLog, Stock, CustomerLedger
 
 admin.site.register(Users)
 admin.site.register(Employee)
@@ -14,5 +14,6 @@ admin.site.register(UserName)
 admin.site.register(UserAddress)
 admin.site.register(UserLog)
 admin.site.register(Stock)
+admin.site.register(CustomerLedger)
 
 # Register your models here.

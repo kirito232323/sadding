@@ -183,8 +183,10 @@ class CustomerOrder(models.Model):
     receiver_name = models.CharField(max_length=100)
     receiver_mobile_number = models.CharField(max_length=20)
     delivery_address = models.TextField()
+    reference_code = models.CharField(max_length=100, unique=True, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
     
     handled_by = models.ForeignKey(
         'Employee',
