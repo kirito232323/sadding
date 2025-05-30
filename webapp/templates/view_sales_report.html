@@ -38,7 +38,9 @@
         <i class="fas fa-user-circle w-4 text-yellow-500"></i><span>Profile</span>
       </a>
     </div>
+    
 
+    {% if request.session.user_role == 'admin' %}
     <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Users</p>
       <a href="{% url 'add_user' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
@@ -52,6 +54,8 @@
       </a>
 
       
+
+      
   <!-- New Create Customer Ledger Link -->
   <a href="{% url 'customer_ledger_create' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
     <i class="fas fa-book w-4 text-yellow-500"></i><span>Create Customer Ledger</span>
@@ -63,7 +67,7 @@
       <!-- Delete Customer link (no user_id, so go to selection page) -->
       
     </div>
-
+{% endif %}
     
 
     <div class="mb-2 px-2">
@@ -79,6 +83,8 @@
       </a>
     </div>
 
+    
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
     <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Inventory</p>
       <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
@@ -88,6 +94,9 @@
         <i class="fas fa-layer-group w-4 text-yellow-500"></i><span>View Levels</span>
       </a>
     </div>
+    {% endif %}
+
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'cashier' %}
 
 <div class="mb-2 px-2">
   <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
@@ -107,6 +116,8 @@
     <i class="fas fa-sync-alt w-4 text-yellow-500"></i><span>Inventory Turnover</span>
   </a>
 </div>
+  {% endif %}
+
 
 
     <div class="border-t border-gray-200 mt-auto px-2 py-4">
@@ -145,83 +156,247 @@
 
 </nav>
 
-  <!-- Page Content -->
-  <main class="max-w-7xl mx-auto p-6">
+<!-- Page Content -->
+<main class="max-w-7xl mx-auto p-6">
 
-    <h2 class="text-2xl font-bold mb-6">Sales Report</h2>
+  <h2 class="text-2xl font-bold mb-6">Reports</h2>
 
-    <!-- Filter Form Removed: No date fields as requested -->
+  <!-- Report Type Tabs -->
+  <div class="mb-6 flex space-x-4 border-b border-gray-300">
+    <button id="sales-report-tab" class="pb-2 border-b-2 border-blue-600 font-semibold text-blue-600" onclick="showReport('sales')">
+      Sales Reports
+    </button>
+    <button id="stock-movement-tab" class="pb-2 border-b-2 border-transparent text-gray-600 hover:text-blue-600" onclick="showReport('stock')">
+      Stock Movement Reports
+    </button>
+  </div>
 
 
-    <!-- Report Table & Export Button -->
-    <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">Summary Table</h3>
-        <button onclick="exportSalesReportToExcel('sales-report-table')" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 text-sm">
-          Export to Excel
-        </button>
-      </div>
-      <table id="sales-report-table" class="min-w-full table-auto border border-gray-200">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="px-4 py-2 border">
-              {% if group_by == 'cashier' %}
-                Cashier
-              {% else %}
-                Rice Type
-              {% endif %}
-            </th>
-            <th class="px-4 py-2 border">Total Quantity Sold</th>
-            <th class="px-4 py-2 border">Total Revenue (₱)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in report_data %}
-            <tr class="text-center">
-              <td class="px-4 py-2 border">
-                {% if group_by == 'cashier' %}
-                  {{ row.employee__full_Name }}
-                {% else %}
-                  {{ row.rice_type__rice_type }}
-                {% endif %}
-              </td>
-              <td class="px-4 py-2 border">{{ row.total_quantity }}</td>
-              <td class="px-4 py-2 border">₱{{ row.total_revenue|floatformat:2 }}</td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="3" class="text-center py-4">No data found for selected filters.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+<!-- Sales Report Filters -->
+<div id="sales-report-filters" class="mb-4 flex flex-wrap items-center gap-4">
+  <label for="group-by" class="font-medium">Group By:</label>
+  <select id="group-by" class="border border-gray-300 rounded px-2 py-1" onchange="applyFilters()">
+    <option value="rice_type" {% if group_by == 'rice_type' %}selected{% endif %}>Rice Type</option>
+    <option value="cashier" {% if group_by == 'cashier' %}selected{% endif %}>Cashier</option>
+  </select>
 
-    <script>
-    function exportSalesReportToExcel(tableID, filename = '') {
-      const table = document.getElementById(tableID);
-      if (!table) {
-        alert('Table not found!');
-        return;
-      }
-      // Remove empty rows (like "No data found for selected filters.")
-      const exportTable = table.cloneNode(true);
-      const rows = exportTable.querySelectorAll('tbody tr');
-      rows.forEach(row => {
-        if (row.textContent.includes('No data found')) {
-          row.parentNode.removeChild(row);
-        }
-      });
-      // Export using XLSX (SheetJS)
-      if (typeof XLSX === 'undefined') {
-        alert('XLSX library not loaded!');
-        return;
-      }
-      const wb = XLSX.utils.table_to_book(exportTable, { sheet: "SalesReport" });
-      XLSX.writeFile(wb, filename ? `${filename}.xlsx` : 'SalesReport.xlsx');
+  <label for="start-date" class="font-medium">Start Date:</label>
+  <input type="date" id="start-date" value="{{ start_date }}" class="border border-gray-300 rounded px-2 py-1" onchange="applyFilters()">
+
+  <label for="end-date" class="font-medium">End Date:</label>
+  <input type="date" id="end-date" value="{{ end_date }}" class="border border-gray-300 rounded px-2 py-1" onchange="applyFilters()">
+
+  <label for="sales-period" class="font-medium">Period:</label>
+  <select id="sales-period" class="border border-gray-300 rounded px-2 py-1" onchange="applyFilters()">
+    <option value="">-- Select Period --</option>
+    <option value="daily" {% if sales_period == 'daily' %}selected{% endif %}>Daily</option>
+    <option value="weekly" {% if sales_period == 'weekly' %}selected{% endif %}>Weekly</option>
+    <option value="monthly" {% if sales_period == 'monthly' %}selected{% endif %}>Monthly</option>
+  </select>
+</div>
+
+
+  <div class="mt-6 bg-gray-50 p-4 rounded-lg shadow">
+  <h4 class="text-lg font-bold mb-2">Sales Highlights</h4>
+  {% if best_selling and low_selling %}
+    <p><span class="font-medium">Best-Selling Rice Type:</span> {{ best_selling.rice_type__rice_type }} ({{ best_selling.total_quantity }} sacks)</p>
+    <p><span class="font-medium">Lowest-Selling Rice Type:</span> {{ low_selling.rice_type__rice_type }} ({{ low_selling.total_quantity }} sacks)</p>
+  {% else %}
+    <p class="text-gray-500">No sales data available for selected filters.</p>
+  {% endif %}
+</div>
+
+<!-- Sales Report Table & Export -->
+<div id="sales-report-section" class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-lg font-semibold">Summary Table</h3>
+    <button onclick="exportSalesReportToExcel('sales-report-table')" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 text-sm">
+      Export to Excel
+    </button>
+  </div>
+  <table id="sales-report-table" class="min-w-full table-auto border border-gray-200">
+    <thead class="bg-gray-100">
+      <tr>
+        <th class="px-4 py-2 border">
+          {% if group_by == 'cashier' %}
+            Cashier
+          {% else %}
+            Rice Type
+          {% endif %}
+        </th>
+        <th class="px-4 py-2 border">Date</th>
+        <th class="px-4 py-2 border">Total Quantity Sold</th>
+        <th class="px-4 py-2 border">Total Revenue (₱)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in report_data %}
+        <tr class="text-center">
+          <td class="px-4 py-2 border">
+            {% if group_by == 'cashier' %}
+              {{ row.employee_full_name }}
+            {% else %}
+              {{ row.rice_type__rice_type }}
+            {% endif %}
+          </td>
+          <td class="px-4 py-2 border">
+{{ row.created_date|date:"M d, Y" }}
+          </td>
+          <td class="px-4 py-2 border">{{ row.total_quantity }}</td>
+          <td class="px-4 py-2 border">₱{{ row.total_revenue|floatformat:2 }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="4" class="text-center py-4">No data found for selected filters.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+
+
+
+
+<!-- Stock Movement Report Section (hidden by default) -->
+<div id="stock-movement-section" class="hidden bg-white p-6 rounded-lg shadow overflow-x-auto">
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-lg font-semibold text-gray-800">Stock Movement Summary</h3>
+    <button onclick="exportStockMovementToExcel('stock-movement-table')" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 text-sm">
+      Export to Excel
+    </button>
+  </div>
+
+<table id="stock-movement-table" class="min-w-full table-auto border border-gray-200">
+  <thead class="bg-gray-100">
+    <tr>
+      <th class="px-4 py-2 border">Rice Type</th>
+      <th class="px-4 py-2 border">Packaging</th>
+      <th class="px-4 py-2 border">Stock In</th>
+      <th class="px-4 py-2 border">Stock Out</th>
+      <th class="px-4 py-2 border">Current Stock</th>
+      <th class="px-4 py-2 border">Last Updated</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in stock_movement_data %}
+    <tr class="text-center">
+      <td class="px-4 py-2 border">{{ item.rice_type.rice_type }}</td>
+      <td class="px-4 py-2 border">{{ item.packaging }}</td>
+      <td class="px-4 py-2 border">{{ item.stock_in }}</td>
+      <td class="px-4 py-2 border">{{ item.stock_out }}</td>
+      <td class="px-4 py-2 border">{{ item.current_stock }}</td>
+      <td class="px-4 py-2 border">{{ item.last_updated|date:"Y-m-d H:i" }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="6" class="text-center py-4">No stock data available.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+
+  <script>
+
+function applyFilters() {
+  const groupBy = document.getElementById('group-by').value;
+  const startDate = document.getElementById('start-date').value;
+  const endDate = document.getElementById('end-date').value;
+  const salesPeriod = document.getElementById('sales-period').value;
+
+  const params = new URLSearchParams();
+
+  if (groupBy) params.append('group_by', groupBy);
+  if (startDate) params.append('start_date', startDate);
+  if (endDate) params.append('end_date', endDate);
+  if (salesPeriod) params.append('sales_period', salesPeriod);
+
+  // Reload page with filters as query string
+  window.location.search = params.toString();
+}
+
+  // Switch between sales report and stock movement report views
+  function showReport(reportType) {
+    const salesTab = document.getElementById('sales-report-tab');
+    const stockTab = document.getElementById('stock-movement-tab');
+    const salesSection = document.getElementById('sales-report-section');
+    const stockSection = document.getElementById('stock-movement-section');
+    const salesFilters = document.getElementById('sales-report-filters');
+
+    if(reportType === 'sales') {
+      salesSection.classList.remove('hidden');
+      stockSection.classList.add('hidden');
+      salesFilters.classList.remove('hidden');
+
+      salesTab.classList.add('border-blue-600', 'text-blue-600', 'font-semibold');
+      salesTab.classList.remove('border-transparent', 'text-gray-600');
+      stockTab.classList.remove('border-blue-600', 'text-blue-600', 'font-semibold');
+      stockTab.classList.add('border-transparent', 'text-gray-600');
+    } else {
+      salesSection.classList.add('hidden');
+      stockSection.classList.remove('hidden');
+      salesFilters.classList.add('hidden');
+
+      stockTab.classList.add('border-blue-600', 'text-blue-600', 'font-semibold');
+      stockTab.classList.remove('border-transparent', 'text-gray-600');
+      salesTab.classList.remove('border-blue-600', 'text-blue-600', 'font-semibold');
+      salesTab.classList.add('border-transparent', 'text-gray-600');
     }
-    </script>
+  }
 
-  </main>
+  // Placeholder: You can implement AJAX or form submission to filter sales report by period
+  function filterSalesReport() {
+    const period = document.getElementById('sales-period').value;
+    // TODO: Trigger backend filtering by period and refresh table data via AJAX or page reload
+    alert(`Filtering sales report by: ${period} (implement backend filtering)`);
+  }
+
+  // Export functions (reuse your existing XLSX export for stock movement too)
+  function exportSalesReportToExcel(tableID, filename = '') {
+    const table = document.getElementById(tableID);
+    if (!table) {
+      alert('Table not found!');
+      return;
+    }
+    const exportTable = table.cloneNode(true);
+    const rows = exportTable.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+      if (row.textContent.includes('No data found')) {
+        row.parentNode.removeChild(row);
+      }
+    });
+    if (typeof XLSX === 'undefined') {
+      alert('XLSX library not loaded!');
+      return;
+    }
+    const wb = XLSX.utils.table_to_book(exportTable, { sheet: "SalesReport" });
+    XLSX.writeFile(wb, filename ? `${filename}.xlsx` : 'SalesReport.xlsx');
+  }
+
+  function exportStockMovementToExcel(tableID, filename = '') {
+    const table = document.getElementById(tableID);
+    if (!table) {
+      alert('Table not found!');
+      return;
+    }
+    const exportTable = table.cloneNode(true);
+    const rows = exportTable.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+      if (row.textContent.includes('No stock movement data')) {
+        row.parentNode.removeChild(row);
+      }
+    });
+    if (typeof XLSX === 'undefined') {
+      alert('XLSX library not loaded!');
+      return;
+    }
+    const wb = XLSX.utils.table_to_book(exportTable, { sheet: "StockMovementReport" });
+    XLSX.writeFile(wb, filename ? `${filename}.xlsx` : 'StockMovementReport.xlsx');
+  }
+  </script>
+
+</main>
 </body>
 </html>

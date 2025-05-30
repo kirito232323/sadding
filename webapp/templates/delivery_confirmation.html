@@ -38,7 +38,9 @@
         <i class="fas fa-user-circle w-4 text-yellow-500"></i><span>Profile</span>
       </a>
     </div>
+    
 
+    {% if request.session.user_role == 'admin' %}
     <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Users</p>
       <a href="{% url 'add_user' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
@@ -52,6 +54,8 @@
       </a>
 
       
+
+      
   <!-- New Create Customer Ledger Link -->
   <a href="{% url 'customer_ledger_create' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
     <i class="fas fa-book w-4 text-yellow-500"></i><span>Create Customer Ledger</span>
@@ -63,7 +67,7 @@
       <!-- Delete Customer link (no user_id, so go to selection page) -->
       
     </div>
-
+{% endif %}
     
 
     <div class="mb-2 px-2">
@@ -74,11 +78,13 @@
       <a href="{% url 'payment_confirmation' 0 %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
         <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Payment Confirmation</span>
       </a>
-      <a href="{% url 'delivery_confirmation' order.order_id %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+      <a href="{% url 'delivery_confirmation' 0 %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
         <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Delivery Confirmation</span>
       </a>
     </div>
 
+    
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
     <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Inventory</p>
       <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
@@ -88,6 +94,9 @@
         <i class="fas fa-layer-group w-4 text-yellow-500"></i><span>View Levels</span>
       </a>
     </div>
+    {% endif %}
+
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'cashier' %}
 
 <div class="mb-2 px-2">
   <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
@@ -107,6 +116,8 @@
     <i class="fas fa-sync-alt w-4 text-yellow-500"></i><span>Inventory Turnover</span>
   </a>
 </div>
+  {% endif %}
+
 
 
     <div class="border-t border-gray-200 mt-auto px-2 py-4">
@@ -121,68 +132,63 @@
 <main class="max-w-7xl mx-auto p-6">
   <div class="flex justify-between items-center mb-4">
     <h2 class="text-2xl font-bold">Payment Orders</h2>
-    <a href="{% url 'allorder_history' %}" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Back to Order History</a>
+    <a href="{% url 'allorder_history' %}" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition">View All Orders</a>
   </div>
 
-  <section class="bg-white shadow-lg rounded-lg p-4">
-    <form id="payment-filters" method="get" class="mb-6 flex flex-col sm:flex-row sm:items-end gap-4">
-      <div class="flex-grow">
-        <label for="search" class="block text-sm font-medium">Search by Customer / Order ID</label>
-        <input type="text" name="search" id="search" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Start typing..." value="{{ request.GET.search }}">
-      </div>
-      <div>
-        <label for="start_date" class="block text-sm font-medium">Start Date</label>
-        <input type="date" name="start_date" id="start_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" value="{{ request.GET.start_date }}">
-      </div>
-      <div>
-        <label for="end_date" class="block text-sm font-medium">End Date</label>
-        <input type="date" name="end_date" id="end_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" value="{{ request.GET.end_date }}">
-      </div>
-      <div>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">Filter</button>
-      </div>
-    </form>
-
-    <div class="overflow-x-auto">
-      <table class="min-w-full border border-gray-300 text-xs rounded-lg overflow-hidden">
-        <thead class="bg-gray-200 text-left font-semibold">
-          <tr>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Order ID</th>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Customer</th>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Date</th>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Payment Method</th>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Amount Due</th>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Status</th>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for order in orders %}
-            {% if order.delivery_type == 'delivery' %}
-            <tr class="hover:bg-gray-50 transition {% cycle 'bg-white' 'bg-gray-50' %}">
-              <td class="py-2 px-3 border-b text-center">{{ order.order_id }}</td>
-              <td class="py-2 px-3 border-b text-center">{{ order.customer_name }}</td>
-              <td class="py-2 px-3 border-b text-center">{{ order.created_at|date:'Y-m-d' }}</td>
-              <td class="py-2 px-3 border-b text-center">{{ order.payment_method|title }}</td>
-              <td class="py-2 px-3 border-b text-center">₱{{ order.total_cost|floatformat:2 }}</td>
-              <td class="py-2 px-3 border-b text-center">{{ order.approval_status|title }}</td>
-              <td class="py-2 px-3 border-b text-center">
-                <form method="post" action="{% url 'payment_confirmation' order.order_id %}">
-                  {% csrf_token %}
-                  <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Confirm Payment</button>
-                </form>
-              </td>
-            </tr>
-            {% endif %}
-          {% empty %}
-            <tr>
-              <td colspan="7" class="text-center py-4 text-gray-500">No delivery orders found.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
+  <div class="overflow-x-auto rounded shadow bg-white">
+    <table class="w-full text-sm text-left text-gray-600">
+      <thead class="text-xs uppercase bg-gray-50 text-gray-500 border-b border-gray-200">
+        <tr>
+          <th class="py-3 px-4">Order ID</th>
+          <th class="py-3 px-4">Customer Name</th>
+          <th class="py-3 px-4">Rice Type</th>
+          <th class="py-3 px-4">Quantity</th>
+          <th class="py-3 px-4">Cost Per Sack</th>
+          <th class="py-3 px-4">Total Cost</th>
+          <th class="py-3 px-4">Payment Method</th>
+          <th class="py-3 px-4">Amount Paid</th>
+          <th class="py-3 px-4">Amount Change</th>
+          <th class="py-3 px-4">Status</th>
+          <th class="py-3 px-4">Date Ordered</th>
+          <th class="py-3 px-4">Date Approved</th>
+          <th class="py-3 px-4">Approved By</th>
+          <th class="py-3 px-4">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for order in orders %}
+        <tr class="border-b border-gray-100 hover:bg-yellow-50">
+          <td class="py-2 px-4">{{ order.order_id }}</td>
+          <td class="py-2 px-4">{{ order.customer_name }}</td>
+          <td class="py-2 px-4">{{ order.rice.rice_type }}</td>
+          <td class="py-2 px-4">{{ order.quantity }}</td>
+          <td class="py-2 px-4">₱{{ order.cost_per_sack|floatformat:2 }}</td>
+          <td class="py-2 px-4">₱{{ order.total_cost|floatformat:2 }}</td>
+          <td class="py-2 px-4">{{ order.payment_method }}</td>
+          <td class="py-2 px-4">₱{{ order.amount_paid|floatformat:2 }}</td>
+          <td class="py-2 px-4">₱{{ order.amount_change|floatformat:2 }}</td>
+          <td class="py-2 px-4">{{ order.status }}</td>
+          <td class="py-2 px-4">{{ order.date_ordered|date:"M d, Y H:i" }}</td>
+          <td class="py-2 px-4">{% if order.date_approved %}{{ order.date_approved|date:"M d, Y H:i" }}{% else %}-{% endif %}</td>
+          <td class="py-2 px-4">{% if order.approved_by %}{{ order.approved_by.full_Name }}{% else %}-{% endif %}</td>
+          <td class="py-2 px-4 space-x-1">
+            <a href="{% url 'approve_order' order.order_id %}" class="text-green-600 hover:text-green-800" title="Approve">
+              <i class="fas fa-check-circle"></i>
+            </a>
+            <a href="{% url 'decline_order' order.order_id %}" class="text-red-600 hover:text-red-800" title="Decline">
+              <i class="fas fa-times-circle"></i>
+            </a>
+            <a href="{% url 'delete_order' order.order_id %}" onclick="return confirm('Are you sure to delete this order?');" class="text-gray-600 hover:text-gray-900" title="Delete">
+              <i class="fas fa-trash-alt"></i>
+            </a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="14" class="text-center py-4 text-gray-400">No orders found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </main>
 
 </body>

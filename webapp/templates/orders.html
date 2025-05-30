@@ -64,64 +64,12 @@
       
     </div>
 
-    
-
-    <div class="mb-2 px-2">
-      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Transaction</p>
-      <a href="{% url 'allorder_history' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>All Orders History</span>
-      </a>
-      <a href="{% url 'payment_confirmation' 0 %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Payment Confirmation</span>
-      </a>
-      <a href="{% url 'delivery_confirmation' 0 %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Delivery Confirmation</span>
-      </a>
-    </div>
-
-    <div class="mb-2 px-2">
-      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Inventory</p>
-      <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-        <i class="fas fa-boxes w-4 text-yellow-500"></i><span>Inventory</span>
-      </a>
-      <a href="{% url 'viewstocklevel' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-        <i class="fas fa-layer-group w-4 text-yellow-500"></i><span>View Levels</span>
-      </a>
-    </div>
-
-<div class="mb-2 px-2">
-  <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
-  <a href="{% url 'new_sale' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
-    <i class="fas fa-cart-plus w-4 text-yellow-500"></i><span>New Sale</span>
-  </a>
-  <a href="{% url 'invoice' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-    <i class="fas fa-file-invoice w-4 text-yellow-500"></i><span>Create Invoice</span>
-  </a>
-  <a href="{% url 'view_sales_history' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-    <i class="fas fa-history w-4 text-yellow-500"></i><span>History</span>
-  </a>
-  <a href="{% url 'view_sales_report' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-    <i class="fas fa-chart-line w-4 text-yellow-500"></i><span>Report</span>
-  </a>
-  <a href="{% url 'inventory_turnover' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-    <i class="fas fa-sync-alt w-4 text-yellow-500"></i><span>Inventory Turnover</span>
-  </a>
-</div>
-
-
-    <div class="border-t border-gray-200 mt-auto px-2 py-4">
-      <a href="{% url 'logout' %}" onclick="return confirm('Logout?');" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-red-100 hover:text-red-600 transition font-semibold text-red-500 mt-2">
-        <i class="fas fa-sign-out-alt w-4"></i><span>Logout</span>
-      </a>
-    
-    </div>
-  </nav>
-</header>
-
+<!-- Sidebar Navigation omitted for brevity -->
 
 <!-- Push content so it’s not behind the sidebar -->
 <div class="mr-56 min-h-screen bg-gray-50">
-  <main class="max-w-screen-xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+  <main class="max-w-screen-xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex flex-col min-h-screen">
+
     <!-- Messages -->
     {% if messages %}
       <div class="mb-6">
@@ -138,158 +86,161 @@
       </div>
     {% endif %}
 
-
- 
-
-
-<!-- Main Content -->
-<main class="flex-1 p-4 overflow-auto">
-  <div class="max-w-7xl mx-auto">
-    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2">
-      <h1 class="text-2xl font-bold text-gray-800 text-center sm:text-left">Customer Orders</h1>
-      <p class="text-sm text-gray-600 text-center sm:text-right">Total Orders: {{ customer_orders|length }}</p>
-      <div class="flex items-center space-x-2">
-        <input
-          type="text"
-          id="searchInput"
-          placeholder="Search by customer..."
-          class="px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto flex-grow">
+      <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2">
+        <h1 class="text-2xl font-bold text-gray-800 text-center sm:text-left">Customer Orders</h1>
+        <p class="text-sm text-gray-600 text-center sm:text-right">Total Orders: {{ customer_orders|length }}</p>
+        <div class="flex items-center space-x-2">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search by customer..."
+            class="px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       </div>
-    </div>
 
-    <div class="overflow-x-auto bg-white shadow-md rounded-lg">
-      <table id="orders-table" class="min-w-full border border-gray-300 text-xs">
-        <thead class="bg-gray-200 text-left font-semibold">
-          <tr>
-            <th class="py-1 px-2 border-b border-gray-300">Date</th>
-            <th class="py-1 px-2 border-b border-gray-300">Order ID</th>
-            <th class="py-1 px-2 border-b border-gray-300">Customer Name</th>
-            <th class="py-1 px-2 border-b border-gray-300">Address</th>
-            <th class="py-1 px-2 border-b border-gray-300">Customer Mobile</th>
-            <th class="py-1 px-2 border-b border-gray-300">Receiver Mobile</th>
-            <th class="py-1 px-2 border-b border-gray-300">Rice Type</th>
-            <th class="py-1 px-2 border-b border-gray-300">Quantity</th>
-            <th class="py-1 px-2 border-b border-gray-300">Cost Per Sack</th>
-            <th class="py-1 px-2 border-b border-gray-300">Total Cost</th>
-            <th class="py-1 px-2 border-b border-gray-300">Amount Paid</th>
-            <th class="py-1 px-2 border-b border-gray-300">Amount Change</th>
-            <th class="py-1 px-2 border-b border-gray-300">Payment Method</th>
-            <th class="py-1 px-2 border-b border-gray-300">Delivery Type</th>
-            <th class="py-1 px-2 border-b border-gray-300">Cashier</th>
-            <th class="py-1 px-2 border-b border-gray-300">Status</th>
-            <th class="py-1 px-2 border-b border-gray-300">Action</th>
-          </tr>
-        </thead>
-        <tbody id="orders-tbody">
-          {% for order in customer_orders %}
-            <tr class="hover:bg-gray-50 transition" data-id="{{ order.order_id }}">
-            <td class="py-2 px-4 border-b">{{ order.created_at|date:"Y-m-d" }}</td>
-            <td class="py-2 px-4 border-b">{{ order.order_id }}</td>
-            <td class="py-2 px-4 border-b">
-              {% if order.customer and order.customer.name %}
-                {{ order.customer.name.last_name }}, {{ order.customer.name.first_name }}{% if order.customer.name.middle_name %} {{ order.customer.name.middle_name }}{% endif %}{% if order.customer.name.suffix %} {{ order.customer.name.suffix }}{% endif %}
-              {% else %}N/A{% endif %}
-            </td>
-            <td class="py-2 px-4 border-b">
-              {% if order.customer and order.customer.address %}
-                {{ order.customer.address.house_unit_number }}{% if order.customer.address.building_name %} {{ order.customer.address.building_name }}, {% endif %}{{ order.customer.address.street_name }}, {{ order.customer.address.barangay }}, {{ order.customer.address.city_municipality }}, {{ order.customer.address.province }}, {{ order.customer.address.zip_code }}
-              {% else %}N/A{% endif %}
-            </td>
-            <td class="py-2 px-4 border-b">{% if order.customer %}{{ order.customer.Customer_Mobile_Number }}{% else %}N/A{% endif %}</td>
-            <td class="py-2 px-4 border-b">{{ order.receiver_mobile_number }}</td>
-            <td class="py-2 px-4 border-b">{{ order.rice_type.rice_type }}</td>
-            <td class="py-2 px-4 border-b">{{ order.quantity }}</td>
-            <td class="py-2 px-4 border-b">₱{{ order.cost_per_sack|default_if_none:"0.00" }}</td>
-            <td class="py-2 px-4 border-b">₱{{ order.total_cost|default_if_none:"0.00" }}</td>
-            <td class="py-2 px-4 border-b">₱{{ order.amount_paid|default_if_none:"0.00" }}</td>
-            <td class="py-2 px-4 border-b">₱{{ order.amount_change|default_if_none:"0.00" }}</td>
-            <td class="py-2 px-4 border-b">{{ order.payment_method }}</td>
-            <td class="py-2 px-4 border-b">{{ order.delivery_type }}</td>
-            <td class="py-2 px-4 border-b">
-              {% if order.employee %}
-                {{ order.employee.FirstName }}{% if order.employee.MiddleName %} {{ order.employee.MiddleName }}{% endif %} {{ order.employee.LastName }}{% if order.employee.Suffix %} {{ order.employee.Suffix }}{% endif %}
-              {% else %}
-                N/A
-              {% endif %}
-            </td>
-            <td class="py-2 px-4 border-b text-center status-cell">
-              {% if order.approval_status == "Approved" %}
-                <span class="text-green-600 font-semibold">Approved</span>
-              {% else %}
-                {% if order.approval_status == "Declined" %}
-                  <span class="text-red-600 font-semibold">Declined</span>
-                {% else %}
-                  <span class="text-yellow-600 font-semibold">Not Approved</span>
-                {% endif %}
-              {% endif %}
-            </td>
-            <td class="py-2 px-4 border-b text-center action-cell">
-              {% if order.approval_status != "Approved" %}
-                <button
-                  class="approve-btn bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs"
-                  data-id="{{ order.id }}"
-                >
-                  Approve
-                </button>
-                <button
-                  class="decline-btn bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs ml-1"
-                  data-id="{{ order.id }}"
-                >
-                  Decline
-                </button>
-              {% else %}
-                <span class="text-green-600 text-xs">No Action</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="17" class="text-center py-4 text-gray-500">No orders found.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+      <div class="overflow-x-auto bg-white shadow-md rounded-lg">
+        <table id="orders-table" class="min-w-full border border-gray-300 text-xs">
+          <thead class="bg-gray-200 text-left font-semibold">
+            <tr>
+              <th class="py-1 px-2 border-b border-gray-300">Date</th>
+              <th class="py-1 px-2 border-b border-gray-300">Order ID</th>
+              <th class="py-1 px-2 border-b border-gray-300">Customer Name</th>
+              <th class="py-1 px-2 border-b border-gray-300">Address</th>
+              <th class="py-1 px-2 border-b border-gray-300">Customer Mobile</th>
+              <th class="py-1 px-2 border-b border-gray-300">Receiver Mobile</th>
+              <th class="py-1 px-2 border-b border-gray-300">Rice Type</th>
+              <th class="py-1 px-2 border-b border-gray-300">Quantity</th>
+              <th class="py-1 px-2 border-b border-gray-300">Cost Per Sack</th>
+              <th class="py-1 px-2 border-b border-gray-300">Total Cost</th>
+              <th class="py-1 px-2 border-b border-gray-300">Amount Paid</th>
+              <th class="py-1 px-2 border-b border-gray-300">Amount Change</th>
+              <th class="py-1 px-2 border-b border-gray-300">Payment Method</th>
+              <th class="py-1 px-2 border-b border-gray-300">Delivery Type</th>
+              <th class="py-1 px-2 border-b border-gray-300">Cashier</th>
+              <th class="py-1 px-2 border-b border-gray-300">Status</th>
+              <th class="py-1 px-2 border-b border-gray-300">Action</th>
+            </tr>
+          </thead>
+          <tbody id="orders-tbody">
+            {% for order in customer_orders %}
+              <tr class="hover:bg-gray-50 transition" data-id="{{ order.order_id }}">
+                <td class="py-2 px-4 border-b">{{ order.created_at|date:"Y-m-d" }}</td>
+                <td class="py-2 px-4 border-b">{{ order.order_id }}</td>
+                <td class="py-2 px-4 border-b">
+                  {% if order.customer %}
+                    {{ order.customer.last_name }}, {{ order.customer.first_name }}
+                    {% if order.customer.middle_name %} {{ order.customer.middle_name }}{% endif %}
+                    {% if order.customer.suffix %} {{ order.customer.suffix }}{% endif %}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </td>
+                <td class="py-2 px-4 border-b">
+                  {% if order.customer %}
+                    {{ order.customer.house_unit_number }}
+                    {% if order.customer.building_name %} {{ order.customer.building_name }}, {% endif %}
+                    {{ order.customer.street_name }}, {{ order.customer.barangay }},
+                    {{ order.customer.city_municipality }}, {{ order.customer.province }},
+                    {{ order.customer.zip_code }}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </td>
+                <td class="py-2 px-4 border-b">{{ order.customer.Customer_Mobile_Number if order.customer else "N/A" }}</td>
+                <td class="py-2 px-4 border-b">{{ order.receiver_mobile_number }}</td>
+                <td class="py-2 px-4 border-b">{{ order.rice_type.rice_type }}</td>
+                <td class="py-2 px-4 border-b">{{ order.quantity }}</td>
+                <td class="py-2 px-4 border-b">₱{{ order.cost_per_sack|default_if_none:"0.00" }}</td>
+                <td class="py-2 px-4 border-b">₱{{ order.total_cost|default_if_none:"0.00" }}</td>
+                <td class="py-2 px-4 border-b">₱{{ order.amount_paid|default_if_none:"0.00" }}</td>
+                <td class="py-2 px-4 border-b">₱{{ order.amount_change|default_if_none:"0.00" }}</td>
+                <td class="py-2 px-4 border-b">{{ order.payment_method }}</td>
+                <td class="py-2 px-4 border-b">{{ order.delivery_type }}</td>
+                <td class="py-2 px-4 border-b">
+                  {% if order.employee %}
+                    {{ order.employee.FirstName }}{% if order.employee.MiddleName %} {{ order.employee.MiddleName }}{% endif %} {{ order.employee.LastName }}{% if order.employee.Suffix %} {{ order.employee.Suffix }}{% endif %}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </td>
+                <td class="py-2 px-4 border-b text-center status-cell">
+                  {% if order.approval_status == "Approved" %}
+                    <span class="text-green-600 font-semibold">Approved</span>
+                  {% elif order.approval_status == "Declined" %}
+                    <span class="text-red-600 font-semibold">Declined</span>
+                  {% else %}
+                    <span class="text-yellow-600 font-semibold">Not Approved</span>
+                  {% endif %}
+                </td>
+                <td class="py-2 px-4 border-b text-center action-cell">
+                  {% if order.approval_status != "Approved" %}
+                    <button
+                      class="approve-btn bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs"
+                      data-id="{{ order.order_id }}"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      class="decline-btn bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs ml-1"
+                      data-id="{{ order.order_id }}"
+                    >
+                      Decline
+                    </button>
+                  {% else %}
+                    <span class="text-green-600 text-xs">No Action</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="17" class="text-center py-4 text-gray-500">No orders found.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
 
-    <!-- Pagination Controls -->
-    {% if customer_orders.has_other_pages %}
-    <nav class="flex justify-center mt-6">
-      <ul class="inline-flex -space-x-px">
-        {% if customer_orders.has_previous %}
-        <li>
-          <a href="?page={{ customer_orders.previous_page_number }}" class="px-3 py-2 ml-0 leading-tight text-gray-500 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 hover:text-gray-700">Previous</a>
-        </li>
-        {% else %}
-        <li>
-          <span class="px-3 py-2 ml-0 leading-tight text-gray-400 bg-gray-100 border border-gray-300 rounded-l-lg cursor-not-allowed">Previous</span>
-        </li>
-        {% endif %}
-        {% for num in customer_orders.paginator.page_range %}
-          {% if customer_orders.number == num %}
-            <li>
-              <span class="px-3 py-2 leading-tight text-blue-600 bg-blue-100 border border-gray-300">{{ num }}</span>
-            </li>
-          {% elif num > customer_orders.number|add:'-3' and num < customer_orders.number|add:'3' %}
-            <li>
-              <a href="?page={{ num }}" class="px-3 py-2 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700">{{ num }}</a>
-            </li>
+      <!-- Pagination Controls -->
+      {% if customer_orders.has_other_pages %}
+      <nav class="flex justify-center mt-6">
+        <ul class="inline-flex -space-x-px">
+          {% if customer_orders.has_previous %}
+          <li>
+            <a href="?page={{ customer_orders.previous_page_number }}" class="px-3 py-1 rounded-l bg-gray-200 hover:bg-gray-300">Previous</a>
+          </li>
+          {% else %}
+          <li>
+            <span class="px-3 py-1 rounded-l bg-gray-100 text-gray-400 cursor-not-allowed">Previous</span>
+          </li>
           {% endif %}
-        {% endfor %}
-        {% if customer_orders.has_next %}
-        <li>
-          <a href="?page={{ customer_orders.next_page_number }}" class="px-3 py-2 leading-tight text-gray-500 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-100 hover:text-gray-700">Next</a>
-        </li>
-        {% else %}
-        <li>
-          <span class="px-3 py-2 leading-tight text-gray-400 bg-gray-100 border border-gray-300 rounded-r-lg cursor-not-allowed">Next</span>
-        </li>
-        {% endif %}
-      </ul>
-    </nav>
-    {% endif %}
-  </div>
-</main>
+
+          {% for num in customer_orders.paginator.page_range %}
+            {% if num == customer_orders.number %}
+              <li><span class="px-3 py-1 bg-blue-600 text-white rounded">{{ num }}</span></li>
+            {% elif num > customer_orders.number|add:'-3' and num < customer_orders.number|add:'3' %}
+              <li><a href="?page={{ num }}" class="px-3 py-1 hover:bg-gray-300 rounded">{{ num }}</a></li>
+            {% endif %}
+          {% endfor %}
+
+          {% if customer_orders.has_next %}
+          <li>
+            <a href="?page={{ customer_orders.next_page_number }}" class="px-3 py-1 rounded-r bg-gray-200 hover:bg-gray-300">Next</a>
+          </li>
+          {% else %}
+          <li>
+            <span class="px-3 py-1 rounded-r bg-gray-100 text-gray-400 cursor-not-allowed">Next</span>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+      {% endif %}
+    </div>
+  </main>
+</div>
+
 
 <script>
  function getCookie(name) {

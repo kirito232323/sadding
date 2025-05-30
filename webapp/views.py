@@ -46,6 +46,24 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect
 
+
+from django.shortcuts import render
+from django.db.models import Sum, F
+from datetime import datetime
+from .models import Stock
+
+from django.shortcuts import render
+from .models import Stock
+
+from django.shortcuts import render
+from .models import Stock
+
+def stock_movement_report(request):
+    stock_data = Stock.objects.select_related('rice_type').all()
+    return render(request, 'view_sales_report.html', {'stock_movement_data': stock_data})
+
+
+
 def customer_ledger_create(request):
     if request.method == 'POST':
         customer_id = request.POST.get('customer')
@@ -509,6 +527,15 @@ from pytz import timezone
 PH_TZ = timezone('Asia/Manila')
 
 
+from datetime import date
+from django.db.models import Sum
+from django.utils.timezone import now
+from .models import CustomerOrder, Stock, Supplier, Announcement, Employee, Users
+
+# Assuming you have PH_TZ defined somewhere in your timezone settings
+from pytz import timezone
+PH_TZ = timezone('Asia/Manila')
+
 def dashboard_view(request):
     is_admin = False
     role = None
@@ -520,7 +547,6 @@ def dashboard_view(request):
     if user_id and user_role:
         if user_role in ['admin', 'cashier', 'employee']:
             try:
-                from .models import Employee
                 custom_user = Employee.objects.get(EmployeeID=user_id)
                 employee_id = custom_user.EmployeeID
                 role = custom_user.Role.strip().lower()
@@ -535,7 +561,6 @@ def dashboard_view(request):
             except Users.DoesNotExist:
                 pass
 
-    from .models import Stock
     stock_data = Stock.objects.select_related('rice_type').all()
 
     recent_sales = CustomerOrder.objects.filter(approval_status='Approved') \
@@ -550,6 +575,15 @@ def dashboard_view(request):
     stock_out_count = stock_data.filter(current_stock=0).count()
     low_stock_count = stock_data.filter(current_stock__lte=100).exclude(current_stock=0).count()
     total_rice_types = stock_data.values('rice_type').distinct().count()
+
+    # Calculate best-selling and lowest-selling rice types
+    sales_aggregation = CustomerOrder.objects.filter(approval_status='Approved') \
+        .values('rice_type__rice_type') \
+        .annotate(total_quantity=Sum('quantity')) \
+        .order_by('-total_quantity')
+
+    best_selling = sales_aggregation.first() if sales_aggregation else None
+    low_selling = sales_aggregation.last() if sales_aggregation else None
 
     notifications = []
     read_notifications = request.session.get('read_notifications', [])
@@ -604,12 +638,15 @@ def dashboard_view(request):
         'stock_out_today': stock_out_count,
         'low_stock_warnings': low_stock_count,
         'total_rice_types': total_rice_types,
+        'best_selling': best_selling,
+        'low_selling': low_selling,
         'notifications': notifications,
         'is_admin': is_admin,
         'role': role,
         'employee_id': employee_id,
         'announcements': announcements,
     })
+
 
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.timezone import now
@@ -882,11 +919,22 @@ def update_stock(request, stockID):
 def removestock(request):
     return render(request, 'removestock.html')
 
+from django.shortcuts import render
+from .models import Stock
+
 def viewstocklevel(request):
     stock_data = Stock.objects.select_related('rice_type').all()
-    return render(request, "viewstocklevel.html", {
-        'stock_data': stock_data
+
+    # Extract distinct rice types and packaging values
+    rice_types = Stock.objects.values_list('rice_type__rice_type', flat=True).distinct()
+    packaging_types = Stock.objects.values_list('packaging', flat=True).distinct()
+
+    return render(request, 'viewstocklevel.html', {
+        'stock_data': stock_data,
+        'rice_types': rice_types,
+        'packaging_types': packaging_types,
     })
+
 
 def logout_view(request):
     request.session.flush()
@@ -1599,34 +1647,116 @@ from django.db.models import Sum, F
 from datetime import datetime
 from .models import CustomerOrder, Users, Rice
 
+from django.shortcuts import render
+from django.db.models import Sum, F
+from .models import CustomerOrder  # Make sure your model is imported
+
+from django.db.models import Sum, F, Q, Value, CharField
+from django.db.models.functions import Concat, Coalesce
+from django.shortcuts import render
+from datetime import datetime
+
+from django.shortcuts import render
+from django.db.models import Q, Sum, F, Value, CharField
+from django.db.models.functions import Concat, Coalesce
+from datetime import datetime
+
+from .models import CustomerOrder, Stock  # Adjust your import according to your app structure
+from django.db.models.functions import TruncDate
+
+from django.db.models import Sum, F, Value, Q, CharField
+from django.db.models.functions import TruncDate, TruncWeek, TruncMonth, Coalesce, Concat
+from django.shortcuts import render
+from datetime import datetime
+from .models import CustomerOrder, Stock
+
 def view_sales_report(request):
     group_by = request.GET.get('group_by', 'rice_type')
     start_date = request.GET.get('start_date', '')
     end_date = request.GET.get('end_date', '')
+    sales_period = request.GET.get('sales_period', '')
 
-    filter_conditions = {}
+    filter_conditions = Q()
     if start_date:
-        filter_conditions['last_updated__gte'] = start_date
+        try:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            filter_conditions &= Q(created_at__gte=start)
+        except ValueError:
+            pass
     if end_date:
-        filter_conditions['last_updated__lte'] = end_date
+        try:
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            filter_conditions &= Q(created_at__lte=end)
+        except ValueError:
+            pass
 
-    if group_by == 'cashier':
-        report_data = CustomerOrder.objects.filter(**filter_conditions) \
-            .values('employee__full_Name') \
-            .annotate(total_quantity=Sum('quantity'), total_revenue=Sum(F('quantity') * F('cost_per_sack'))) \
-            .order_by('employee__full_Name')
+    # Choose time truncation based on sales_period
+    if sales_period == 'daily':
+        trunc_func = TruncDate
+    elif sales_period == 'weekly':
+        trunc_func = TruncWeek
+    elif sales_period == 'monthly':
+        trunc_func = TruncMonth
     else:
-        report_data = CustomerOrder.objects.filter(**filter_conditions) \
-            .values('rice_type__rice_type') \
-            .annotate(total_quantity=Sum('quantity'), total_revenue=Sum(F('quantity') * F('cost_per_sack'))) \
-            .order_by('rice_type__rice_type')
+        trunc_func = TruncDate
+
+    # Main report data
+    if group_by == 'cashier':
+        report_data = CustomerOrder.objects.filter(filter_conditions) \
+            .annotate(
+                employee_full_name=Concat(
+                    'employee__FirstName', Value(' '),
+                    Coalesce('employee__MiddleName', Value('')), Value(' '),
+                    'employee__LastName', Value(' '),
+                    Coalesce('employee__Suffix', Value('')),
+                    output_field=CharField()
+                ),
+                created_date=trunc_func('created_at')
+            ) \
+            .values('employee_full_name', 'created_date') \
+            .annotate(
+                total_quantity=Sum('quantity'),
+                total_revenue=Sum(F('quantity') * F('cost_per_sack'))
+            ) \
+            .order_by('employee_full_name', 'created_date')
+    else:
+        report_data = CustomerOrder.objects.filter(filter_conditions) \
+            .annotate(created_date=trunc_func('created_at')) \
+            .values('rice_type__rice_type', 'created_date') \
+            .annotate(
+                total_quantity=Sum('quantity'),
+                total_revenue=Sum(F('quantity') * F('cost_per_sack'))
+            ) \
+            .order_by('rice_type__rice_type', 'created_date')
+
+    # Best & Low Selling Rice Types
+    best_selling = None
+    low_selling = None
+    rice_sales = CustomerOrder.objects.filter(filter_conditions) \
+        .values('rice_type__rice_type') \
+        .annotate(total_quantity=Sum('quantity')) \
+        .order_by('-total_quantity')
+
+    if rice_sales.exists():
+        best_selling = rice_sales.first()
+        low_selling = rice_sales.last()
+
+    # Stock Movement Data
+    stock_movement_data = Stock.objects.all().order_by('rice_type__rice_type')
 
     context = {
         'report_data': report_data,
         'group_by': group_by,
+        'start_date': start_date,
+        'end_date': end_date,
+        'sales_period': sales_period,
+        'stock_movement_data': stock_movement_data,
+        'best_selling': best_selling,
+        'low_selling': low_selling,
     }
-
     return render(request, 'view_sales_report.html', context)
+
+
 
 from django.db.models import Sum
 from datetime import datetime
@@ -2220,69 +2350,97 @@ def delete_customer(request, user_id):
         return redirect('user_account')
     return render(request, 'delete_customer.html', {'customer': customer, 'customers': customers})
 
-def allorder_history(request):
-    # TODO: Replace with real order data
-    return render(request, 'allorder_history.html', {'orders': []})
+from decimal import InvalidOperation
+from webapp.models import CustomerOrder
+from django.shortcuts import render
 
-import logging
-logger = logging.getLogger(__name__)
+from django.shortcuts import render
+from webapp.models import CustomerOrder
+
+def allorder_history(request):
+    orders = CustomerOrder.objects.filter(is_active=True).order_by('-created_at')
+    return render(request, 'allorder_history.html', {'orders': orders})
+
+from django.shortcuts import render, redirect
+from django.http import HttpResponseBadRequest
+from .models import CustomerOrder
+
+from django.shortcuts import render, redirect
+from django.http import HttpResponseBadRequest, HttpResponseNotAllowed
+from .models import CustomerOrder
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponseBadRequest
+from .models import CustomerOrder
+
+from django.shortcuts import get_object_or_404, redirect, render
+from django.http import HttpResponseBadRequest
+from .models import CustomerOrder
 
 def payment_confirmation(request, order_id):
-    logger.info(f"Fetching order with ID: {order_id}")
-    try:
-        order = CustomerOrder.objects.get(order_id=order_id)
+    # Check if order_id is valid
+    if not str(order_id).isdigit() or int(order_id) <= 0:
+        return HttpResponseBadRequest()
 
-        if order.delivery_type == 'pickup':
-            if order.payment_method in ['gcash', 'credit_card']:
-                # Stay in payment confirmation
-                return render(request, 'payment_confirmation.html', {'order': order})
-            elif order.payment_method == 'cash':
-                # Redirect to history
-                return redirect('allorder_history')
+    # Safely fetch the order or return 404
+    order = get_object_or_404(CustomerOrder, order_id=order_id)
 
-        elif order.delivery_type == 'delivery':
-            if order.payment_method == 'cash':
-                # Validate order_id before redirecting
-                if order_id <= 0 or not CustomerOrder.objects.filter(order_id=order_id).exists():
-                    logger.error("Invalid order ID provided for redirect to delivery_confirmation.")
-                    return HttpResponseBadRequest("Invalid order ID for redirect")
-                # Redirect to delivery confirmation, then history
-                return redirect('delivery_confirmation', order_id=order_id)
-            elif order.payment_method in ['gcash', 'credit_card']:
-                # Validate order_id before redirecting
-                if order_id <= 0 or not CustomerOrder.objects.filter(order_id=order_id).exists():
-                    logger.error("Invalid order ID provided for redirect to payment_confirmation.")
-                    return HttpResponseBadRequest("Invalid order ID for redirect")
-                # Redirect to payment confirmation, then delivery confirmation, then history
-                return redirect('payment_confirmation', order_id=order_id)
+    if request.method == "POST":
+        if order.approval_status.lower() != "approved":
+            order.approval_status = "approved"
+            order.save()
+        return redirect('allorder_history')
 
-        return HttpResponseBadRequest("Invalid order flow")
+    # GET handling
+    if order.delivery_type == 'pickup':
+        if order.payment_method in ['gcash', 'credit_card']:
+            return render(request, 'payment_confirmation.html', {'order': order})
+        elif order.payment_method == 'cash':
+            return redirect('allorder_history')
 
-    except CustomerOrder.DoesNotExist:
-        logger.error(f"Order with ID {order_id} does not exist.")
-        return HttpResponseBadRequest("Order does not exist")
+    elif order.delivery_type == 'delivery':
+        if order.payment_method == 'cash':
+            return redirect('delivery_confirmation', order_id=order.order_id)
+        elif order.payment_method in ['gcash', 'credit_card']:
+            return render(request, 'payment_confirmation.html', {'order': order})
+
+    return HttpResponseBadRequest("Invalid order flow")
+
+from django.shortcuts import render
+from webapp.models import CustomerOrder
 
 def delivery_confirmation(request, order_id=None):
-    logger.info(f"Fetching orders. Specific order ID: {order_id}")
+    error_message = None
+    orders = None
 
-    if order_id is not None and order_id <= 0:
-        logger.error("Invalid order ID provided.")
-        return HttpResponseBadRequest("Invalid order ID")
+    # Validate order_id if given
+    if order_id is not None:
+        try:
+            order_id = int(order_id)
+            if order_id <= 0:
+                error_message = "Invalid order ID."
+        except (ValueError, TypeError):
+            error_message = "Invalid order ID."
 
-    try:
-        if order_id:
-            # Fetch a specific order
-            orders = CustomerOrder.objects.filter(order_id=order_id, delivery_type='delivery')
-        else:
-            # Fetch all delivery orders
-            orders = CustomerOrder.objects.filter(delivery_type='delivery')
+    if not error_message:
+        try:
+            if order_id:
+                # Filter by order_id AND delivery_type='delivery' (case-sensitive, because it's a choice field)
+                orders = CustomerOrder.objects.filter(order_id=order_id, delivery_type='delivery', is_active=True)
+                if not orders.exists():
+                    error_message = f"No active delivery order found with ID {order_id}."
+            else:
+                # Get all active delivery orders
+                orders = CustomerOrder.objects.filter(delivery_type='delivery', is_active=True)
+                if not orders.exists():
+                    error_message = "No active delivery orders available."
+        except Exception as e:
+            error_message = "An unexpected error occurred while fetching delivery orders."
+            print(f"Exception in delivery_confirmation: {e}")
+            import traceback
+            traceback.print_exc()
 
-        if not orders.exists():
-            logger.warning("No delivery orders found.")
-
-        # Render delivery confirmation with all or specific orders
-        return render(request, 'delivery_confirmation.html', {'orders': orders})
-
-    except Exception as e:
-        logger.error(f"Error fetching delivery orders: {e}")
-        return HttpResponseBadRequest("An error occurred while fetching delivery orders.")
+    return render(request, 'delivery_confirmation.html', {
+        'orders': orders,
+        'error_message': error_message,
+    })

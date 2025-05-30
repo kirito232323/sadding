@@ -1,4 +1,3 @@
-{% block content %}
 {% load safedecimal %}
 {% load humanize %}
 <!DOCTYPE html>
@@ -40,7 +39,9 @@
         <i class="fas fa-user-circle w-4 text-yellow-500"></i><span>Profile</span>
       </a>
     </div>
+    
 
+    {% if request.session.user_role == 'admin' %}
     <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Users</p>
       <a href="{% url 'add_user' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
@@ -54,6 +55,8 @@
       </a>
 
       
+
+      
   <!-- New Create Customer Ledger Link -->
   <a href="{% url 'customer_ledger_create' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
     <i class="fas fa-book w-4 text-yellow-500"></i><span>Create Customer Ledger</span>
@@ -65,7 +68,7 @@
       <!-- Delete Customer link (no user_id, so go to selection page) -->
       
     </div>
-
+{% endif %}
     
 
     <div class="mb-2 px-2">
@@ -81,6 +84,8 @@
       </a>
     </div>
 
+    
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'employee' %}
     <div class="mb-2 px-2">
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Inventory</p>
       <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
@@ -90,6 +95,9 @@
         <i class="fas fa-layer-group w-4 text-yellow-500"></i><span>View Levels</span>
       </a>
     </div>
+    {% endif %}
+
+    {% if request.session.user_role == 'admin' or request.session.user_role == 'cashier' %}
 
 <div class="mb-2 px-2">
   <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
@@ -109,6 +117,8 @@
     <i class="fas fa-sync-alt w-4 text-yellow-500"></i><span>Inventory Turnover</span>
   </a>
 </div>
+  {% endif %}
+
 
 
     <div class="border-t border-gray-200 mt-auto px-2 py-4">
@@ -125,25 +135,32 @@
     <h2 class="text-2xl font-bold">📋 History</h2>
     
   </div>
-  <section class="bg-white shadow-lg rounded-lg p-4">
-    <form id="order-filters" method="get" class="mb-6 flex flex-col sm:flex-row sm:items-end gap-4">
-      <div class="flex-grow">
-        <label for="search" class="block text-sm font-medium">Search by Cashier / Customer / Order ID</label>
-        <input type="text" name="search" id="search" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Start typing..." value="{{ request.GET.search }}">
-      </div>
-      <div>
-        <label for="start_date" class="block text-sm font-medium">Start Date</label>
-        <input type="date" name="start_date" id="start_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" value="{{ request.GET.start_date }}">
-      </div>
-      <div>
-        <label for="end_date" class="block text-sm font-medium">End Date</label>
-        <input type="date" name="end_date" id="end_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" value="{{ request.GET.end_date }}">
-      </div>
-      <div>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">Filter</button>
-      </div>
-    </form>
-    <div class="overflow-x-auto">
+<section class="bg-white shadow-lg rounded-lg p-4">
+  <form id="order-filters" method="get" class="mb-6 flex flex-col sm:flex-row sm:items-end gap-4">
+    <div class="flex-grow">
+      <label for="search" class="block text-sm font-medium">Search by Cashier / Customer / Order ID</label>
+      <input type="text" name="search" id="search" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Start typing..." value="{{ request.GET.search }}">
+    </div>
+    <div>
+      <label for="start_date" class="block text-sm font-medium">Start Date</label>
+      <input type="date" name="start_date" id="start_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" value="{{ request.GET.start_date }}">
+    </div>
+    <div>
+      <label for="end_date" class="block text-sm font-medium">End Date</label>
+      <input type="date" name="end_date" id="end_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" value="{{ request.GET.end_date }}">
+    </div>
+    <div>
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">Filter</button>
+    </div>
+  </form>
+
+  <header class="bg-white shadow p-4">
+    <h1 class="text-2xl font-semibold text-center text-gray-800">Customer Order History</h1>
+  </header>
+
+  <main class="p-6 max-w-7xl mx-auto">
+
+    <section class="overflow-x-auto bg-white rounded-lg shadow-md p-4">
       <table id="orders-table" class="min-w-full border border-gray-300 text-xs rounded-lg overflow-hidden">
         <thead class="bg-gray-200 text-left font-semibold">
           <tr>
@@ -170,37 +187,53 @@
             <td class="py-2 px-3 border-b text-center">{{ order.created_at|date:"Y-m-d" }}</td>
             <td class="py-2 px-3 border-b text-center">{{ order.order_id }}</td>
             <td class="py-2 px-3 border-b text-center">
-              {% if order.customer and order.customer.name %}
-                {{ order.customer.name.first_name }}{% if order.customer.name.middle_name %} {{ order.customer.name.middle_name }}{% endif %} {{ order.customer.name.last_name }}{% if order.customer.name.suffix %} {{ order.customer.name.suffix }}{% endif %}
-              {% else %}N/A{% endif %}
+              {% if order.customer %}
+                {{ order.customer.full_name }}
+              {% else %}
+                N/A
+              {% endif %}
             </td>
             <td class="py-2 px-3 border-b text-center">
-              {% if order.customer and order.customer.address %}
-                {{ order.customer.address.house_unit_number }} {{ order.customer.address.street_name }}, {{ order.customer.address.barangay }}, {{ order.customer.address.city_municipality }}
-              {% else %}N/A{% endif %}
+              {% if order.customer %}
+                {{ order.customer.full_address }}
+              {% else %}
+                N/A
+              {% endif %}
             </td>
-            <td class="py-2 px-3 border-b text-center">{% if order.customer %}{{ order.customer.Customer_Mobile_Number }}{% else %}N/A{% endif %}</td>
-            <td class="py-2 px-3 border-b text-center">{{ order.receiver_mobile_number }}</td>
-            <td class="py-2 px-3 border-b text-center">{{ order.rice_type.rice_type }}</td>
+            <td class="py-2 px-3 border-b text-center">
+              {% if order.customer and order.customer.customer_mobile_number %}
+                {{ order.customer.customer_mobile_number }}
+              {% else %}
+                N/A
+              {% endif %}
+            </td>
+            <td class="py-2 px-3 border-b text-center">{{ order.receiver_mobile_number|default:"N/A" }}</td>
+            <td class="py-2 px-3 border-b text-center">{{ order.rice_type.rice_type|default:"N/A" }}</td>
             <td class="py-2 px-3 border-b text-center">{{ order.quantity }}</td>
-            <td class="py-2 px-3 border-b text-center">₱{{ order.cost_per_sack|safedecimal }}</td>
-            <td class="py-2 px-3 border-b text-center">₱{{ order.total_cost|safedecimal }}</td>
-            <td class="py-2 px-3 border-b text-center">₱{{ order.amount_paid|safedecimal }}</td>
-            <td class="py-2 px-3 border-b text-center">₱{{ order.amount_change|safedecimal }}</td>
-            <td class="py-2 px-3 border-b text-center">{{ order.payment_method }}</td>
-            <td class="py-2 px-3 border-b text-center">{{ order.delivery_type }}</td>
+            <td class="py-2 px-3 border-b text-center">₱{{ order.cost_per_sack|floatformat:2 }}</td>
+            <td class="py-2 px-3 border-b text-center">₱{{ order.total_cost|floatformat:2 }}</td>
+            <td class="py-2 px-3 border-b text-center">₱{{ order.amount_paid|floatformat:2 }}</td>
+            <td class="py-2 px-3 border-b text-center">₱{{ order.amount_change|floatformat:2 }}</td>
+            <td class="py-2 px-3 border-b text-center">{{ order.payment_method|default:"N/A"|title }}</td>
+            <td class="py-2 px-3 border-b text-center">{{ order.delivery_type|default:"N/A"|title }}</td>
             <td class="py-2 px-3 border-b text-center">
               {% if order.employee %}
-                {{ order.employee.FirstName }}{% if order.employee.MiddleName %} {{ order.employee.MiddleName }}{% endif %} {{ order.employee.LastName }}{% if order.employee.Suffix %} {{ order.employee.Suffix }}{% endif %}
-              {% else %}N/A{% endif %}
+                {{ order.employee.full_name }}
+              {% else %}
+                N/A
+              {% endif %}
             </td>
           </tr>
           {% empty %}
-          <tr><td colspan="15" class="text-center py-4 text-gray-500">No orders found.</td></tr>
+          <tr>
+            <td colspan="15" class="text-center py-4 text-gray-500">No orders found.</td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
-    </div>
-  </section>
-</main>
-{% endblock %}
+    </section>
+
+  </main>
+
+</body>
+</html>
