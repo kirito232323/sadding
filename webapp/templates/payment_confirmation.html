@@ -130,7 +130,12 @@
 </header>
 
 
-<main class="max-w-7xl mx-auto p-6">
+<main class="max-w-7xl mx-auto p-6 ml-56">
+  {% if error_message %}
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+      <strong class="font-bold">Error:</strong> <span class="block sm:inline">{{ error_message }}</span>
+    </div>
+  {% endif %}
   <div class="flex justify-between items-center mb-4">
     <h2 class="text-2xl font-bold">Payment Orders</h2>
     <a href="{% url 'allorder_history' %}" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Back to Order History</a>
@@ -162,6 +167,7 @@
             <th class="py-2 px-3 border-b border-gray-300 text-center">Date</th>
             <th class="py-2 px-3 border-b border-gray-300 text-center">Payment Method</th>
             <th class="py-2 px-3 border-b border-gray-300 text-center">Amount Due</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Amount Paid</th>
             <th class="py-2 px-3 border-b border-gray-300 text-center">Status</th>
             <th class="py-2 px-3 border-b border-gray-300 text-center">Action</th>
           </tr>
@@ -170,10 +176,15 @@
           {% for order in orders %}
           <tr class="hover:bg-gray-50 transition {% cycle 'bg-white' 'bg-gray-50' %}">
             <td class="py-2 px-3 border-b text-center">{{ order.order_id }}</td>
-            <td class="py-2 px-3 border-b text-center">{{ order.customer_name }}</td>
+            <td class="py-2 px-3 border-b text-center">
+              {% if order.customer and order.customer.name %}
+                {{ order.customer.name.first_name }}{% if order.customer.name.middle_name %} {{ order.customer.name.middle_name }}{% endif %} {{ order.customer.name.last_name }}{% if order.customer.name.suffix %} {{ order.customer.name.suffix }}{% endif %}
+              {% else %}N/A{% endif %}
+            </td>
             <td class="py-2 px-3 border-b text-center">{{ order.created_at|date:"Y-m-d" }}</td>
             <td class="py-2 px-3 border-b text-center">{{ order.payment_method|title }}</td>
             <td class="py-2 px-3 border-b text-center">₱{{ order.total_cost }}</td>
+            <td class="py-2 px-3 border-b text-center">₱{{ order.amount_paid }}</td>
             <td class="py-2 px-3 border-b text-center">{{ order.approval_status|title }}</td>
             <td class="py-2 px-3 border-b text-center">
               <form method="post" action="{% url 'payment_confirmation' order.order_id %}">

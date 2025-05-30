@@ -150,39 +150,48 @@
       </div>
     {% endif %}
 
-  <!-- Header & Notifications -->
-  <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-10">
-    <h1 class="text-3xl font-bold text-[#1e293b] mb-4 sm:mb-0">Dashboard</h1>
-    <div class="flex items-center gap-6 text-sm sm:text-base">
-      <h3 class="text-lg font-semibold select-none">Welcome, {{ request.session.user_name }}!</h3>
-      <div class="relative">
-        <button id="notificationBtn" class="text-gray-600 hover:text-black text-xl relative focus:outline-none">
-          <i class="fas fa-bell"></i>
-          {% if notifications|length > 0 %}
-            <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1">{{ notifications|length }}</span>
-          {% endif %}
-        </button>
-        <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-64 bg-white text-gray-800 rounded-md shadow-lg z-50 max-h-80 overflow-y-auto">
-          {% if notifications %}
-            {% for notification in notifications %}
-              <div class="px-4 py-2 border-b hover:bg-gray-100 text-sm">
-                {% if "pending customer order(s) need approval" in notification.message %}
-                  <a href="{% url 'orders' %}" class="text-blue-500 hover:underline">{{ notification.message }}</a>
-                {% elif "pending supplier order(s) need approval" in notification.message %}
-                  <a href="{% url 'supplier' %}" class="text-blue-500 hover:underline">{{ notification.message }}</a>
-                {% else %}
+<!-- Header & Notifications -->
+<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-10">
+  <h1 class="text-3xl font-bold text-[#1e293b] mb-4 sm:mb-0">Dashboard</h1>
+
+  <div class="flex items-center gap-6 text-sm sm:text-base">
+    <h3 class="text-lg font-semibold select-none">Welcome, {{ request.session.user_name }}!</h3>
+
+    <!-- Notification Bell -->
+    <div class="relative">
+      <button id="notificationBtn" class="text-gray-600 hover:text-black text-xl relative focus:outline-none">
+        <i class="fas fa-bell"></i>
+        {% if notifications|length > 0 %}
+          <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full px-1">{{ notifications|length }}</span>
+        {% endif %}
+      </button>
+
+      <!-- Notification Dropdown -->
+      <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white text-gray-800 rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 z-50 max-h-80 overflow-y-auto">
+        {% if notifications %}
+          {% for notification in notifications %}
+            <div class="px-4 py-3 border-b hover:bg-gray-100 transition duration-150">
+              {% if "pending customer order(s) need approval" in notification.message and notification.order_id %}
+                <a href="{% url 'payment_confirmation' notification.order_id %}" class="text-blue-600 hover:underline font-medium block">
                   {{ notification.message }}
-                {% endif %}
-                <div class="text-xs text-gray-400">{{ notification.timestamp }}</div>
-              </div>
-            {% endfor %}
-          {% else %}
-            <div class="px-4 py-2 text-sm text-gray-500 text-center">No new notifications.</div>
-          {% endif %}
-        </div>
+                </a>
+              {% elif "pending supplier order(s) need approval" in notification.message %}
+                <a href="{% url 'supplier' %}" class="text-blue-600 hover:underline font-medium block">
+                  {{ notification.message }}
+                </a>
+              {% else %}
+                <span class="block text-gray-700">{{ notification.message }}</span>
+              {% endif %}
+              <time class="text-xs text-gray-400 mt-1 block">{{ notification.timestamp|date:"M d, Y h:i A" }}</time>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="px-4 py-3 text-sm text-gray-500 text-center">No new notifications.</div>
+        {% endif %}
       </div>
     </div>
   </div>
+</div>
  
   
     <!-- Metrics Cards -->
@@ -358,7 +367,6 @@
         <table class="min-w-full divide-y divide-gray-200 text-sm text-left">
           <thead class="bg-gray-100 text-gray-600 uppercase tracking-wider text-xs">
             <tr>
-              <th class="px-4 py-3">Order ID</th>
               <th class="px-4 py-3">Customer Name</th>
               <th class="px-4 py-3">Rice Type</th>
               <th class="px-4 py-3 text-right">Quantity</th>
@@ -372,7 +380,6 @@
           <tbody>
             {% for sale in recent_sales %}
               <tr class="hover:bg-green-50 transition">
-                <td class="px-4 py-2">{{ sale.id }}</td>
                 <td class="px-4 py-2">{{ sale.customer_name }}</td>
                 <td class="px-4 py-2">{{ sale.rice_type.rice_type }}</td>
                 <td class="px-4 py-2 text-right">{{ sale.quantity }}</td>

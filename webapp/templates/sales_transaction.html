@@ -7,7 +7,14 @@
   <title>Dashboard - Dragon Ricemill</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
-  <style>
+<style>
+@keyframes slideIn {
+  0% { opacity: 0; transform: translateX(100%); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.animate-slideIn {
+  animation: slideIn 0.3s ease forwards;
+}
     html { scroll-behavior: smooth; }
     .dropdown:hover .dropdown-menu {
       opacity: 1;
@@ -137,13 +144,15 @@
       <h2 class="text-xl sm:text-2xl font-bold mb-4 border-b pb-2">Customer Order</h2>
 
       <div id="messageBox" class="hidden p-3 mb-3 rounded text-white text-center"></div>
-      {% if status and message %}
+      {% if status or message %}
         <div class="p-3 mb-3 rounded bg-green-50 border border-green-400 text-green-900 text-center font-semibold shadow flex items-center justify-center gap-2">
           <i class="fas fa-check-circle text-2xl"></i>
-          <span class="whitespace-pre-line break-words">Status: {{ status|title }}\A{{ message|safe }}</span>
+          <span class="whitespace-pre-line break-words">
+            {% if status %}Status: {{ status|title }}\A{% endif %}{{ message|safe }}
+          </span>
         </div>
       {% endif %}
-
+ 
       <!-- MAIN ORDER FORM -->
       <form id="orderForm" method="POST" action="{% url 'process_order' %}" class="space-y-4">
 
@@ -340,6 +349,81 @@
   </div>
 </form>
 
+<div id="messagePopup" style="display:none; padding:10px; margin-top:10px; border:1px solid #ccc;"></div>
+
+<script>
+
+  document.getElementById('orderForm').addEventListener('submit', function(event) {
+  event.preventDefault(); // prevent default form submission
+
+  const form = event.target;
+  const formData = new FormData(form);
+
+  fetch("{% url 'process_order' %}", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": formData.get('csrfmiddlewaretoken')
+    },
+    body: formData,
+  })
+  .then(response => response.json())
+  .then(data => {
+    const msgDiv = document.getElementById('messagePopup');
+    if (data.status === "success") {
+      msgDiv.style.color = "green";
+      msgDiv.textContent = data.message || "Order processed successfully!";
+      msgDiv.style.display = "block";
+
+      form.reset(); // reset the form fields here
+    } else {
+      msgDiv.style.color = "red";
+      msgDiv.textContent = data.message || "Error processing order.";
+      msgDiv.style.display = "block";
+    }
+  })
+  .catch(error => {
+    const msgDiv = document.getElementById('messagePopup');
+    msgDiv.style.color = "red";
+    msgDiv.textContent = "Network error: " + error;
+    msgDiv.style.display = "block";
+  });
+});
+
+document.getElementById('orderForm').addEventListener('submit', function(event) {
+  event.preventDefault(); // prevent default form submission
+
+  const form = event.target;
+  const formData = new FormData(form);
+
+  fetch("{% url 'process_order' %}", {  // URL of your view that handles form POST
+    method: "POST",
+    headers: {
+      "X-CSRFToken": formData.get('csrfmiddlewaretoken')
+    },
+    body: formData,
+  })
+  .then(response => response.json())
+  .then(data => {
+    const msgDiv = document.getElementById('messagePopup');
+    if (data.status === "success") {
+      msgDiv.style.color = "green";
+      msgDiv.textContent = data.message || "Order processed successfully!";
+    } else {
+      msgDiv.style.color = "red";
+      msgDiv.textContent = data.message || "Error processing order.";
+    }
+    msgDiv.style.display = "block";
+  })
+  .catch(error => {
+    const msgDiv = document.getElementById('messagePopup');
+    msgDiv.style.color = "red";
+    msgDiv.textContent = "Network error: " + error;
+    msgDiv.style.display = "block";
+  });
+});
+</script>
+
+
 
 
 <!-- Modal Background -->
@@ -397,6 +481,25 @@
 
 <!-- Modal Script -->
 <script>
+
+function showToast(message, type = 'success') {
+    const toastContainer = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+
+    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+
+    toast.className = `${bgColor} text-white px-4 py-2 rounded shadow-lg animate-slideIn`;
+    toast.innerText = message;
+
+    toastContainer.appendChild(toast);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('opacity-0');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   const paymentMethod = document.getElementById("payment_method_bottom");
   const referenceGroup = document.getElementById("referenceCodeGroup");
@@ -436,11 +539,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const finalTotal = totalCost - discount;
     const amountPaid = parseFloat(amountPaidInput?.value) || 0;
-    const amountChange = amountPaid - finalTotal;
+    let amountChange = amountPaid - finalTotal;
+    if (amountChange < 0) amountChange = 0;
 
     if (totalCostInput) totalCostInput.value = totalCost.toFixed(2);
     if (discountInput) discountInput.value = discount.toFixed(2);
-    if (amountChangeInput) amountChangeInput.value = amountChange >= 0 ? amountChange.toFixed(2) : "0.00";
+    if (amountChangeInput) amountChangeInput.value = amountChange.toFixed(2);
   }
 
   if (stockSelect) {
@@ -552,5 +656,69 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   }
+
+  // Prevent negative values for number inputs
+  const numberInputs = document.querySelectorAll('input[type="number"]');
+  numberInputs.forEach(input => {
+    input.addEventListener('input', function () {
+      if (parseFloat(this.value) < 0) {
+        this.value = '';
+      }
+    });
+  });
+
+  // Prevent negative value in Amount Change (even if calculated)
+  if (amountChangeInput) {
+    amountChangeInput.addEventListener('input', function () {
+      if (parseFloat(this.value) < 0) {
+        this.value = '0.00';
+      }
+    });
+  }
+
+  // Also enforce in calculation
+  function calculateTotal() {
+    const quantity = parseFloat(quantityInput?.value) || 0;
+    const costPerSack = parseFloat(costPerSackInput?.value) || 0;
+    const isLoyalCustomer = loyalCustomerCheckbox?.checked || false;
+
+    const totalCost = quantity * costPerSack;
+    let discount = 0;
+
+    if (quantity >= 50) discount += totalCost * 0.05;
+    if (isLoyalCustomer) discount += totalCost * 0.05;
+
+    const finalTotal = totalCost - discount;
+    const amountPaid = parseFloat(amountPaidInput?.value) || 0;
+    let amountChange = amountPaid - finalTotal;
+    if (amountChange < 0) amountChange = 0;
+
+    if (totalCostInput) totalCostInput.value = totalCost.toFixed(2);
+    if (discountInput) discountInput.value = discount.toFixed(2);
+    if (amountChangeInput) amountChangeInput.value = amountChange.toFixed(2);
+  }
 });
+
+fetch('/your/process_order/url/', {
+    method: 'POST',
+    headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+        'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams(new FormData(document.getElementById('order-form')))
+})
+.then(response => response.json())
+.then(data => {
+    if (data.status === 'success') {
+        showToast(data.message, 'success');
+        // Optionally reset form or redirect
+    } else {
+        showToast(data.message, 'error');
+    }
+})
+.catch(error => {
+    showToast('An unexpected error occurred.', 'error');
+    console.error('Error:', error);
+});
+
 </script>
