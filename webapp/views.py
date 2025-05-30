@@ -94,22 +94,13 @@ def customer_ledger_create(request):
 from django.http import JsonResponse
 from .models import CustomerOrder, Users
 
-def orders_for_customer(request, customer_id):
-    try:
-        print(f"Fetching orders for customer_id={customer_id}")
-        orders = CustomerOrder.objects.filter(customer__UserID=customer_id).order_by('-created_at').values('order_id', 'created_at')
-        orders_list = list(orders)
-        for o in orders_list:
-            if o['created_at']:
-                o['created_at'] = o['created_at'].strftime('%Y-%m-%d')
-            else:
-                o['created_at'] = ''
-        print(f"Found orders: {orders_list}")
-        return JsonResponse(orders_list, safe=False)
-    except Exception as e:
-        print(f"Error in orders_for_customer view: {e}")
-        return JsonResponse({'error': str(e)}, status=400)
+from django.http import JsonResponse
+from .models import CustomerOrder
 
+def orders_for_customer(request, customer_id):
+    orders = CustomerOrder.objects.filter(customer_id=customer_id).values('order_id', 'created_at')
+    orders_list = list(orders)
+    return JsonResponse(orders_list, safe=False)
 
 
 def money_fmt(val):
@@ -2174,33 +2165,53 @@ def allorder_history(request):
     # TODO: Replace with real order data
     return render(request, 'allorder_history.html', {'orders': []})
 
-def payment_confirmation(request, order_id):
-    # TODO: Replace with real order data
-    return render(request, 'payment_confirmation.html', {
-        'order': {
-            'id': order_id,
-            'customer_name': '',
-            'payment_method': '',
-            'total_cost': 0,
-            'items': [],
-            'discount': 0,
-            'amount_paid': 0,
-            'amount_change': 0
-        }
-    })
+import logging
+logger = logging.getLogger(__name__)
 
-def delivery_confirmation(request, order_id):
-    # TODO: Replace with real order data
-    return render(request, 'delivery_confirmation.html', {
-        'order': {
-            'id': order_id,
-            'customer_name': '',
-            'delivery_type': '',
-            'delivery_address': '',
-            'items': [],
-            'total_cost': 0,
-            'discount': 0,
-            'amount_paid': 0,
-            'amount_change': 0
-        }
-    })
+def payment_confirmation(request, order_id):
+    logger.info(f"Fetching order with ID: {order_id}")
+    try:
+        order = CustomerOrder.objects.get(order_id=order_id)
+
+        if order.delivery_type == 'pickup':
+            if order.payment_method in ['gcash', 'credit_card']:
+                # Stay in payment confirmation
+                return render(request, 'payment_confirmation.html', {'order': order})
+            elif order.payment_method == 'cash':
+                # Redirect to history
+                return redirect('allorder_history')
+
+        elif order.delivery_type == 'delivery':
+            if order.payment_method == 'cash':
+                # Redirect to delivery confirmation, then history
+                return redirect('delivery_confirmation', order_id=order_id)
+            elif order.payment_method in ['gcash', 'credit_card']:
+                # Redirect to payment confirmation, then delivery confirmation, then history
+                return redirect('payment_confirmation', order_id=order_id)
+
+        return HttpResponseBadRequest("Invalid order flow")
+
+    except CustomerOrder.DoesNotExist:
+        logger.error(f"Order with ID {order_id} does not exist.")
+        return render(request, 'payment_confirmation.html', {'error': 'Order does not exist'})
+
+def delivery_confirmation(request, order_id=None):
+    logger.info(f"Fetching orders. Specific order ID: {order_id}")
+    try:
+        if order_id:
+            # Fetch a specific order
+            orders = CustomerOrder.objects.filter(order_id=order_id, delivery_type='delivery')
+        else:
+            # Fetch all delivery orders
+            orders = CustomerOrder.objects.filter(delivery_type='delivery')
+
+        if not orders.exists():
+            logger.warning("No delivery orders found.")
+            return render(request, 'delivery_confirmation.html', {'error': 'No delivery orders found'})
+
+        # Render delivery confirmation with all or specific orders
+        return render(request, 'delivery_confirmation.html', {'orders': orders})
+
+    except Exception as e:
+        logger.error(f"Error fetching delivery orders: {e}")
+        return render(request, 'delivery_confirmation.html', {'error': 'An error occurred while fetching delivery orders'})

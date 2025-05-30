@@ -39,8 +39,8 @@
       color: red;
     }
   </style>
+
   <script>
-    // Function to fetch orders for selected customer
     async function fetchOrders(customerId) {
       const orderSelect = document.getElementById('order');
       orderSelect.innerHTML = '<option value="">Loading orders...</option>';
@@ -51,15 +51,21 @@
       }
 
       try {
-        const response = await fetch(`/api/orders_for_customer/${customerId}/`);
+        const response = await fetch(`/api/orders-for-customer/${customerId}/`);
         if (!response.ok) {
           throw new Error('Failed to fetch orders');
         }
         const orders = await response.json();
+        orderSelect.innerHTML = ''; // Clear existing options
+
         if (orders.length === 0) {
-          orderSelect.innerHTML = '<option value="">No orders found for this customer</option>';
+          orderSelect.innerHTML = '<option value="">No orders found</option>';
         } else {
-          orderSelect.innerHTML = '<option value="">Select order (optional)</option>';
+          const defaultOption = document.createElement('option');
+          defaultOption.value = '';
+          defaultOption.textContent = 'Select order (optional)';
+          orderSelect.appendChild(defaultOption);
+
           orders.forEach(order => {
             const option = document.createElement('option');
             option.value = order.order_id;
@@ -68,6 +74,7 @@
           });
         }
       } catch (error) {
+        console.error(error);
         orderSelect.innerHTML = '<option value="">Error loading orders</option>';
       }
     }
@@ -77,13 +84,15 @@
       customerSelect.addEventListener('change', () => {
         fetchOrders(customerSelect.value);
       });
-      // Optionally load orders if a customer is pre-selected (for edit forms)
+
+      // Pre-load orders if editing an existing entry
       if (customerSelect.value) {
         fetchOrders(customerSelect.value);
       }
     });
   </script>
 </head>
+
 <body>
   <h2>Create Customer Ledger Entry</h2>
 
@@ -130,44 +139,5 @@
 
     <button type="submit">Create Entry</button>
   </form>
-  <script>
-    // Your loadOrders function here
-    function loadOrders(customerId) {
-      fetch(`/api/orders-for-customer/${customerId}/`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          console.log("Orders:", data);
-          const orderSelect = document.getElementById('order');
-          orderSelect.innerHTML = '<option value="">-- Select Order --</option>'; // reset options
-          data.forEach(order => {
-            const option = document.createElement('option');
-            option.value = order.order_id;
-            option.textContent = `Order #${order.order_id} - ${order.created_at}`;
-            orderSelect.appendChild(option);
-          });
-        })
-        .catch(error => {
-          console.error('Error loading orders:', error);
-          alert('Error loading orders');
-        });
-    }
-
-    // Called when customer dropdown changes
-    function onCustomerChange() {
-      const customerSelect = document.getElementById('customer');
-      const selectedCustomerId = customerSelect.value;
-      if (selectedCustomerId) {
-        loadOrders(selectedCustomerId);
-      } else {
-        // Clear orders if no customer selected
-        document.getElementById('order').innerHTML = '<option value="">-- Select Order --</option>';
-      }
-    }
-  </script>
 </body>
 </html>
