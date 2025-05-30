@@ -104,6 +104,12 @@
       <h2 class="text-xl sm:text-2xl font-bold mb-4 border-b pb-2">Customer Order</h2>
 
       <div id="messageBox" class="hidden p-3 mb-3 rounded text-white text-center"></div>
+      {% if status and message %}
+        <div class="p-3 mb-3 rounded bg-green-50 border border-green-400 text-green-900 text-center font-semibold shadow flex items-center justify-center gap-2">
+          <i class="fas fa-check-circle text-2xl"></i>
+          <span class="whitespace-pre-line break-words">Status: {{ status|title }}\A{{ message|safe }}</span>
+        </div>
+      {% endif %}
 
       <!-- MAIN ORDER FORM -->
       <form id="orderForm" method="POST" action="{% url 'process_order' %}" class="space-y-4">
@@ -278,7 +284,7 @@
         </div>
       </form>
 
- <!-- Modal Background -->
+<!-- Modal Background -->
 <div id="addCustomerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
   <!-- Modal Content -->
   <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl relative">
@@ -289,49 +295,101 @@
       &times;
     </button>
 
-    <!-- Your Form Goes Here -->
+    <!-- Form -->
     <form method="POST" action="{% url 'add_customer' %}" id="addCustomerForm">
       {% csrf_token %}
 
-     <!-- Full Name Section -->
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-  <input type="text" name="first_name" class="border p-2 rounded" placeholder="First Name" required>
-  <input type="text" name="middle_name" class="border p-2 rounded" placeholder="Middle Name">
-  <input type="text" name="last_name" class="border p-2 rounded" placeholder="Last Name" required>
-  <input type="text" name="suffix" class="border p-2 rounded" placeholder="Suffix">
+      <!-- Full Name Section -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <input type="text" name="first_name" class="border p-2 rounded" placeholder="First Name" required>
+        <input type="text" name="middle_name" class="border p-2 rounded" placeholder="Middle Name">
+        <input type="text" name="last_name" class="border p-2 rounded" placeholder="Last Name" required>
+        <input type="text" name="suffix" class="border p-2 rounded" placeholder="Suffix">
+      </div>
+
+      <!-- Address Section -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <input type="text" name="house_unit_number" class="border p-2 rounded" placeholder="House/Unit Number" required>
+        <input type="text" name="building_name" class="border p-2 rounded" placeholder="Building Name (Optional)">
+        <input type="text" name="street_name" class="border p-2 rounded" placeholder="Street Name">
+        <input type="text" name="barangay" class="border p-2 rounded" placeholder="Barangay" required>
+      </div>
+
+      <!-- City, Province, ZIP -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <input type="text" name="city_municipality" class="border p-2 rounded" placeholder="City/Municipality" required>
+        <input type="text" name="province" class="border p-2 rounded" placeholder="Province" required>
+        <input type="text" name="zip_code" class="border p-2 rounded" placeholder="ZIP Code" required>
+        <div></div>
+      </div>
+
+      <!-- Contact Numbers -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+        <input type="text" name="customer_mobile_number" class="border p-2 rounded" placeholder="Customer Mobile Number" required>
+      </div>
+
+      <!-- Buttons -->
+      <div class="flex justify-end gap-3">
+        <button type="button" id="cancelAddCustomer" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancel</button>
+        <button type="submit" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">Add Customer</button>
+      </div>
+    </form>
+  </div>
 </div>
 
-<!-- Address Section -->
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-  <input type="text" name="house_unit_number" class="border p-2 rounded" placeholder="House/Unit Number" required>
-  <input type="text" name="building_name" class="border p-2 rounded" placeholder="Building Name (Optional)">
-  <input type="text" name="street_name" class="border p-2 rounded" placeholder="Street Name">
-  <input type="text" name="barangay" class="border p-2 rounded" placeholder="Barangay" required>
-</div>
-
-<!-- City, Province and Zip Code -->
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-  <input type="text" name="city_municipality" class="border p-2 rounded" placeholder="City/Municipality" required>
-  <input type="text" name="province" class="border p-2 rounded" placeholder="Province" required>
-  <input type="text" name="zip_code" class="border p-2 rounded" placeholder="ZIP Code" required>
-  <div></div>
-</div>
-
-<!-- Contact Numbers -->
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-  <input type="text" name="customer_mobile_number" class="border p-2 rounded" placeholder="Customer Mobile Number" required>
-</div>
-
-<!-- Buttons -->
-<div class="flex justify-end gap-3">
-  <button type="button" id="cancelAddCustomer" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancel</button>
-  <button type="submit" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">Add Customer</button>
-</div>
-
-
-
+<!-- Modal Script -->
 <script>
-  // --- BEGIN JS CLEANUP AND AUTO-SELECT LOGIC ---
+
+document.addEventListener("DOMContentLoaded", function () {
+  const stockSelect = document.getElementById("stock_id");
+  const quantityInput = document.getElementById("quantity");
+  const costPerSackInput = document.getElementById("cost_per_sack");
+  const totalCostInput = document.getElementById("total_cost");
+  const discountInput = document.getElementById("discount");
+  const amountPaidInput = document.getElementById("amount_paid");
+  const amountChangeInput = document.getElementById("amount_change");
+
+  function calculateTotal() {
+    const quantity = parseFloat(quantityInput.value) || 0;
+    const costPerSack = parseFloat(costPerSackInput.value) || 0;
+
+    const totalCost = quantity * costPerSack;
+
+    // Example discount logic: ₱20 discount for orders over ₱5000
+    let discount = 0;
+    if (totalCost >= 5000) {
+      discount = 20;
+    }
+
+    const finalTotal = totalCost - discount;
+    const amountPaid = parseFloat(amountPaidInput.value) || 0;
+    const amountChange = amountPaid - finalTotal;
+
+    totalCostInput.value = totalCost.toFixed(2);
+    discountInput.value = discount.toFixed(2);
+    amountChangeInput.value = amountChange >= 0 ? amountChange.toFixed(2) : "0.00";
+  }
+
+  // Auto-fill cost per sack when rice type is selected
+  stockSelect.addEventListener("change", function () {
+    const selectedOption = stockSelect.options[stockSelect.selectedIndex];
+    const price = selectedOption.getAttribute("data-price");
+    const maxQuantity = selectedOption.getAttribute("data-max-quantity");
+
+    costPerSackInput.value = parseFloat(price || 0).toFixed(2);
+    if (maxQuantity) {
+      quantityInput.max = maxQuantity;
+    } else {
+      quantityInput.removeAttribute('max');
+    }
+    calculateTotal();
+  });
+
+  // Recalculate on quantity, cost, and amount paid input
+  [quantityInput, costPerSackInput, amountPaidInput].forEach(input => {
+    input.addEventListener("input", calculateTotal);
+  });
+});
 
   // Modal logic (unchanged)
   const openModalBtn = document.getElementById('openAddCustomerModal');
