@@ -5,6 +5,51 @@ from datetime import datetime
 from django.utils import timezone
 from decimal import Decimal
 
+class CustomerLedger(models.Model):
+    TRANSACTION_TYPES = [
+        ('order', 'Order'),
+        ('payment', 'Payment'),
+        ('adjustment', 'Adjustment'),
+        ('refund', 'Refund'),
+    ]
+
+    ledger_id = models.AutoField(primary_key=True)
+    customer = models.ForeignKey('Users', on_delete=models.CASCADE, related_name='ledger_entries')
+    order = models.ForeignKey('CustomerOrder', on_delete=models.SET_NULL, null=True, blank=True)
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
+    reference = models.CharField(max_length=100, blank=True, null=True)  # Optional: external ref no.
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    running_balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    remarks = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'customer_ledger'
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.customer} - {self.transaction_type} - {self.amount} on {self.created_at.date()}"
+
+    def save(self, *args, **kwargs):
+        # Set default remarks
+        if not self.remarks:
+            self.remarks = f"{self.get_transaction_type_display()}"
+
+        # Get latest balance
+        last_entry = CustomerLedger.objects.filter(customer=self.customer).order_by('-created_at').first()
+        previous_balance = last_entry.running_balance if last_entry else Decimal('0.00')
+
+        # Calculate new balance
+        if self.transaction_type == 'order':
+            self.running_balance = previous_balance + self.amount  # Adding debt
+        elif self.transaction_type in ['payment', 'refund']:
+            self.running_balance = previous_balance - self.amount  # Subtracting payment
+        elif self.transaction_type == 'adjustment':
+            self.running_balance = previous_balance + self.amount  # Could be + or -
+
+        super().save(*args, **kwargs)
+
+
 
 class UserName(models.Model):
     first_name = models.CharField(max_length=50)

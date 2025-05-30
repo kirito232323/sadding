@@ -1,0 +1,49 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Invoice {{ invoice_number }}</title>
+  <style>
+    body {
+      font-family: monospace, monospace;
+      max-width: 300px;
+      margin: 20px auto;
+      padding: 10px;
+      border: 1px solid #000;
+    }
+    h2, p {
+      margin: 4px 0;
+    }
+    hr {
+      border: 1px dashed #000;
+      margin: 10px 0;
+    }
+    .text-right {
+      text-align: right;
+    }
+    .bold {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body onload="window.print()">
+  <h2>Dragon Ricemill</h2>
+  <p class="bold">Invoice Number: {{ invoice_number }}</p>
+  <hr />
+  <p><strong>Customer:</strong> {{ order.customer.name|default:"N/A" }}</p>
+  <p><strong>Address:</strong> {{ order.customer.address|default:"N/A" }}</p>
+  <hr />
+  <p><strong>Rice Type:</strong> {{ order.rice_type.rice_type }}</p>
+  <p><strong>Quantity:</strong> {{ order.quantity }} sack(s)</p>
+  <p><strong>Cost Per Sack:</strong> ₱{{ order.cost_per_sack|floatformat:2|intcomma }}</p>
+  <p><strong>Discount:</strong> {{ formatted_discount }}</p>
+  <hr />
+  <p class="text-right"><strong>Total Cost:</strong> ₱{{ order.total_cost|floatformat:2|intcomma }}</p>
+  <p class="text-right"><strong>Payment Method:</strong> {{ order.payment_method }}</p>
+  <p class="text-right"><strong>Amount Paid:</strong> ₱{{ order.amount_paid|floatformat:2|intcomma }}</p>
+  <p class="text-right"><strong>Change:</strong> ₱{{ order.amount_change|floatformat:2|intcomma }}</p>
+  <hr />
+  <p class="bold" style="text-align:center;">Thank you for your purchase!</p>
+</body>
+</html>

@@ -189,7 +189,7 @@
 
         <!-- CONTACT NUMBERS -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input type="text" name="receiver_mobile_number" class="border p-2 rounded" placeholder="Receiver Mobile Number" required autocomplete="off">
+          <input type="text" name="receiver_mobile_number" class="border p-2 rounded" placeholder="Receiver Mobile Number" required autocomplete="off" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" />
         </div>
 
 <!-- STOCK SELECTION BY RICE TYPE + PACKAGING -->
@@ -385,8 +385,19 @@ document.addEventListener("DOMContentLoaded", function () {
     calculateTotal();
   });
 
-  // Recalculate on quantity, cost, and amount paid input
-  [quantityInput, costPerSackInput, amountPaidInput].forEach(input => {
+  // Prevent entering quantity greater than available stock
+  quantityInput.addEventListener("input", function () {
+    const max = parseInt(quantityInput.max, 10);
+    let value = parseInt(quantityInput.value, 10);
+    if (!isNaN(max) && value > max) {
+      quantityInput.value = max;
+      value = max;
+    }
+    calculateTotal();
+  });
+
+  // Recalculate on cost and amount paid input
+  [costPerSackInput, amountPaidInput].forEach(input => {
     input.addEventListener("input", calculateTotal);
   });
 });
@@ -447,6 +458,19 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
   // --- END JS CLEANUP ---
+
+  // Add JS to enforce only numbers and max length 11
+  const receiverMobileInput = document.querySelector('input[name="receiver_mobile_number"]');
+  if (receiverMobileInput) {
+    receiverMobileInput.addEventListener('input', function () {
+      // Remove non-numeric characters
+      this.value = this.value.replace(/[^0-9]/g, '');
+      // Limit to 11 digits
+      if (this.value.length > 11) {
+        this.value = this.value.slice(0, 11);
+      }
+    });
+  }
 </script>
 
 </body>

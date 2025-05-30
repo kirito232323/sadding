@@ -54,6 +54,12 @@ urlpatterns = [
     path('ajax/get-customer-details/', views.get_customer_details, name='get_customer_details'),
     path('invoice/', views.invoice_view, name='invoice'),
     path('delete_customer/<int:user_id>/', views.delete_customer, name='delete_customer'),
+    path('allorder-history/', views.allorder_history, name='allorder_history'),
+    path('payment-confirmation/<int:order_id>/', views.payment_confirmation, name='payment_confirmation'),
+    path('delivery-confirmation/<int:order_id>/', views.delivery_confirmation, name='delivery_confirmation'),
+    path('customer-ledger/create/', views.customer_ledger_create, name='customer_ledger_create'),
+    path('api/orders-for-customer/<int:customer_id>/', views.orders_for_customer, name='orders_for_customer'),
+
 
 ]
 

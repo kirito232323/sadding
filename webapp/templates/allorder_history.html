@@ -1,0 +1,212 @@
+{% block content %}
+{% load safedecimal %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard - Dragon Ricemill</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
+  <style>
+    html { scroll-behavior: smooth; }
+    .dropdown:hover .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen font-sans leading-relaxed overflow-x-hidden">
+
+<header class="fixed top-0 right-0 h-screen w-56 bg-white shadow-lg flex flex-col z-50 border-l border-gray-200">
+  <div class="h-14 flex items-center justify-center border-b border-gray-200">
+    <a href="#" class="flex items-center space-x-2 select-none text-gray-900 font-bold text-lg tracking-wide">
+      <span class="text-yellow-500 text-2xl">🌾</span>
+      <span>Dragon Ricemill</span>
+    </a>
+  </div>
+
+  <nav class="flex-1 flex flex-col py-1 pr-1 overflow-y-auto scrollbar-hide">
+    <div class="px-2 py-1">
+      <span class="block text-1 text-gray-500 font-semibold mb-3">Welcome, {{ request.session.user_name }}!</span>
+      <a href="{% url 'dashboard' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 font-semibold hover:text-yellow-600 transition">
+        <i class="fas fa-home w-4 text-yellow-500"></i><span>Home</span>
+      </a>
+      <a href="{% url 'profile' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition text-gray-900">
+        <i class="fas fa-user-circle w-4 text-yellow-500"></i><span>Profile</span>
+      </a>
+    </div>
+
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Users</p>
+      <a href="{% url 'add_user' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-user-plus w-4 text-yellow-500"></i><span>Add User</span>
+      </a>
+      <a href="{% url 'edituser' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-user-edit w-4 text-yellow-500"></i><span>Edit User</span>
+      </a>
+      <a href="{% url 'user_account' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-user-circle w-4 text-yellow-500"></i><span>Customer</span>
+      </a>
+
+      
+  <!-- New Create Customer Ledger Link -->
+  <a href="{% url 'customer_ledger_create' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+    <i class="fas fa-book w-4 text-yellow-500"></i><span>Create Customer Ledger</span>
+  </a>
+
+      <a href="{% url 'logs' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-file-alt w-4 text-yellow-500"></i><span>User Logs</span>
+      </a>
+      <!-- Delete Customer link (no user_id, so go to selection page) -->
+      <a href="{% url 'delete_customer' 0 %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-user-times w-4 text-yellow-500"></i><span>Delete Customer</span>
+      </a>
+    </div>
+
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Delivery System</p>
+      <a href="{% url 'delivery-management' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Manage Deliveries</span>
+      </a>
+    </div>
+
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Transaction</p>
+      <a href="#order-filters" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>All Orders History</span>
+      </a>
+      <a href="{% url 'payment_confirmation' 0 %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Payment Confirmation</span>
+      </a>
+      <a href="{% url 'delivery_confirmation' 0 %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Delivery Confirmation</span>
+      </a>
+    </div>
+
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Inventory</p>
+      <a href="{% url 'addstock' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+        <i class="fas fa-boxes w-4 text-yellow-500"></i><span>Inventory</span>
+      </a>
+      <a href="{% url 'viewstocklevel' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-layer-group w-4 text-yellow-500"></i><span>View Levels</span>
+      </a>
+    </div>
+
+<div class="mb-2 px-2">
+  <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Sales</p>
+  <a href="{% url 'new_sale' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition">
+    <i class="fas fa-cart-plus w-4 text-yellow-500"></i><span>New Sale</span>
+  </a>
+  <a href="{% url 'invoice' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+    <i class="fas fa-file-invoice w-4 text-yellow-500"></i><span>Create Invoice</span>
+  </a>
+  <a href="{% url 'view_sales_history' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+    <i class="fas fa-history w-4 text-yellow-500"></i><span>History</span>
+  </a>
+  <a href="{% url 'view_sales_report' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+    <i class="fas fa-chart-line w-4 text-yellow-500"></i><span>Report</span>
+  </a>
+  <a href="{% url 'inventory_turnover' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+    <i class="fas fa-sync-alt w-4 text-yellow-500"></i><span>Inventory Turnover</span>
+  </a>
+</div>
+
+
+    <div class="border-t border-gray-200 mt-auto px-2 py-4">
+      <a href="{% url 'logout' %}" onclick="return confirm('Logout?');" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-red-100 hover:text-red-600 transition font-semibold text-red-500 mt-2">
+        <i class="fas fa-sign-out-alt w-4"></i><span>Logout</span>
+      </a>
+    
+    </div>
+  </nav>
+</header>
+
+<main class="ml-56 pt-16 px-6 pb-6 min-h-screen bg-gray-50">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-2xl font-bold">📋 History</h2>
+    
+  </div>
+  <section class="bg-white shadow-lg rounded-lg p-4">
+    <form id="order-filters" method="get" class="mb-6 flex flex-col sm:flex-row sm:items-end gap-4">
+      <div class="flex-grow">
+        <label for="search" class="block text-sm font-medium">Search by Cashier / Customer / Order ID</label>
+        <input type="text" name="search" id="search" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Start typing..." value="{{ request.GET.search }}">
+      </div>
+      <div>
+        <label for="start_date" class="block text-sm font-medium">Start Date</label>
+        <input type="date" name="start_date" id="start_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" value="{{ request.GET.start_date }}">
+      </div>
+      <div>
+        <label for="end_date" class="block text-sm font-medium">End Date</label>
+        <input type="date" name="end_date" id="end_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" value="{{ request.GET.end_date }}">
+      </div>
+      <div>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">Filter</button>
+      </div>
+    </form>
+    <div class="overflow-x-auto">
+      <table id="orders-table" class="min-w-full border border-gray-300 text-xs rounded-lg overflow-hidden">
+        <thead class="bg-gray-200 text-left font-semibold">
+          <tr>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Date</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Order ID</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Customer Name</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Address</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Customer Mobile</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Receiver Mobile</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Rice Type</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Quantity</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Cost Per Sack</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Total Cost</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Amount Paid</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Amount Change</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Payment Method</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Delivery Type</th>
+            <th class="py-2 px-3 border-b border-gray-300 text-center">Cashier</th>
+          </tr>
+        </thead>
+        <tbody id="orders-tbody">
+          {% for order in customer_orders %}
+          <tr class="hover:bg-gray-50 transition {% cycle 'bg-white' 'bg-gray-50' %}">
+            <td class="py-2 px-3 border-b text-center">{{ order.created_at|date:"Y-m-d" }}</td>
+            <td class="py-2 px-3 border-b text-center">{{ order.order_id }}</td>
+            <td class="py-2 px-3 border-b text-center">
+              {% if order.customer and order.customer.name %}
+                {{ order.customer.name.first_name }}{% if order.customer.name.middle_name %} {{ order.customer.name.middle_name }}{% endif %} {{ order.customer.name.last_name }}{% if order.customer.name.suffix %} {{ order.customer.name.suffix }}{% endif %}
+              {% else %}N/A{% endif %}
+            </td>
+            <td class="py-2 px-3 border-b text-center">
+              {% if order.customer and order.customer.address %}
+                {{ order.customer.address.house_unit_number }} {{ order.customer.address.street_name }}, {{ order.customer.address.barangay }}, {{ order.customer.address.city_municipality }}
+              {% else %}N/A{% endif %}
+            </td>
+            <td class="py-2 px-3 border-b text-center">{% if order.customer %}{{ order.customer.Customer_Mobile_Number }}{% else %}N/A{% endif %}</td>
+            <td class="py-2 px-3 border-b text-center">{{ order.receiver_mobile_number }}</td>
+            <td class="py-2 px-3 border-b text-center">{{ order.rice_type.rice_type }}</td>
+            <td class="py-2 px-3 border-b text-center">{{ order.quantity }}</td>
+            <td class="py-2 px-3 border-b text-center">₱{{ order.cost_per_sack|safedecimal }}</td>
+            <td class="py-2 px-3 border-b text-center">₱{{ order.total_cost|safedecimal }}</td>
+            <td class="py-2 px-3 border-b text-center">₱{{ order.amount_paid|safedecimal }}</td>
+            <td class="py-2 px-3 border-b text-center">₱{{ order.amount_change|safedecimal }}</td>
+            <td class="py-2 px-3 border-b text-center">{{ order.payment_method }}</td>
+            <td class="py-2 px-3 border-b text-center">{{ order.delivery_type }}</td>
+            <td class="py-2 px-3 border-b text-center">
+              {% if order.employee %}
+                {{ order.employee.FirstName }}{% if order.employee.MiddleName %} {{ order.employee.MiddleName }}{% endif %} {{ order.employee.LastName }}{% if order.employee.Suffix %} {{ order.employee.Suffix }}{% endif %}
+              {% else %}N/A{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="15" class="text-center py-4 text-gray-500">No orders found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+{% endblock %}

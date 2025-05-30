@@ -23,27 +23,182 @@ from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from webapp.models import CustomerOrder
-
-
 from decimal import Decimal, InvalidOperation
 from django.shortcuts import render
+from django.http import HttpResponse
+from webapp.models import CustomerOrder
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+import textwrap
+
+from decimal import Decimal, InvalidOperation
+from django.http import HttpResponse
+from django.shortcuts import render
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
 from .models import CustomerOrder
 
-def invoice_view(request):
-    orders = CustomerOrder.objects.all()
+from django.shortcuts import render, redirect
+from .models import Users, CustomerOrder, CustomerLedger
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 
-    for order in orders:
+def customer_ledger_create(request):
+    if request.method == 'POST':
+        customer_id = request.POST.get('customer')
+        order_id = request.POST.get('order') or None
+        transaction_type = request.POST.get('transaction_type')
+        reference = request.POST.get('reference')
+        amount = request.POST.get('amount')
+        remarks = request.POST.get('remarks')
+
         try:
-            order.safe_cost_per_sack = Decimal(order.cost_per_sack or 0)
-            order.safe_quantity = Decimal(order.quantity or 0)
-            order.safe_total = order.safe_cost_per_sack * order.safe_quantity
-        except (InvalidOperation, TypeError):
-            order.safe_cost_per_sack = Decimal(0)
-            order.safe_quantity = Decimal(0)
-            order.safe_total = Decimal(0)
+            customer = Users.objects.get(UserID=customer_id)
+        except Users.DoesNotExist:
+            return render(request, 'ledger_entry.html', {
+                'error': 'Selected customer does not exist.',
+                'customers': Users.objects.all()
+            })
 
-    return render(request, 'invoice.html', {'orders': orders})
+        order = None
+        if order_id:
+            try:
+                order = CustomerOrder.objects.get(order_id=order_id, customer=customer)
+            except CustomerOrder.DoesNotExist:
+                return render(request, 'ledger_entry.html', {
+                    'error': 'Selected order does not exist for this customer.',
+                    'customers': Users.objects.all()
+                })
 
+        # Create ledger entry
+        ledger = CustomerLedger(
+            customer=customer,
+            order=order,
+            transaction_type=transaction_type,
+            reference=reference,
+            amount=amount,
+            remarks=remarks,
+        )
+        ledger.save()
+
+        return render(request, 'ledger.html', {
+            'message': 'Customer ledger entry created successfully.',
+            'customers': Users.objects.all()
+        })
+
+    # GET request, render form
+    customers = Users.objects.all()
+    return render(request, 'ledger.html', {'customers': customers})
+
+
+from django.http import JsonResponse
+from .models import CustomerOrder, Users
+
+def orders_for_customer(request, customer_id):
+    try:
+        print(f"Fetching orders for customer_id={customer_id}")
+        orders = CustomerOrder.objects.filter(customer__UserID=customer_id).order_by('-created_at').values('order_id', 'created_at')
+        orders_list = list(orders)
+        for o in orders_list:
+            if o['created_at']:
+                o['created_at'] = o['created_at'].strftime('%Y-%m-%d')
+            else:
+                o['created_at'] = ''
+        print(f"Found orders: {orders_list}")
+        return JsonResponse(orders_list, safe=False)
+    except Exception as e:
+        print(f"Error in orders_for_customer view: {e}")
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+
+def money_fmt(val):
+    """Format Decimal as pesos with commas and 2 decimals."""
+    return f"₱{format(val, ',.2f')}"
+
+def invoice_view(request):
+    orders = CustomerOrder.objects.all().order_by('-created_at')
+    selected_order = None
+
+    order_id = request.POST.get('order_id') or request.GET.get('order_id')
+    if order_id:
+        try:
+            selected_order = CustomerOrder.objects.get(order_id=order_id)
+            # Convert to Decimal safely
+            selected_order.safe_cost_per_sack = Decimal(selected_order.cost_per_sack or 0)
+            selected_order.safe_quantity = Decimal(selected_order.quantity or 0)
+            selected_order.safe_discount = Decimal(selected_order.discount or 0)  # Assuming discount field exists
+            selected_order.safe_total = (selected_order.safe_cost_per_sack * selected_order.safe_quantity) - selected_order.safe_discount
+        except (CustomerOrder.DoesNotExist, InvalidOperation, TypeError):
+            selected_order = None
+
+    if request.method == "POST" and "export_pdf" in request.POST and selected_order:
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename=receipt_{order_id}.pdf'
+
+        PAGE_WIDTH = 100 * mm
+        PAGE_HEIGHT = 200 * mm
+        LEFT_MARGIN = 15
+        LINE_HEIGHT = 14
+
+        p = canvas.Canvas(response, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
+        p.setFont("Helvetica", 11)
+
+        y = PAGE_HEIGHT - 20  # start near top
+
+        def line(text='', gap=LINE_HEIGHT, bold=False, align_right=False, value=None):
+            nonlocal y
+            if bold:
+                p.setFont("Helvetica-Bold", 11)
+            else:
+                p.setFont("Helvetica", 11)
+
+            if align_right and value is not None:
+                p.drawString(LEFT_MARGIN, y, text)
+                p.drawRightString(PAGE_WIDTH - LEFT_MARGIN, y, str(value))
+            else:
+                p.drawString(LEFT_MARGIN, y, text)
+            y -= gap
+
+        line("Dragon Ricemill Receipt", bold=True)
+        line()
+        line(f"Invoice Number: INV-{order_id}", bold=True)
+        line(f"Customer: {selected_order.customer.name}")
+        line(f"Address: {selected_order.customer.address}")
+        line()
+        line(f"Rice Type: {selected_order.rice_type.rice_type}")
+        line(f"Quantity: {selected_order.quantity} sack(s)")
+        line(f"Cost Per Sack: {money_fmt(selected_order.safe_cost_per_sack)}")
+        line(f"Discount: {money_fmt(selected_order.safe_discount)}")
+        line(f"Total Cost: {money_fmt(selected_order.safe_total)}")
+        line(f"Payment Method: {selected_order.payment_method}")
+        line(f"Amount Paid: {money_fmt(Decimal(selected_order.amount_paid or 0))}")
+        line(f"Change: {money_fmt(Decimal(selected_order.amount_change or 0))}")
+        line()
+        line("Thank you for your purchase!", bold=True)
+
+        p.showPage()
+        p.save()
+        return response
+
+    # Render invoice HTML page (for print)
+    if order_id and selected_order and request.method == "GET":
+        formatted_discount = money_fmt(Decimal(selected_order.discount or 0))
+        context = {
+            'order': selected_order,
+            'invoice_number': f'INV-{order_id}',
+            'formatted_discount': formatted_discount,
+            'money_fmt': money_fmt,  # pass helper function if needed in template
+        }
+        return render(request, 'invoice_print.html', context)
+
+    # Default render with order selection form
+    context = {
+        'orders': orders,
+        'order': selected_order,
+        'invoice_number': f'INV-{order_id or "N/A"}',
+    }
+    return render(request, 'invoice.html', context)
 
 @require_POST
 def undo_update(request, log_id):
@@ -311,15 +466,26 @@ def dashboard_view(request):
     role = None
     employee_id = None
 
-    if request.user.is_authenticated:
-        try:
-            custom_user = Users.objects.get(Username=request.user.username)
-            employee_id = custom_user.EmployeeID
-            role = custom_user.Role.strip().lower()
-            is_admin = (role == 'admin')
-        except Users.DoesNotExist:
-            pass
-
+    # Use session to determine user type and get info
+    user_id = request.session.get('user_id')
+    user_role = request.session.get('user_role', '').lower()
+    if user_id and user_role:
+        if user_role in ['admin', 'cashier', 'employee']:
+            try:
+                from .models import Employee
+                custom_user = Employee.objects.get(EmployeeID=user_id)
+                employee_id = custom_user.EmployeeID
+                role = custom_user.Role.strip().lower()
+                is_admin = (role == 'admin')
+            except Employee.DoesNotExist:
+                pass
+        else:
+            try:
+                custom_user = Users.objects.get(UserID=user_id)
+                role = user_role
+                is_admin = (role == 'admin')
+            except Users.DoesNotExist:
+                pass
 
     from .models import Stock
     stock_data = Stock.objects.select_related('rice_type').all()
@@ -461,84 +627,40 @@ def toggle_notification(request):
 
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
-from webapp.models import UserName, UserAddress, Users  # adjust if model names/locations differ
-from django.views.decorators.csrf import csrf_exempt
-
-@csrf_exempt
-@require_POST
-def add_customer(request):
-    try:
-        # Create UserName instance
-        name = UserName.objects.create(
-            first_name=request.POST.get('first_name', '').strip(),
-            middle_name=request.POST.get('middle_name', '').strip(),
-            last_name=request.POST.get('last_name', '').strip(),
-            suffix=request.POST.get('suffix', '').strip(),
-        )
-
-        # Create UserAddress instance with correct field names from form
-        address = UserAddress.objects.create(
-            house_unit_number=request.POST.get('house_unit_number', '').strip(),
-            building_name=request.POST.get('building_name', '').strip(),
-            street_name=request.POST.get('street_name', '').strip(),
-            barangay=request.POST.get('barangay', '').strip(),
-            city_municipality=request.POST.get('city_municipality', '').strip(),
-            province=request.POST.get('province', '').strip(),
-            zip_code=request.POST.get('zip_code', '').strip(),
-        )
-
-        # Create Users instance
-        user = Users.objects.create(
-            name=name,
-            address=address,
-            Customer_Mobile_Number=request.POST.get('customer_mobile_number', '').strip()
-        )
-
-        # Redirect to new_sale with new_customer_id for auto-select
-        return redirect(f"{reverse('new_sale')}?new_customer_id={user.UserID}")
-    except Exception as e:
-        from django.contrib import messages
-        messages.error(request, f"Failed to add customer: {str(e)}")
-        return redirect(reverse('new_sale'))
-
-
-
-from django.views.decorators.http import require_POST
-from django.http import JsonResponse
-from .models import UserName, UserAddress, Users
+from webapp.models import UserName, UserAddress, Users  # Adjust if needed
 
 @require_POST
 def add_customer(request):
-    try:
-        # Create UserName instance
+    if request.method == 'POST':
+        # Step 1: Create name
         name = UserName.objects.create(
             first_name=request.POST.get('first_name'),
             middle_name=request.POST.get('middle_name'),
             last_name=request.POST.get('last_name'),
-            suffix=request.POST.get('suffix'),
+            suffix=request.POST.get('suffix')
         )
 
-        # Create UserAddress instance
+        # Step 2: Create address
         address = UserAddress.objects.create(
-            house_unit_number=request.POST.get('house_no'),
-            street_name=request.POST.get('street'),
+            house_unit_number=request.POST.get('house_unit_number'),
+            building_name=request.POST.get('building_name'),
+            street_name=request.POST.get('street_name'),
             barangay=request.POST.get('barangay'),
-            city_municipality=request.POST.get('city'),
-            province='Not specified',  # Provide a default or fetch from request.POST if needed
-            zip_code='0000'  # Provide a default or fetch from request.POST if needed
+            city_municipality=request.POST.get('city_municipality'),
+            province=request.POST.get('province'),
+            zip_code=request.POST.get('zip_code')
         )
 
-        # Create Users instance
+        # Step 3: Create user with name and address
         Users.objects.create(
             name=name,
             address=address,
             Customer_Mobile_Number=request.POST.get('customer_mobile_number')
         )
 
-        return JsonResponse({'status': 'success', 'message': 'Customer added successfully.'})
-    
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)})
+        return JsonResponse({"status": "success", "message": "Customer added successfully"})
+
+    return JsonResponse({"status": "error", "message": "Invalid request"})
 
 
 
@@ -2047,3 +2169,38 @@ def delete_customer(request, user_id):
         customer.delete()
         return redirect('user_account')
     return render(request, 'delete_customer.html', {'customer': customer, 'customers': customers})
+
+def allorder_history(request):
+    # TODO: Replace with real order data
+    return render(request, 'allorder_history.html', {'orders': []})
+
+def payment_confirmation(request, order_id):
+    # TODO: Replace with real order data
+    return render(request, 'payment_confirmation.html', {
+        'order': {
+            'id': order_id,
+            'customer_name': '',
+            'payment_method': '',
+            'total_cost': 0,
+            'items': [],
+            'discount': 0,
+            'amount_paid': 0,
+            'amount_change': 0
+        }
+    })
+
+def delivery_confirmation(request, order_id):
+    # TODO: Replace with real order data
+    return render(request, 'delivery_confirmation.html', {
+        'order': {
+            'id': order_id,
+            'customer_name': '',
+            'delivery_type': '',
+            'delivery_address': '',
+            'items': [],
+            'total_cost': 0,
+            'discount': 0,
+            'amount_paid': 0,
+            'amount_change': 0
+        }
+    })

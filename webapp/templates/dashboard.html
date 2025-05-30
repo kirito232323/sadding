@@ -50,6 +50,13 @@
       <a href="{% url 'user_account' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
         <i class="fas fa-user-circle w-4 text-yellow-500"></i><span>Customer</span>
       </a>
+
+      
+  <!-- New Create Customer Ledger Link -->
+  <a href="{% url 'customer_ledger_create' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+    <i class="fas fa-book w-4 text-yellow-500"></i><span>Create Customer Ledger</span>
+  </a>
+
       <a href="{% url 'logs' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
         <i class="fas fa-file-alt w-4 text-yellow-500"></i><span>User Logs</span>
       </a>
@@ -63,6 +70,19 @@
       <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Delivery System</p>
       <a href="{% url 'delivery-management' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
         <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Manage Deliveries</span>
+      </a>
+    </div>
+
+    <div class="mb-2 px-2">
+      <p class="uppercase text-xs font-semibold text-gray-400 mb-1">Transaction</p>
+      <a href="{% url 'allorder_history' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>All Orders History</span>
+      </a>
+      <a href="{% url 'payment_confirmation' 0 %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Payment Confirmation</span>
+      </a>
+      <a href="{% url 'delivery_confirmation' 0 %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
+        <i class="fas fa-truck-moving w-4 text-yellow-500"></i><span>Delivery Confirmation</span>
       </a>
     </div>
 
@@ -159,6 +179,7 @@
       </div>
     </div>
   </div>
+ 
   
     <!-- Metrics Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -412,66 +433,69 @@
       });
     }
 
-    // --- Modal open/close for Edit Announcement ---
-    const editModal = document.getElementById('editAnnouncementModal');
-    const editForm = document.getElementById('editAnnouncementForm');
-    const editTextarea = document.getElementById('editMessage');
+ // --- Modal open/close for Edit Announcement ---
+const editModal = document.getElementById('editAnnouncementModal');
+const editForm = document.getElementById('editAnnouncementForm');
+const editTextarea = document.getElementById('editMessage');
 
-    document.querySelectorAll('.edit-announcement-btn').forEach(button => {
-      button.addEventListener('click', () => {
-        const id = button.getAttribute('data-id');
-        const message = button.getAttribute('data-message');
-        if (!editForm || !editTextarea || !editModal) return;
+document.querySelectorAll('.edit-announcement-btn').forEach(button => {
+  button.addEventListener('click', () => {
+    const id = button.getAttribute('data-id');
+    const message = button.getAttribute('data-message');
+    if (!editForm || !editTextarea || !editModal) return;
 
-        editForm.setAttribute('data-ann-id', id);
-        editTextarea.value = message;
-        editModal.classList.remove('hidden');
-      });
-    });
+    editForm.setAttribute('data-ann-id', id);
+    editTextarea.value = message;
+    editModal.classList.remove('hidden');
+  });
+});
 
-    ['cancelEditAnnouncementBtn', 'closeEditAnnouncementBtn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn && editModal) {
-        btn.addEventListener('click', () => editModal.classList.add('hidden'));
-      }
-    });
+['cancelEditAnnouncementBtn', 'closeEditAnnouncementBtn'].forEach(id => {
+  const btn = document.getElementById(id);
+  if (btn && editModal) {
+    btn.addEventListener('click', () => editModal.classList.add('hidden'));
+  }
+});
 
-    if (editForm) {
-      editForm.addEventListener('submit', (e) => {
-        e.preventDefault();
+if (editForm) {
+  editForm.addEventListener('submit', (e) => {
+    e.preventDefault();
 
-        const annId = editForm.getAttribute('data-ann-id');
-        const message = editTextarea.value.trim();
+    const annId = editForm.getAttribute('data-ann-id');
+    const message = editTextarea.value.trim();
 
-        if (!message) {
-          alert('Message cannot be empty.');
-          return;
-        }
-
-        fetchWithCSRF(`/announcement/edit/${annId}/`, {
-          method: 'POST',
-          body: JSON.stringify({ message })
-        })
-        .then(res => res.json())
-        .then(data => {
-          if (data.status === 'success') {
-            alert('Announcement updated!');
-
-            const announcementElem = document.getElementById(`announcement-${annId}`);
-            if (announcementElem) {
-              const messageElem = announcementElem.querySelector('.announcement-message');
-              if (messageElem) {
-                messageElem.textContent = data.updated_message;
-              }
-            }
-            editModal.classList.add('hidden');
-          } else {
-            alert(data.message || 'Failed to update announcement.');
-          }
-        })
-        .catch(() => alert('An error occurred while updating the announcement.'));
-      });
+    if (!message) {
+      alert('Message cannot be empty.');
+      return;
     }
+
+    fetchWithCSRF(`/announcement/edit/${annId}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'success') {
+        alert('Announcement updated!');
+
+        const announcementElem = document.getElementById(`announcement-${annId}`);
+        if (announcementElem) {
+          const messageElem = announcementElem.querySelector('.announcement-message');
+          if (messageElem) {
+            messageElem.textContent = data.updated_message;
+          }
+        }
+        editModal.classList.add('hidden');
+      } else {
+        alert(data.message || 'Failed to update announcement.');
+      }
+    })
+    .catch(() => alert('An error occurred while updating the announcement.'));
+  });
+}
 
     // --- Delete announcement buttons (only once) ---
     document.querySelectorAll('.delete-announcement-btn').forEach(btn => {
