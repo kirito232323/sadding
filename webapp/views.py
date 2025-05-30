@@ -1332,11 +1332,23 @@ def get_customer_details(request):
     return JsonResponse({'status': 'success', 'data': data})
 
 from decimal import Decimal, InvalidOperation
+from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from .models import Stock, Users, CustomerOrder, Employee
 
+from decimal import Decimal, InvalidOperation
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from .models import Stock, Users, CustomerOrder, Employee
+import uuid
+from django.utils.crypto import get_random_string
+
+@csrf_exempt  # Only use this if you're not sending CSRF token from the frontend
 def process_order(request):
-    # Get POST data
+    if request.method != "POST":
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
+
+    # Get and validate IDs
     stock_id = request.POST.get("stock_id")
     customer_id = request.POST.get("customer_id")
 
@@ -1357,63 +1369,89 @@ def process_order(request):
     except Users.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Customer not found.'})
 
-    # Optional: Get employee
+    # Optional: Validate employee
     employee = None
-    employee_id = request.POST.get('employee_id')
+    employee_id = request.POST.get("employee_id")
     if employee_id:
         try:
             employee = Employee.objects.get(EmployeeID=employee_id)
         except Employee.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Employee not found.'})
 
-    # Format delivery address
+    # Build delivery address from user's address
     delivery_address = ""
     if customer.address:
         addr = customer.address
-        delivery_address = f"{addr.house_unit_number or ''} {addr.building_name or ''} {addr.street_name or ''}, {addr.barangay or ''}, {addr.city_municipality or ''}, {addr.province or ''} {addr.zip_code or ''}".strip()
+        delivery_address = ", ".join(filter(None, [
+            addr.house_unit_number,
+            addr.building_name,
+            addr.street_name,
+            addr.barangay,
+            addr.city_municipality,
+            addr.province,
+            addr.zip_code
+        ]))
 
-    # Parse numeric values safely
+    # Safely parse numeric fields
     try:
-        quantity = int(request.POST.get('quantity', 0))
-        cost_per_sack = Decimal(str(request.POST.get('cost_per_sack', '0')))
-        discount = Decimal(str(request.POST.get('discount', '0')))
-        total_cost = Decimal(str(request.POST.get('total_cost', '0')))
-        amount_paid = Decimal(str(request.POST.get('amount_paid', '0')))
-        amount_change = Decimal(str(request.POST.get('amount_change', '0')))
+        quantity = int(request.POST.get("quantity", 0))
+        cost_per_sack = Decimal(str(request.POST.get("cost_per_sack", '0')))
+        discount = Decimal(str(request.POST.get("discount", '0')))
+        total_cost = Decimal(str(request.POST.get("total_cost", '0')))
+        amount_paid = Decimal(str(request.POST.get("amount_paid", '0')))
+        amount_change = Decimal(str(request.POST.get("amount_change", '0')))
     except (InvalidOperation, TypeError, ValueError):
-        return JsonResponse({'status': 'error', 'message': 'Invalid numeric input. Please check the amounts and try again.'})
+        return JsonResponse({'status': 'error', 'message': 'Invalid numeric input. Please check your entries.'})
 
-    # Get reference code (optional, user-provided)
-    reference_code = request.POST.get('reference_code', None)
-    if reference_code == '':
-        reference_code = None
+    # Get payment method
+    payment_method = request.POST.get("payment_method", "cash").lower()
+
+    # Handle reference code (optional, but ensure uniqueness)
+    reference_code = request.POST.get("reference_code")
+    max_attempts = 10
+    attempt = 0
+    if not reference_code:
+        reference_code = get_random_string(8)
+    while CustomerOrder.objects.filter(reference_code=reference_code).exists() and attempt < max_attempts:
+        reference_code = get_random_string(8)
+        attempt += 1
+    if CustomerOrder.objects.filter(reference_code=reference_code).exists():
+        return JsonResponse({'status': 'error', 'message': 'Could not generate a unique reference code. Please try again.'})
+
+    # Determine approval status
+    if payment_method == "cash":
+        approval_status = "Approved" if amount_paid >= total_cost else "Pending"
+    else:
+        approval_status = request.POST.get("approval_status", "Pending")
 
     # Create the order
     try:
-        order = CustomerOrder.objects.create(
+        CustomerOrder.objects.create(
             customer=customer,
-            rice_type=stock.rice_type,  # Pulled from Stock
+            rice_type=stock.rice_type,
             quantity=quantity,
             cost_per_sack=cost_per_sack,
             discount=discount,
             total_cost=total_cost,
-            payment_method=request.POST.get('payment_method', 'cash'),
+            payment_method=payment_method,
             amount_paid=amount_paid,
             amount_change=amount_change,
-            delivery_type=request.POST.get('delivery_type', 'delivery'),
-            delivery_status=request.POST.get('delivery_status', 'pending'),
-            approval_status=request.POST.get('approval_status', 'Approved'),
+            delivery_type=request.POST.get("delivery_type", "delivery"),
+            delivery_status=request.POST.get("delivery_status", "pending"),
+            approval_status=approval_status,
             employee=employee,
             handled_by=employee,
-            receiver_name=request.POST.get('receiver_name', ''),
-            receiver_mobile_number=request.POST.get('receiver_mobile_number', ''),
+            receiver_name=request.POST.get("receiver_name", ""),
+            receiver_mobile_number=request.POST.get("receiver_mobile_number", ""),
             delivery_address=delivery_address,
-            reference_code=reference_code,  # ✅ User-provided and optional
-            order_notes=request.POST.get('order_notes', ''),
+            reference_code=reference_code,
+            order_notes=request.POST.get("order_notes", ""),
         )
         return JsonResponse({'status': 'success', 'message': 'Order created successfully.'})
+
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f"Order creation failed: {str(e)}"})
+
 
 from django.core.paginator import Paginator
 
@@ -2075,6 +2113,7 @@ import json
 def update_supplier_status(request, supplier_id):
     try:
         data = json.loads(request.body)
+
         new_status = data.get('status')
 
         if new_status not in ['Approved', 'Declined']:
@@ -2357,63 +2396,91 @@ from django.shortcuts import render
 from django.shortcuts import render
 from webapp.models import CustomerOrder
 
+from django.core.paginator import Paginator
+from django.shortcuts import render
+from .models import CustomerOrder
+
 def allorder_history(request):
-    orders = CustomerOrder.objects.filter(is_active=True).order_by('-created_at')
-    return render(request, 'allorder_history.html', {'orders': orders})
-
-from django.shortcuts import render, redirect
-from django.http import HttpResponseBadRequest
-from .models import CustomerOrder
-
-from django.shortcuts import render, redirect
-from django.http import HttpResponseBadRequest, HttpResponseNotAllowed
-from .models import CustomerOrder
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponseBadRequest
-from .models import CustomerOrder
-
-from django.shortcuts import get_object_or_404, redirect, render
-from django.http import HttpResponseBadRequest
-from .models import CustomerOrder
+    # Show orders that are considered 'history' (completed/approved)
+    # Pickup+Cash: approved
+    # Pickup+GCash/Credit Card: approved
+    # Delivery+Cash: approved and delivered
+    # Delivery+GCash/Credit Card: approved and delivered
+    orders_list = CustomerOrder.objects.filter(
+        is_active=True,
+        approval_status__iexact='approved'
+    ).filter(
+        (
+            # Pickup + Cash (approved)
+            Q(delivery_type__iexact='pickup', payment_method__iexact='cash') |
+            # Pickup + GCash/Credit Card (approved)
+            Q(delivery_type__iexact='pickup', payment_method__in=['gcash', 'credit card']) |
+            # Delivery + Cash (approved and delivered)
+            Q(delivery_type__iexact='delivery', payment_method__iexact='cash', delivery_status__iexact='delivered') |
+            # Delivery + GCash/Credit Card (approved and delivered)
+            Q(delivery_type__iexact='delivery', payment_method__in=['gcash', 'credit card'], delivery_status__iexact='delivered')
+        )
+    ).order_by('-created_at')
+    
+    paginator = Paginator(orders_list, 10)  # Show 10 orders per page
+    
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'allorder_history.html', {'page_obj': page_obj})
 
 def payment_confirmation(request, order_id):
-    # Check if order_id is valid
-    if not str(order_id).isdigit() or int(order_id) <= 0:
-        return HttpResponseBadRequest()
+    # Validate order_id is a positive integer or zero
+    if not str(order_id).isdigit() or int(order_id) < 0:
+        return render(request, 'payment_confirmation.html', {
+            'orders': [],
+            'error_message': 'Invalid order ID.'
+        })
 
-    # Safely fetch the order or return 404
+    order_id = int(order_id)
+
+    if order_id == 0:
+        # Show orders for payment confirmation:
+        # Pickup + GCash/Credit Card (pending)
+        # Delivery + GCash/Credit Card (pending)
+        orders = CustomerOrder.objects.filter(
+            approval_status__iexact='pending',
+            is_active=True
+        ).filter(
+            (
+                # Pickup + GCash/Credit Card
+                Q(delivery_type__iexact='pickup', payment_method__in=['gcash', 'credit card']) |
+                # Delivery + GCash/Credit Card
+                Q(delivery_type__iexact='delivery', payment_method__in=['gcash', 'credit card'])
+            )
+        ).order_by('-created_at')
+
+        return render(request, 'payment_confirmation.html', {'orders': orders})
+
+    # For a specific order_id:
     order = get_object_or_404(CustomerOrder, order_id=order_id)
 
     if request.method == "POST":
         if order.approval_status.lower() != "approved":
             order.approval_status = "approved"
+            order.is_active = True  # Ensure it is active
             order.save()
         return redirect('allorder_history')
 
-    # GET handling
-    if order.delivery_type == 'pickup':
-        if order.payment_method in ['gcash', 'credit_card']:
-            return render(request, 'payment_confirmation.html', {'order': order})
-        elif order.payment_method == 'cash':
-            return redirect('allorder_history')
+    # Only allow confirmation for eligible payment methods
+    if order.payment_method.lower() not in ['gcash', 'credit card']:
+        return render(request, 'payment_confirmation.html', {
+            'orders': [],
+            'error_message': 'Payment method not eligible for confirmation.'
+        })
 
-    elif order.delivery_type == 'delivery':
-        if order.payment_method == 'cash':
-            return redirect('delivery_confirmation', order_id=order.order_id)
-        elif order.payment_method in ['gcash', 'credit_card']:
-            return render(request, 'payment_confirmation.html', {'order': order})
+    return render(request, 'payment_confirmation.html', {'orders': [order]})
 
-    return HttpResponseBadRequest("Invalid order flow")
-
-from django.shortcuts import render
-from webapp.models import CustomerOrder
 
 def delivery_confirmation(request, order_id=None):
     error_message = None
     orders = None
 
-    # Validate order_id if given
     if order_id is not None:
         try:
             order_id = int(order_id)
@@ -2422,25 +2489,49 @@ def delivery_confirmation(request, order_id=None):
         except (ValueError, TypeError):
             error_message = "Invalid order ID."
 
+    if request.method == 'POST' and order_id and not error_message:
+        # Confirm delivery by updating delivery_status and approval_status
+        order = get_object_or_404(CustomerOrder, order_id=order_id, delivery_type='delivery')
+        order.delivery_status = 'delivered'
+        order.approval_status = 'approved'
+        order.is_active = True
+        order.save()
+        return redirect('delivery_confirmation')
+
     if not error_message:
         try:
             if order_id:
-                # Filter by order_id AND delivery_type='delivery' (case-sensitive, because it's a choice field)
-                orders = CustomerOrder.objects.filter(order_id=order_id, delivery_type='delivery', is_active=True)
+                orders = CustomerOrder.objects.filter(
+                    order_id=order_id,
+                    delivery_type='delivery',
+                    is_active=True
+                ).filter(
+                    (
+                        # Delivery + Cash: approved & pending delivery
+                        Q(payment_method__iexact='cash', approval_status__iexact='approved', delivery_status__iexact='pending') |
+                        # Delivery + GCash/Credit Card: approved & pending delivery
+                        Q(payment_method__in=['gcash', 'credit card'], approval_status__iexact='approved', delivery_status__iexact='pending')
+                    )
+                )
                 if not orders.exists():
-                    error_message = f"No active delivery order found with ID {order_id}."
+                    error_message = f"No active approved delivery order found with ID {order_id}."
             else:
-                # Get all active delivery orders
-                orders = CustomerOrder.objects.filter(delivery_type='delivery', is_active=True)
+                orders = CustomerOrder.objects.filter(
+                    delivery_type='delivery',
+                    is_active=True
+                ).filter(
+                    (
+                        Q(payment_method__iexact='cash', approval_status__iexact='approved', delivery_status__iexact='pending') |
+                        Q(payment_method__in=['gcash', 'credit card'], approval_status__iexact='approved', delivery_status__iexact='pending')
+                    )
+                )
                 if not orders.exists():
-                    error_message = "No active delivery orders available."
+                    error_message = "No active approved delivery orders available."
         except Exception as e:
             error_message = "An unexpected error occurred while fetching delivery orders."
             print(f"Exception in delivery_confirmation: {e}")
-            import traceback
-            traceback.print_exc()
 
     return render(request, 'delivery_confirmation.html', {
-        'orders': orders,
+        'orders': orders if orders is not None else [],
         'error_message': error_message,
     })
