@@ -743,8 +743,12 @@ def add_customer(request):
             Customer_Mobile_Number=request.POST.get('customer_mobile_number')
         )
 
-        return JsonResponse({"status": "success", "message": "Customer added successfully"})
-
+        # If AJAX, return JSON
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({"status": "success", "message": "Customer added successfully!"})
+        # Otherwise, redirect or render as usual
+        from django.shortcuts import redirect
+        return redirect('user_account')
     return JsonResponse({"status": "error", "message": "Invalid request"})
 
 
