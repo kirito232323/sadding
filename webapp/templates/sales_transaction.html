@@ -333,18 +333,13 @@
          class="w-full border rounded px-3 py-2" placeholder="Enter reference code" />
 </div>
 
-<form id="orderForm" method="POST" action="{% url 'process_order' %}">
-  {% csrf_token %}
-
-  <!-- form fields go here -->
-
-  <!-- SUBMIT BUTTON -->
-  <div class="pt-4">
-    <button type="submit"
-            class="w-full bg-yellow-500 text-white font-semibold py-3 rounded hover:bg-yellow-600 transition duration-200">
-      Submit Order
-    </button>
-  </div>
+<!-- SUBMIT BUTTON -->
+<div class="pt-4">
+  <button type="submit"
+          class="w-full bg-yellow-500 text-white font-semibold py-3 rounded hover:bg-yellow-600 transition duration-200">
+    Submit Order
+  </button>
+</div>
 </form>
 
 <div id="messagePopup" style="display:none; padding:10px; margin-top:10px; border:1px solid #ccc;"></div>
@@ -390,117 +385,6 @@ document.getElementById('orderForm').addEventListener('submit', function(event) 
   });
 });
 
-
-document.getElementById('orderForm').addEventListener('submit', function(event) {
-  event.preventDefault(); // prevent default form submission
-
-  const form = event.target;
-  const formData = new FormData(form);
-
-  fetch("{% url 'process_order' %}", {  // URL of your view that handles form POST
-    method: "POST",
-    headers: {
-      "X-CSRFToken": formData.get('csrfmiddlewaretoken')
-    },
-    body: formData,
-  })
-  .then(response => response.json())
-  .then(data => {
-    const msgDiv = document.getElementById('messagePopup');
-    if (data.status === "success") {
-      msgDiv.style.color = "green";
-      msgDiv.textContent = data.message || "Order processed successfully!";
-    } else {
-      msgDiv.style.color = "red";
-      msgDiv.textContent = data.message || "Error processing order.";
-    }
-    msgDiv.style.display = "block";
-  })
-  .catch(error => {
-    const msgDiv = document.getElementById('messagePopup');
-    msgDiv.style.color = "red";
-    msgDiv.textContent = "Network error: " + error;
-    msgDiv.style.display = "block";
-  });
-});
-</script>
-
-
-
-
-<!-- Modal Background -->
-<div id="addCustomerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-  <!-- Modal Content -->
-  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl relative">
-    <h2 class="text-xl font-semibold mb-4">Add Customer</h2>
-
-    <!-- Close Button -->
-    <button id="closeAddCustomerModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">
-      &times;
-    </button>
-
-    <!-- Form -->
-    <form method="POST" action="{% url 'add_customer' %}" id="addCustomerForm">
-      {% csrf_token %}
-
-      <!-- Full Name Section -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <input type="text" name="first_name" class="border p-2 rounded" placeholder="First Name" required>
-        <input type="text" name="middle_name" class="border p-2 rounded" placeholder="Middle Name">
-        <input type="text" name="last_name" class="border p-2 rounded" placeholder="Last Name" required>
-        <input type="text" name="suffix" class="border p-2 rounded" placeholder="Suffix">
-      </div>
-
-      <!-- Address Section -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <input type="text" name="house_unit_number" class="border p-2 rounded" placeholder="House/Unit Number" required>
-        <input type="text" name="building_name" class="border p-2 rounded" placeholder="Building Name (Optional)">
-        <input type="text" name="street_name" class="border p-2 rounded" placeholder="Street Name">
-        <input type="text" name="barangay" class="border p-2 rounded" placeholder="Barangay" required>
-      </div>
-
-      <!-- City, Province, ZIP -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <input type="text" name="city_municipality" class="border p-2 rounded" placeholder="City/Municipality" required>
-        <input type="text" name="province" class="border p-2 rounded" placeholder="Province" required>
-        <input type="text" name="zip_code" class="border p-2 rounded" placeholder="ZIP Code" required>
-        <div></div>
-      </div>
-
-      <!-- Contact Numbers -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-        <input type="text" name="customer_mobile_number" class="border p-2 rounded" placeholder="Customer Mobile Number" required>
-      </div>
-
-      <!-- Buttons -->
-      <div class="flex justify-end gap-3">
-        <button type="button" id="cancelAddCustomer" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancel</button>
-        <button type="submit" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">Add Customer</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Modal Script -->
-<script>
-
-function showToast(message, type = 'success') {
-    const toastContainer = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-
-    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
-
-    toast.className = `${bgColor} text-white px-4 py-2 rounded shadow-lg animate-slideIn`;
-    toast.innerText = message;
-
-    toastContainer.appendChild(toast);
-
-    // Auto-remove after 3 seconds
-    setTimeout(() => {
-        toast.classList.add('opacity-0');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
 
 document.addEventListener("DOMContentLoaded", function () {
   const paymentMethod = document.getElementById("payment_method_bottom");
@@ -613,10 +497,11 @@ document.addEventListener("DOMContentLoaded", function () {
     if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
     if (cancelModalBtn) cancelModalBtn.addEventListener('click', closeModal);
 
-    form.addEventListener('submit', (e) => {
-      const confirmSubmit = confirm("Are you sure you want to add this customer?");
-      if (!confirmSubmit) e.preventDefault();
-    });
+    // Remove this duplicate submit handler to avoid double confirmation and double toast
+    // form.addEventListener('submit', (e) => {
+    //   const confirmSubmit = confirm("Are you sure you want to add this customer?");
+    //   if (!confirmSubmit) e.preventDefault();
+    // });
   }
 
   // --- CUSTOMER SELECT AUTO-FILL ---
@@ -724,3 +609,102 @@ fetch('/your/process_order/url/', {
 });
 
 </script>
+
+<!-- Modal Background -->
+<div id="addCustomerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+  <!-- Modal Content -->
+  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl relative">
+    <h2 class="text-xl font-semibold mb-4">Add Customer</h2>
+
+    <!-- Close Button -->
+    <button id="closeAddCustomerModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">
+      &times;
+    </button>
+
+    <!-- Form -->
+    <form method="POST" action="{% url 'add_customer' %}" id="addCustomerForm">
+      {% csrf_token %}
+
+      <!-- Full Name Section -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <input type="text" name="first_name" class="border p-2 rounded" placeholder="First Name" required>
+        <input type="text" name="middle_name" class="border p-2 rounded" placeholder="Middle Name">
+        <input type="text" name="last_name" class="border p-2 rounded" placeholder="Last Name" required>
+        <input type="text" name="suffix" class="border p-2 rounded" placeholder="Suffix">
+      </div>
+
+      <!-- Address Section -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <input type="text" name="house_unit_number" class="border p-2 rounded" placeholder="House/Unit Number" required>
+        <input type="text" name="building_name" class="border p-2 rounded" placeholder="Building Name (Optional)">
+        <input type="text" name="street_name" class="border p-2 rounded" placeholder="Street Name">
+        <input type="text" name="barangay" class="border p-2 rounded" placeholder="Barangay" required>
+      </div>
+
+      <!-- City, Province, ZIP -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <input type="text" name="city_municipality" class="border p-2 rounded" placeholder="City/Municipality" required>
+        <input type="text" name="province" class="border p-2 rounded" placeholder="Province" required>
+        <input type="text" name="zip_code" class="border p-2 rounded" placeholder="ZIP Code" required>
+        <div></div>
+      </div>
+
+      <!-- Contact Numbers -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+        <input type="text" name="customer_mobile_number" class="border p-2 rounded" placeholder="Customer Mobile Number" required>
+      </div>
+
+      <!-- Buttons -->
+      <div class="flex justify-end gap-3">
+        <button type="button" id="cancelAddCustomer" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancel</button>
+        <button type="submit" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">Add Customer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Script -->
+<script>
+// (No change to showToast function)
+
+// Add Customer AJAX submission
+const addCustomerForm = document.getElementById('addCustomerForm');
+if (addCustomerForm) {
+  addCustomerForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const confirmSubmit = confirm("Are you sure you want to add this customer?");
+    if (!confirmSubmit) return;
+    const formData = new FormData(addCustomerForm);
+    fetch(addCustomerForm.action, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+        'X-Requested-With': 'XMLHttpRequest' // Ensure Django detects AJAX
+      },
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        showToast(data.message || 'Customer added successfully!', 'success');
+        addCustomerForm.reset();
+        document.getElementById('addCustomerModal').classList.add('hidden'); // Only close modal on success
+        // Optionally reload customer list here
+      } else {
+        showToast(data.message || 'Error adding customer.', 'error');
+        // Do NOT close modal on error
+      }
+    })
+    .catch(error => {
+      showToast('An unexpected error occurred.', 'error');
+      console.error('Error:', error);
+    });
+  });
+}
+</script>
+
+<!-- Toast Container -->
+<div id="toast-container" class="fixed top-5 right-5 z-50 space-y-2"></div>
+
+</body>
+</html>
