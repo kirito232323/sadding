@@ -150,9 +150,7 @@
   <a href="{% url 'invoice' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
     <i class="fas fa-file-invoice w-4 text-yellow-500"></i><span>Create Invoice</span>
   </a>
-  <a href="{% url 'view_sales_history' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
-    <i class="fas fa-history w-4 text-yellow-500"></i><span>History</span>
-  </a>
+  
   <a href="{% url 'view_sales_report' %}" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-yellow-50 hover:text-yellow-600 transition mt-1">
     <i class="fas fa-chart-line w-4 text-yellow-500"></i><span>Report</span>
   </a>
@@ -160,7 +158,6 @@
     <i class="fas fa-sync-alt w-4 text-yellow-500"></i><span>Inventory Turnover</span>
   </a>
 </div>
-
 
     <div class="border-t border-gray-200 mt-auto px-2 py-4">
       <a href="{% url 'logout' %}" onclick="return confirm('Logout?');" class="flex items-center space-x-2 px-2 py-1 rounded text-sm hover:bg-red-100 hover:text-red-600 transition font-semibold text-red-500 mt-2">
@@ -172,6 +169,7 @@
 </header>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 
   <script>
     async function fetchOrders(customerId) {
@@ -322,7 +320,10 @@
       background-color: #f3f4f6;
       padding: 1rem;             /* Equal padding all around */
     "
+
+
   >
+  
     <form id="ledger-form" class="bg-white p-6 rounded-lg shadow-md" method="post" style="width: 400px; margin: 0;">
       <h2>Create Customer Ledger Entry</h2>
 

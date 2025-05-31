@@ -2077,6 +2077,11 @@ def supplier_order(request):
     return render(request, 'supplierorder.html', {'employees': employees})
 
 
+
+
+
+
+
 from webapp.models import Employee, Supplier, UserLog
 
 def process_supplier(request):
@@ -2494,13 +2499,24 @@ def payment_confirmation(request, order_id):
 
     if request.method == "POST":
         if order.approval_status.lower() != "approved":
+            # Deduct stock and increment stock_out
+            from .models import Stock
+            # Try to match both rice_type and packaging (if available)
+            stock_qs = Stock.objects.filter(rice_type=order.rice_type)
+            if hasattr(order, 'packaging') and order.packaging:
+                stock_qs = stock_qs.filter(packaging=order.packaging)
+            stock = stock_qs.first()
+            if stock and stock.current_stock >= order.quantity:
+                stock.stock_out += order.quantity
+                stock.save()  # current_stock auto-updates in model
+            # else: optionally handle not enough stock
             order.approval_status = "approved"
             order.is_active = True  # Ensure it is active
             order.save()
         return redirect('allorder_history')
 
     # Only allow confirmation for eligible payment methods
-    if order.payment_method.lower() not in ['gcash', 'credit card']:
+    if order.payment_method.lower() not in ['gcash', 'credit card', 'cash']:
         return render(request, 'payment_confirmation.html', {
             'orders': [],
             'error_message': 'Payment method not eligible for confirmation.'
@@ -2520,6 +2536,18 @@ def delivery_confirmation(request, order_id=None):
         try:
             order = get_object_or_404(CustomerOrder, order_id=order_id, delivery_type='delivery')
             if order.delivery_status.lower() == 'pending':
+                # Deduct stock and increment stock_out from Stock model
+                from .models import Stock
+                # Try to match both rice_type and packaging (if available)
+                stock_qs = Stock.objects.filter(rice_type=order.rice_type)
+                # If your CustomerOrder has a packaging field, use it; otherwise, remove this filter
+                if hasattr(order, 'packaging') and order.packaging:
+                    stock_qs = stock_qs.filter(packaging=order.packaging)
+                stock = stock_qs.first()
+                if stock and stock.current_stock >= order.quantity:
+                    stock.stock_out += order.quantity
+                    stock.save()  # current_stock auto-updates in model
+                # else: optionally handle not enough stock
                 order.delivery_status = 'delivered'
                 order.approval_status = 'approved'
                 order.is_active = True
@@ -2537,14 +2565,12 @@ def delivery_confirmation(request, order_id=None):
                 is_active=True,
                 delivery_status__iexact='pending',
             )
-            # Do not set error_message if not found, just show empty table
         else:
             orders = CustomerOrder.objects.filter(
                 delivery_type='delivery',
                 is_active=True,
                 delivery_status__iexact='pending',
             )
-            # Do not set error_message if not found, just show empty table
     except Exception as e:
         error_message = "An unexpected error occurred while fetching delivery orders."
         print(f"Exception in delivery_confirmation: {e}")
