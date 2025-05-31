@@ -339,7 +339,6 @@
 </section>
 
 
-<!-- Update Log Section -->
 <section class="bg-white p-6 rounded-lg shadow-md mb-8">
   <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Update Log</h2>
   <div id="update-log-list">
@@ -348,18 +347,14 @@
         {% for log in update_logs %}
           <li class="flex justify-between items-center border-b py-2">
             <span class="text-sm text-gray-700">
-              <span class="font-medium">{{ log.employee.full_name }}</span>
-              (<span class="italic text-gray-500">{{ log.employee.role }}</span>) — 
-              {% if "Added" in log.action_type %}
-                {{ log.action_type }} at {{ log.timestamp|date:"M d, Y H:i" }}
-              {% else %}
-                {{ log.action_type }} at {{ log.timestamp|date:"M d, Y H:i" }}
-              {% endif %}
-              {% if "(Undone)" in log.action_type %}
+              <span class="font-medium">{{ log.user_full_name }}</span>
+              (<span class="italic text-gray-500">{{ log.user_role }}</span>) —
+              Added {{ log.quantity_added }} sacks to {{ log.rice_type }} at {{ log.timestamp|date:"M d, Y H:i" }}
+              {% if log.undone %}
                 <span class="text-red-500 ml-2">(Undone)</span>
               {% endif %}
             </span>
-            {% if "Added" in log.action_type and "(Undone)" not in log.action_type %}
+            {% if not log.undone %}
               <button type="button"
                       class="undo-btn text-xs text-red-600 border border-red-400 rounded px-2 py-1 hover:bg-red-50 ml-2"
                       data-log-id="{{ log.id }}">
