@@ -552,6 +552,12 @@ document.addEventListener("DOMContentLoaded", function () {
         this.value = '';
       }
     });
+    // Prevent manual entry of minus sign
+    input.addEventListener('keydown', function(e) {
+      if (e.key === '-' || e.key === 'Subtract') {
+        e.preventDefault();
+      }
+    });
   });
 
   // Prevent negative value in Amount Change (even if calculated)
@@ -665,7 +671,6 @@ fetch('/your/process_order/url/', {
 
 <!-- Modal Script -->
 <script>
-// (No change to showToast function)
 
 // Add Customer AJAX submission
 const addCustomerForm = document.getElementById('addCustomerForm');
