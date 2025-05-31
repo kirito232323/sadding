@@ -61,6 +61,27 @@ def list_all_tables():
     except sqlite3.Error as e:
         print(f"SQLite error: {e}")
 
+def find_invalid_decimals():
+    conn = sqlite3.connect('db.sqlite3')
+    c = conn.cursor()
+    FIELDS = ['cost_per_sack', 'total_cost', 'amount_paid', 'amount_change', 'discount']
+    print('\n--- Checking for invalid decimal values in webapp_customerorder ---')
+    for field in FIELDS:
+        print(f'Checking field: {field}')
+        c.execute(f"SELECT order_id, {field} FROM webapp_customerorder")
+        for row_id, value in c.fetchall():
+            try:
+                if value is None or value == '' or str(value).strip() == '':
+                    print(f'  order_id={row_id}: EMPTY')
+                else:
+                    float(value)
+            except Exception:
+                print(f'  order_id={row_id}: INVALID VALUE: {value!r}')
+            else:
+                print(f'  order_id={row_id}: {value!r}')
+    conn.close()
+
 if __name__ == "__main__":
     list_all_tables()
     inspect_webapp_customerorder_table()
+    find_invalid_decimals()

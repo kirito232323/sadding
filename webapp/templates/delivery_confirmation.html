@@ -134,70 +134,69 @@
     <h2 class="text-2xl font-bold">Payment Orders</h2>
     <a href="{% url 'allorder_history' %}" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition">View All Orders</a>
   </div>
-<div class="overflow-x-auto rounded shadow bg-white">
-  <table class="w-full text-sm text-left text-gray-600">
-    <thead class="text-xs uppercase bg-gray-50 text-gray-500 border-b border-gray-200">
-      <tr>
-        <th class="py-3 px-4">Order ID</th>
-        <th class="py-3 px-4">Customer Name</th>
-        <th class="py-3 px-4">Rice Type</th>
-        <th class="py-3 px-4">Quantity</th>
-        <th class="py-3 px-4">Cost Per Sack</th>
-        <th class="py-3 px-4">Discount (%)</th>
-        <th class="py-3 px-4">Total Cost</th>
-        <th class="py-3 px-4">Payment Method</th>
-        <th class="py-3 px-4">Amount Paid</th>
-        <th class="py-3 px-4">Amount Change</th>
-        <th class="py-3 px-4">Status</th>
-        <th class="py-3 px-4">Date Ordered</th>
-        <th class="py-3 px-4">Date Approved</th>
-        <th class="py-3 px-4">Approved By</th>
-        <th class="py-3 px-4">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for order in page_obj|default:orders %}
-        <tr class="border-b border-gray-100 hover:bg-yellow-50">
-          <td class="py-2 px-4">{{ order.order_id }}</td>
-          <td class="py-2 px-4">
-            {% if order.customer and order.customer.name %}
-              {{ order.customer.name.first_name }}{% if order.customer.name.middle_name %} {{ order.customer.name.middle_name }}{% endif %} {{ order.customer.name.last_name }}{% if order.customer.name.suffix %} {{ order.customer.name.suffix }}{% endif %}
-            {% else %}N/A{% endif %}
-          </td>
-          <td class="py-2 px-4">{{ order.rice_type.rice_type }}</td>
-          <td class="py-2 px-4">{{ order.quantity }}</td>
-          <td class="py-2 px-4">₱{{ order.cost_per_sack|floatformat:2 }}</td>
-          <td class="py-2 px-4">{{ order.discount|floatformat:2 }}</td>
-          <td class="py-2 px-4">₱{{ order.total_cost|floatformat:2 }}</td>
-          <td class="py-2 px-4">{{ order.payment_method|title }}</td>
-          <td class="py-2 px-4">₱{{ order.amount_paid|floatformat:2 }}</td>
-          <td class="py-2 px-4">₱{{ order.amount_change|floatformat:2 }}</td>
-          <td class="py-2 px-4">{{ order.approval_status|title }}</td>
-          <td class="py-2 px-4">{{ order.created_at|date:"M d, Y H:i" }}</td>
-          <td class="py-2 px-4">{% if order.updated_at %}{{ order.updated_at|date:"M d, Y H:i" }}{% else %}-{% endif %}</td>
-          <td class="py-2 px-4">
-            {% if order.handled_by %}
-              {{ order.handled_by.FirstName }}{% if order.handled_by.MiddleName %} {{ order.handled_by.MiddleName }}{% endif %} {{ order.handled_by.LastName }}{% if order.handled_by.Suffix %} {{ order.handled_by.Suffix }}{% endif %}
-            {% else %}-{% endif %}
-          </td>
-          <td class="py-2 px-4 space-x-1">
-            <a href="{% url 'approve_order' order.order_id %}" class="text-green-600 hover:text-green-800" title="Approve">
-              <i class="fas fa-check-circle"></i>
-            </a>
-            <a href="{% url 'decline_order' order.order_id %}" class="text-red-600 hover:text-red-800" title="Decline">
-              <i class="fas fa-times-circle"></i>
-            </a>
-            <a href="{% url 'delete_order' order.order_id %}" onclick="return confirm('Are you sure to delete this order?');" class="text-gray-600 hover:text-gray-900" title="Delete">
-              <i class="fas fa-trash-alt"></i>
-            </a>
-          </td>
+
+  {% if error_message %}
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+      {{ error_message }}
+    </div>
+  {% endif %}
+
+  <div class="overflow-x-auto rounded shadow bg-white">
+    <table class="w-full text-sm text-left text-gray-600">
+      <thead class="text-xs uppercase bg-gray-50 text-gray-500 border-b border-gray-200">
+        <tr>
+          <th class="py-3 px-4">Order ID</th>
+          <th class="py-3 px-4">Customer Name</th>
+          <th class="py-3 px-4">Rice Type</th>
+          <th class="py-3 px-4">Quantity</th>
+          <th class="py-3 px-4">Cost Per Sack</th>
+          <th class="py-3 px-4">Discount (%)</th>
+          <th class="py-3 px-4">Total Cost</th>
+          <th class="py-3 px-4">Payment Method</th>
+          <th class="py-3 px-4">Amount Paid</th>
+          <th class="py-3 px-4">Amount Change</th>
+          <th class="py-3 px-4">Status</th>
+          <th class="py-3 px-4">Date Ordered</th>
+          <th class="py-3 px-4">Date Approved</th>
+          <th class="py-3 px-4">Approved By</th>
+          <th class="py-3 px-4">Actions</th>
         </tr>
-      {% empty %}
-        <tr><td colspan="15" class="text-center py-4 text-gray-400">No orders found.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+          <tr class="border-b border-gray-100 hover:bg-yellow-50">
+            <td class="py-2 px-4">{{ order.order_id }}</td>
+            <td class="py-2 px-4">{{ order.customer_name }}</td>
+            <td class="py-2 px-4">{{ order.rice_type.rice_type }}</td>
+            <td class="py-2 px-4">{{ order.quantity }}</td>
+            <td class="py-2 px-4">₱{{ order.cost_per_sack|floatformat:2 }}</td>
+            <td class="py-2 px-4">{{ order.discount|floatformat:2 }}</td>
+            <td class="py-2 px-4">₱{{ order.total_cost|floatformat:2 }}</td>
+            <td class="py-2 px-4">{{ order.payment_method|title }}</td>
+            <td class="py-2 px-4">₱{{ order.amount_paid|floatformat:2 }}</td>
+            <td class="py-2 px-4">₱{{ order.amount_change|floatformat:2 }}</td>
+            <td class="py-2 px-4">{{ order.approval_status|title }} / {{ order.delivery_status|title }}</td>
+            <td class="py-2 px-4">{{ order.created_at|date:"M d, Y H:i" }}</td>
+            <td class="py-2 px-4">{% if order.updated_at %}{{ order.updated_at|date:"M d, Y H:i" }}{% else %}-{% endif %}</td>
+            <td class="py-2 px-4">
+              {% if order.handled_by %}
+                {{ order.handled_by.FirstName }}{% if order.handled_by.MiddleName %} {{ order.handled_by.MiddleName }}{% endif %} {{ order.handled_by.LastName }}{% if order.handled_by.Suffix %} {{ order.handled_by.Suffix }}{% endif %}
+              {% else %}-{% endif %}
+            </td>
+            <td class="py-2 px-4 space-x-1">
+  <form method="post" action="{% url 'delivery_confirmation' order.order_id %}">
+    {% csrf_token %}
+    <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Confirm Delivered</button>
+  </form>
+</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="15" class="text-center py-4 text-gray-400">No orders found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</main>
 
 </body>
 </html>

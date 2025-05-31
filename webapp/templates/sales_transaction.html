@@ -350,11 +350,15 @@
 </form>
 
 <div id="messagePopup" style="display:none; padding:10px; margin-top:10px; border:1px solid #ccc;"></div>
-
 <script>
-
-  document.getElementById('orderForm').addEventListener('submit', function(event) {
+document.getElementById('orderForm').addEventListener('submit', function(event) {
   event.preventDefault(); // prevent default form submission
+
+  // Ensure payment_method is always lowercase value
+  const paymentSelect = document.getElementById('payment_method_bottom');
+  if (paymentSelect) {
+    paymentSelect.value = paymentSelect.value.toLowerCase();
+  }
 
   const form = event.target;
   const formData = new FormData(form);
@@ -373,7 +377,6 @@
       msgDiv.style.color = "green";
       msgDiv.textContent = data.message || "Order processed successfully!";
       msgDiv.style.display = "block";
-
       form.reset(); // reset the form fields here
     } else {
       msgDiv.style.color = "red";
@@ -388,6 +391,7 @@
     msgDiv.style.display = "block";
   });
 });
+
 
 document.getElementById('orderForm').addEventListener('submit', function(event) {
   event.preventDefault(); // prevent default form submission

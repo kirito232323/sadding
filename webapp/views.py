@@ -173,9 +173,14 @@ def safe_decimal(value):
 def money_fmt(value):
     return f"₱{safe_decimal(value):,.2f}"
 
+from decimal import Decimal, InvalidOperation
+from django.shortcuts import render
+from django.http import HttpResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+from .models import CustomerOrder
 
-# --- Invoice View ---
-def invoice_view(request):
+def invoice_view(request): 
     orders = CustomerOrder.objects.all().order_by('-created_at')
     selected_order = None
     order_id = request.POST.get('order_id') or request.GET.get('order_id')
@@ -184,7 +189,7 @@ def invoice_view(request):
         try:
             selected_order = CustomerOrder.objects.get(order_id=order_id)
 
-            # Calculate safe values for display and PDF
+            # Calculate safe values
             selected_order.safe_cost_per_sack = safe_decimal(selected_order.cost_per_sack)
             selected_order.safe_quantity = safe_decimal(selected_order.quantity)
             selected_order.safe_discount = safe_decimal(getattr(selected_order, 'discount', 0))
@@ -213,11 +218,7 @@ def invoice_view(request):
 
         def line(text='', gap=LINE_HEIGHT, bold=False, align_right=False, value=None):
             nonlocal y
-            if bold:
-                p.setFont("Helvetica-Bold", 11)
-            else:
-                p.setFont("Helvetica", 11)
-
+            p.setFont("Helvetica-Bold", 11) if bold else p.setFont("Helvetica", 11)
             if align_right and value is not None:
                 p.drawString(LEFT_MARGIN, y, text)
                 p.drawRightString(PAGE_WIDTH - LEFT_MARGIN, y, str(value))
@@ -263,7 +264,6 @@ def invoice_view(request):
         'invoice_number': f'INV-{order_id or "N/A"}',
     }
     return render(request, 'invoice.html', context)
-
 
 
 @require_POST
@@ -838,12 +838,12 @@ def new_sale_view(request):
                 quantity=quantity,
                 cost_per_sack=cost_per_sack,
                 total_cost=total_cost,
-                payment_method=request.POST.get('payment_method', ''),
+                payment_method=request.POST.get('payment_method', '').lower(),
                 amount_paid=amount_paid,
                 amount_change=amount_change,
-                delivery_type=request.POST.get('delivery_type', 'delivery'),
-                delivery_status='Pending',
-                approval_status='Pending',
+                delivery_type=request.POST.get('delivery_type', 'delivery').lower(),
+                delivery_status='pending',
+                approval_status='pending',
                 employee=employee,
             )
 
@@ -1329,47 +1329,34 @@ def get_customer_details(request):
         # add other fields as needed
     }
 
-    return JsonResponse({'status': 'success', 'data': data})
-
 from decimal import Decimal, InvalidOperation
-from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
-from .models import Stock, Users, CustomerOrder, Employee
-
-from decimal import Decimal, InvalidOperation
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from .models import Stock, Users, CustomerOrder, Employee
-import uuid
 from django.utils.crypto import get_random_string
+from .models import CustomerOrder, Stock, Users, Employee
 
-@csrf_exempt  # Only use this if you're not sending CSRF token from the frontend
 def process_order(request):
     if request.method != "POST":
         return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
 
-    # Get and validate IDs
     stock_id = request.POST.get("stock_id")
     customer_id = request.POST.get("customer_id")
+    reference_code = request.POST.get("reference_code")
 
     if not stock_id:
         return JsonResponse({'status': 'error', 'message': 'Please select a rice type.'})
     if not customer_id:
         return JsonResponse({'status': 'error', 'message': 'Customer ID is required.'})
 
-    # Validate stock
     try:
         stock = Stock.objects.select_related('rice_type').get(stockID=stock_id)
     except Stock.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Selected stock does not exist.'})
 
-    # Validate customer
     try:
         customer = Users.objects.select_related('address').get(UserID=customer_id)
     except Users.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Customer not found.'})
 
-    # Optional: Validate employee
     employee = None
     employee_id = request.POST.get("employee_id")
     if employee_id:
@@ -1378,7 +1365,6 @@ def process_order(request):
         except Employee.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Employee not found.'})
 
-    # Build delivery address from user's address
     delivery_address = ""
     if customer.address:
         addr = customer.address
@@ -1392,41 +1378,36 @@ def process_order(request):
             addr.zip_code
         ]))
 
-    # Safely parse numeric fields
     try:
         quantity = int(request.POST.get("quantity", 0))
         cost_per_sack = Decimal(str(request.POST.get("cost_per_sack", '0')))
         discount = Decimal(str(request.POST.get("discount", '0')))
-        total_cost = Decimal(str(request.POST.get("total_cost", '0')))
         amount_paid = Decimal(str(request.POST.get("amount_paid", '0')))
-        amount_change = Decimal(str(request.POST.get("amount_change", '0')))
     except (InvalidOperation, TypeError, ValueError):
-        return JsonResponse({'status': 'error', 'message': 'Invalid numeric input. Please check your entries.'})
+        return JsonResponse({'status': 'error', 'message': 'Invalid numeric input.'})
 
-    # Get payment method
+    total_cost = (cost_per_sack * quantity) - discount
+    total_cost = max(total_cost, Decimal('0.00'))
+    amount_change = max(amount_paid - total_cost, Decimal('0.00'))
+
     payment_method = request.POST.get("payment_method", "cash").lower()
+    approval_status = "Approved" if payment_method == "cash" and amount_paid >= total_cost else "Pending"
 
-    # Handle reference code (optional, but ensure uniqueness)
-    reference_code = request.POST.get("reference_code")
-    max_attempts = 10
-    attempt = 0
+    # Ensure reference code is unique
     if not reference_code:
-        reference_code = get_random_string(8)
-    while CustomerOrder.objects.filter(reference_code=reference_code).exists() and attempt < max_attempts:
-        reference_code = get_random_string(8)
-        attempt += 1
-    if CustomerOrder.objects.filter(reference_code=reference_code).exists():
-        return JsonResponse({'status': 'error', 'message': 'Could not generate a unique reference code. Please try again.'})
-
-    # Determine approval status
-    if payment_method == "cash":
-        approval_status = "Approved" if amount_paid >= total_cost else "Pending"
+        for _ in range(10):
+            temp_code = get_random_string(8)
+            if not CustomerOrder.objects.filter(reference_code=temp_code).exists():
+                reference_code = temp_code
+                break
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Could not generate a unique reference code.'})
     else:
-        approval_status = request.POST.get("approval_status", "Pending")
+        if CustomerOrder.objects.filter(reference_code=reference_code).exists():
+            return JsonResponse({'status': 'error', 'message': 'Reference code already exists.'})
 
-    # Create the order
     try:
-        CustomerOrder.objects.create(
+        order = CustomerOrder.objects.create(
             customer=customer,
             rice_type=stock.rice_type,
             quantity=quantity,
@@ -1445,12 +1426,12 @@ def process_order(request):
             receiver_mobile_number=request.POST.get("receiver_mobile_number", ""),
             delivery_address=delivery_address,
             reference_code=reference_code,
-            order_notes=request.POST.get("order_notes", ""),
+            order_notes=request.POST.get("order_notes", "")
         )
         return JsonResponse({'status': 'success', 'message': 'Order created successfully.'})
-
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': f"Order creation failed: {str(e)}"})
+        return JsonResponse({'status': 'error', 'message': f'Order creation failed: {str(e)}'})
+
 
 
 from django.core.paginator import Paginator
@@ -1506,6 +1487,9 @@ def approve_order(request, order_id):
             return JsonResponse({'status': 'error', 'message': 'Not enough stock to approve this order.'}, status=400)
 
         order.approval_status = 'Approved'
+        # If delivery+cash, set delivery_status to 'delivered' so it appears in allorder_history
+        if order.delivery_type.lower() == 'delivery' and order.payment_method.lower() == 'cash':
+            order.delivery_status = 'delivered'
         order.save()
         return JsonResponse({'status': 'success'})
     except Exception as e:
@@ -1566,6 +1550,11 @@ from django.shortcuts import render
 from .models import CustomerOrder, Users
 
 
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import JsonResponse
+from django.db.models import Q
+from urllib.parse import urlencode
+
 def view_sales_history(request):
     cashier_id = request.GET.get('cashier')
     start_date = request.GET.get('start_date')
@@ -1596,13 +1585,32 @@ def view_sales_history(request):
     from .models import Employee, Supplier
     cashiers = Employee.objects.filter(Role__in=['cashier', 'admin'])
 
-    # Fetch all approved supplier orders
     supplier_orders = Supplier.objects.filter(approval_status__iexact='approved').order_by('-purchase_date')
 
+    orders = orders.order_by('-created_at')
+
+    # PAGINATION
+    paginator = Paginator(orders, 10)  # Show 10 orders per page
+    page_number = request.GET.get('page', 1)
+
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    # Build querystring for all GET params except 'page'
+    querydict = request.GET.copy()
+    if 'page' in querydict:
+        querydict.pop('page')
+    querystring = querydict.urlencode()
+
     context = {
-        'customer_orders': orders.order_by('-created_at'),
+        'page_obj': page_obj,
         'cashiers': cashiers,
         'supplier_orders': supplier_orders,
+        'querystring': querystring,
     }
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -1610,6 +1618,8 @@ def view_sales_history(request):
         return JsonResponse({'html': html})
 
     return render(request, 'view_sales_history.html', context)
+
+
 
 from django.core.paginator import Paginator
 from django.shortcuts import render
@@ -1853,40 +1863,62 @@ def inventory_turnover_report(request):
     })
 
 
-from django.template.loader import render_to_string
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q
+from django.template.loader import render_to_string
+
+from webapp.models import CustomerOrder, Users  # ✅ Import your models
 
 def view_sales_his(request):
-    search = request.GET.get('search', '')
-    cashier_id = request.GET.get('cashier', '')
-    start_date = request.GET.get('start_date', '')
-    end_date = request.GET.get('end_date', '')
+    # Get filter parameters
+    search = request.GET.get('search', '').strip()
+    cashier_id = request.GET.get('cashier', '').strip()
+    start_date = request.GET.get('start_date', '').strip()
+    end_date = request.GET.get('end_date', '').strip()
+    page = request.GET.get('page', 1)
 
-    orders = CustomerOrder.objects.all().select_related('employee', 'rice_type')
+    # Start with all orders and select related foreign keys
+    orders = CustomerOrder.objects.select_related('employee', 'rice_type', 'customer').all()
 
+    # Filter by cashier
     if cashier_id:
         orders = orders.filter(employee_id=cashier_id)
 
+    # Filter by date range
     if start_date:
         orders = orders.filter(created_at__date__gte=start_date)
     if end_date:
         orders = orders.filter(created_at__date__lte=end_date)
 
+    # Filter by search query (customer name or order_id)
     if search:
         orders = orders.filter(
             Q(customer_name__icontains=search) |
-            Q(id__icontains=search)
+            Q(order_id__icontains=search)
         )
 
+    # Paginate the filtered orders
+    paginator = Paginator(orders, 10)
+    try:
+        paginated_orders = paginator.page(page)
+    except (PageNotAnInteger, EmptyPage):
+        paginated_orders = paginator.page(1)
+
+    # Return partial HTML if AJAX request
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        html = render_to_string('partials/orders_table.html', {'customer_orders': orders})
+        html = render_to_string('partials/orders_table.html', {
+            'customer_orders': paginated_orders
+        }, request=request)
         return JsonResponse({'html': html})
 
+    # Otherwise, render full page
     cashiers = Users.objects.all()
-    return render(request, 'view_sales_history.html', {'customer_orders': orders, 'cashiers': cashiers})
-
-from django.shortcuts import render, redirect
-from .models import CustomerOrder
+    return render(request, 'view_sales_history.html', {
+        'customer_orders': paginated_orders,
+        'cashiers': cashiers
+    })
 
 def delivery_management(request):
     orders = CustomerOrder.objects.filter(delivery_type='delivery')
@@ -2477,59 +2509,45 @@ def payment_confirmation(request, order_id):
     return render(request, 'payment_confirmation.html', {'orders': [order]})
 
 
+from django.shortcuts import render, get_object_or_404
+from django.db.models import Q
+
 def delivery_confirmation(request, order_id=None):
-    error_message = None
     orders = None
+    error_message = None
 
-    if order_id is not None:
+    if request.method == 'POST' and order_id:
         try:
-            order_id = int(order_id)
-            if order_id <= 0:
-                error_message = "Invalid order ID."
-        except (ValueError, TypeError):
-            error_message = "Invalid order ID."
-
-    if request.method == 'POST' and order_id and not error_message:
-        # Confirm delivery by updating delivery_status and approval_status
-        order = get_object_or_404(CustomerOrder, order_id=order_id, delivery_type='delivery')
-        order.delivery_status = 'delivered'
-        order.approval_status = 'approved'
-        order.is_active = True
-        order.save()
-        return redirect('delivery_confirmation')
-
-    if not error_message:
-        try:
-            if order_id:
-                orders = CustomerOrder.objects.filter(
-                    order_id=order_id,
-                    delivery_type='delivery',
-                    is_active=True
-                ).filter(
-                    (
-                        # Delivery + Cash: approved & pending delivery
-                        Q(payment_method__iexact='cash', approval_status__iexact='approved', delivery_status__iexact='pending') |
-                        # Delivery + GCash/Credit Card: approved & pending delivery
-                        Q(payment_method__in=['gcash', 'credit card'], approval_status__iexact='approved', delivery_status__iexact='pending')
-                    )
-                )
-                if not orders.exists():
-                    error_message = f"No active approved delivery order found with ID {order_id}."
+            order = get_object_or_404(CustomerOrder, order_id=order_id, delivery_type='delivery')
+            if order.delivery_status.lower() == 'pending':
+                order.delivery_status = 'delivered'
+                order.approval_status = 'approved'
+                order.is_active = True
+                order.save()
             else:
-                orders = CustomerOrder.objects.filter(
-                    delivery_type='delivery',
-                    is_active=True
-                ).filter(
-                    (
-                        Q(payment_method__iexact='cash', approval_status__iexact='approved', delivery_status__iexact='pending') |
-                        Q(payment_method__in=['gcash', 'credit card'], approval_status__iexact='approved', delivery_status__iexact='pending')
-                    )
-                )
-                if not orders.exists():
-                    error_message = "No active approved delivery orders available."
+                error_message = "Order is not eligible for delivery confirmation."
         except Exception as e:
-            error_message = "An unexpected error occurred while fetching delivery orders."
-            print(f"Exception in delivery_confirmation: {e}")
+            error_message = f"Failed to update order: {e}"
+
+    try:
+        if order_id:
+            orders = CustomerOrder.objects.filter(
+                order_id=order_id,
+                delivery_type='delivery',
+                is_active=True,
+                delivery_status__iexact='pending',
+            )
+            # Do not set error_message if not found, just show empty table
+        else:
+            orders = CustomerOrder.objects.filter(
+                delivery_type='delivery',
+                is_active=True,
+                delivery_status__iexact='pending',
+            )
+            # Do not set error_message if not found, just show empty table
+    except Exception as e:
+        error_message = "An unexpected error occurred while fetching delivery orders."
+        print(f"Exception in delivery_confirmation: {e}")
 
     return render(request, 'delivery_confirmation.html', {
         'orders': orders if orders is not None else [],

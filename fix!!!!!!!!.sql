@@ -17,4 +17,4 @@ WHERE
     OR amount_change GLOB '*[^0-9.]*'
 ;
 
-DELETE FROM webapp_customerorder WHERE order_id = 22;
+DELETE FROM webapp_customerorder WHERE order_id = 72;

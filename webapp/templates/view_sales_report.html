@@ -243,7 +243,7 @@
 {{ row.created_date|date:"M d, Y" }}
           </td>
           <td class="px-4 py-2 border">{{ row.total_quantity }}</td>
-          <td class="px-4 py-2 border">₱{{ row.total_revenue|floatformat:2 }}</td>
+<td class="px-4 py-2 border">₱{{ row.total_revenue|floatformat:2|intcomma }}</td>
         </tr>
       {% empty %}
         <tr>
