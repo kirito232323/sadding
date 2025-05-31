@@ -1635,7 +1635,7 @@ def user_logs(request):
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT ul.id, ul.action_type, ul.timestamp,
-                   CONCAT(e.FirstName, ' ', COALESCE(e.MiddleName, ''), ' ', e.LastName, ' ', COALESCE(e.Suffix, '')) AS employee_name,
+                   (e.FirstName || ' ' || COALESCE(e.MiddleName, '') || ' ' || e.LastName || ' ' || COALESCE(e.Suffix, '')) AS employee_name,
                    e.Role
             FROM user_logs ul
             JOIN employee e ON ul.employee_id = e.EmployeeID
@@ -2000,7 +2000,7 @@ def update_delivery_status(request):
                 except Employee.DoesNotExist:
                     return JsonResponse({"success": False, "message": "Logged-in employee not found."})
             else:
-                return JsonResponse({"success": False, "message": "User not authenticated."})
+                JsonResponse({"success": False, "message": "User not authenticated."})
 
             return JsonResponse({"success": True})
 
@@ -2075,10 +2075,6 @@ def supplier_order(request):
 
     employees = Users.objects.filter(Role='employee')
     return render(request, 'supplierorder.html', {'employees': employees})
-
-
-
-
 
 
 
