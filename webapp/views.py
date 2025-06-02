@@ -1,8 +1,10 @@
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-from django.views.decorators.http import require_POST, require_GET
-from .models import UserLog, Rice, Users, CustomerOrder
+from django.views.decorators.http import require_POST, require_GET, require_http_methods
+from .models import UserLog, Rice, Users, CustomerOrder, UserName, UserAddress
 from django.http import HttpResponseBadRequest
+from django.shortcuts import render, redirect
+from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
@@ -268,45 +270,73 @@ def invoice_view(request):
 
 @require_POST
 def undo_update(request, log_id):
-    if request.headers.get('x-requested-with') != 'XMLHttpRequest':
-        return HttpResponseBadRequest("Invalid request.")
-
-    log = get_object_or_404(UserLog, id=log_id)
-
-    # Only proceed if the log is an "add stock" entry and not yet undone
-    if not log.action_type.startswith('Added') or 'sacks to' not in log.action_type:
-        return JsonResponse({'status': 'error', 'message': 'Undo not allowed for this action.'}, status=400)
-
-    if '(Undone)' in log.action_type:
-        return JsonResponse({'status': 'error', 'message': 'This action has already been undone.'}, status=400)
+    # Check if it's an AJAX request
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
 
     try:
-        parts = log.action_type.split()
-        quantity = int(parts[1])
-        rice_type = ' '.join(parts[4:]).strip()
-    except Exception:
-        return JsonResponse({'status': 'error', 'message': 'Malformed log entry.'}, status=400)
+        # Get the log entry
+        log = get_object_or_404(UserLog, id=log_id)
 
-    # Try to find the rice
-    rice = Rice.objects.filter(rice_type__iexact=rice_type.replace('(Undone)', '').strip()).first()
-    if not rice:
-        return JsonResponse({'status': 'error', 'message': f'Rice type not found: {rice_type}'}, status=404)
+        # Only proceed if the log is an "add stock" entry and not yet undone
+        if not log.action_type.startswith('Added') or 'sacks to' not in log.action_type:
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'message': 'Undo not allowed for this action.'}, status=400)
+            messages.error(request, 'Undo not allowed for this action.')
+            return redirect('addstock')
 
-    # Get stock (assumes default packaging is 50kg)
-    stock = Stock.objects.filter(rice_type=rice, packaging='50kg').first()
-    if not stock:
-        return JsonResponse({'status': 'error', 'message': 'Stock record not found.'}, status=404)
+        if '(Undone)' in log.action_type:
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'message': 'This action has already been undone.'}, status=400)
+            messages.error(request, 'This action has already been undone.')
+            return redirect('addstock')
 
-    # Perform undo: subtract stock_in
-    stock.stock_in = max(0, stock.stock_in - quantity)
-    stock.current_stock = max(0, stock.stock_in - stock.stock_out)
-    stock.save()
+        try:
+            parts = log.action_type.split()
+            quantity = int(parts[1])
+            rice_type = ' '.join(parts[4:]).strip()
+            # Remove packaging info from rice type if present
+            rice_type = rice_type.split('(')[0].strip()
+        except Exception:
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'message': 'Malformed log entry.'}, status=400)
+            messages.error(request, 'Malformed log entry.')
+            return redirect('addstock')
 
-    # Append "(Undone)" to log.action_type to visually indicate it, but no field is used
-    log.action_type = f"{log.action_type} (Undone)"
-    log.save()
+        # Try to find the rice
+        rice = Rice.objects.filter(rice_type__iexact=rice_type).first()
+        if not rice:
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'message': f'Rice type not found: {rice_type}'}, status=404)
+            messages.error(request, f'Rice type not found: {rice_type}')
+            return redirect('addstock')
 
-    return JsonResponse({'status': 'success', 'message': 'Undo successful.'})
+        # Get stock (assumes default packaging is 50kg)
+        stock = Stock.objects.filter(rice_type=rice).first()
+        if not stock:
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'message': 'Stock record not found.'}, status=404)
+            messages.error(request, 'Stock record not found.')
+            return redirect('addstock')
+
+        # Perform undo: subtract stock_in
+        stock.stock_in = max(0, stock.stock_in - quantity)
+        stock.current_stock = max(0, stock.stock_in - stock.stock_out)
+        stock.save()
+
+        # Append "(Undone)" to log.action_type
+        log.action_type = f"{log.action_type} (Undone)"
+        log.save()
+
+        if is_ajax:
+            return JsonResponse({'status': 'success', 'message': 'Undo successful.'})
+        messages.success(request, 'Stock update has been successfully undone.')
+        return redirect('addstock')
+
+    except Exception as e:
+        if is_ajax:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        messages.error(request, f'An error occurred: {str(e)}')
+        return redirect('addstock')
 
 
 @require_GET
@@ -714,42 +744,65 @@ from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from webapp.models import UserName, UserAddress, Users  # Adjust if needed
 
-@require_POST
+@require_http_methods(["GET", "POST"])
 def add_customer(request):
-    if request.method == 'POST':
-        # Step 1: Create name
-        name = UserName.objects.create(
-            first_name=request.POST.get('first_name'),
-            middle_name=request.POST.get('middle_name'),
-            last_name=request.POST.get('last_name'),
-            suffix=request.POST.get('suffix')
-        )
+    if request.method == 'GET':
+        return render(request, 'add_customer.html')
+        
+    elif request.method == 'POST':
+        try:
+            # Extract form data
+            first_name = request.POST.get('first_name')
+            middle_name = request.POST.get('middle_name', '')
+            last_name = request.POST.get('last_name')
+            suffix = request.POST.get('suffix', '')
+            customer_mobile_number = request.POST.get('customer_mobile_number')
+            house_unit_number = request.POST.get('house_unit_number')
+            building_name = request.POST.get('building_name', '')
+            street_name = request.POST.get('street_name', '')
+            barangay = request.POST.get('barangay')
+            city_municipality = request.POST.get('city_municipality')
+            province = request.POST.get('province')
+            zip_code = request.POST.get('zip_code')
 
-        # Step 2: Create address
-        address = UserAddress.objects.create(
-            house_unit_number=request.POST.get('house_unit_number'),
-            building_name=request.POST.get('building_name'),
-            street_name=request.POST.get('street_name'),
-            barangay=request.POST.get('barangay'),
-            city_municipality=request.POST.get('city_municipality'),
-            province=request.POST.get('province'),
-            zip_code=request.POST.get('zip_code')
-        )
+            # Validate required fields
+            if not all([first_name, last_name, customer_mobile_number, house_unit_number, 
+                       street_name, barangay, city_municipality, province, zip_code]):
+                messages.error(request, 'Please fill in all required fields.')
+                return render(request, 'add_customer.html')
 
-        # Step 3: Create user with name and address
-        Users.objects.create(
-            name=name,
-            address=address,
-            Customer_Mobile_Number=request.POST.get('customer_mobile_number')
-        )
+            # Create UserName record
+            user_name = UserName.objects.create(
+                first_name=first_name,
+                middle_name=middle_name,
+                last_name=last_name,
+                suffix=suffix
+            )
 
-        # If AJAX, return JSON
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({"status": "success", "message": "Customer added successfully!"})
-        # Otherwise, redirect or render as usual
-        from django.shortcuts import redirect
-        return redirect('user_account')
-    return JsonResponse({"status": "error", "message": "Invalid request"})
+            # Create UserAddress record
+            user_address = UserAddress.objects.create(
+                house_unit_number=house_unit_number,
+                building_name=building_name,
+                street_name=street_name,
+                barangay=barangay,
+                city_municipality=city_municipality,
+                province=province,
+                zip_code=zip_code
+            )
+
+            # Create Users record with the related models
+            user = Users.objects.create(
+                name=user_name,
+                address=user_address,
+                Customer_Mobile_Number=customer_mobile_number
+            )
+
+            messages.success(request, 'Customer added successfully!')
+            return render(request, 'add_customer.html')
+
+        except Exception as e:
+            messages.error(request, f'Error adding customer: {str(e)}')
+            return render(request, 'add_customer.html')
 
 
 
@@ -761,41 +814,34 @@ from .models import Rice, Stock, CustomerOrder, Users, UserName, UserAddress, Em
 def new_sale_view(request):
     if request.method == 'POST':
         try:
-            # 1. Validate rice type
-            rice_type_id = request.POST.get('rice-type')
-            if not rice_type_id:
-                return JsonResponse({'status': 'error', 'message': 'Please select a rice type.'})
+            # Get form data
+            rice_type_id = request.POST.get('rice_type_id')
+            quantity = request.POST.get('quantity')
+            cost_per_sack = request.POST.get('cost_per_sack')
+            total_cost = request.POST.get('total_cost')
+            amount_paid = request.POST.get('amount_paid')
+            amount_change = request.POST.get('amount_change')
 
-            # 2. Validate customer name
-            first_name = request.POST.get('first_name')
-            last_name = request.POST.get('last_name')
-            if not first_name or not last_name:
-                return JsonResponse({'status': 'error', 'message': 'Customer first and last name are required.'})
-
-            middle_name = request.POST.get('middle_name', '')
-            suffix = request.POST.get('suffix', '')
-
-            # 3. Get or create UserName instance
-            user_name, _ = UserName.objects.get_or_create(
-                first_name=first_name.strip(),
-                last_name=last_name.strip(),
-                middle_name=middle_name.strip() if middle_name else None,
-                suffix=suffix.strip() if suffix else None
+            # Create UserName instance
+            user_name = UserName.objects.create(
+                first_name=request.POST.get('first_name', ''),
+                middle_name=request.POST.get('middle_name', ''),
+                last_name=request.POST.get('last_name', ''),
+                suffix=request.POST.get('suffix', '')
             )
 
-            # 4. Get or create UserAddress instance
-            address_fields = {
-                'house_unit_number': request.POST.get('house_unit_number', ''),
-                'building_name': request.POST.get('building_name', ''),
-                'street_name': request.POST.get('street_name', ''),
-                'barangay': request.POST.get('barangay', ''),
-                'city_municipality': request.POST.get('city_municipality', ''),
-                'province': request.POST.get('province', ''),
-                'zip_code': request.POST.get('zip_code', ''),
-            }
-            user_address, _ = UserAddress.objects.get_or_create(**address_fields)
+            # Create UserAddress instance
+            user_address = UserAddress.objects.create(
+                house_unit_number=request.POST.get('house_unit_number', ''),
+                building_name=request.POST.get('building_name', ''),
+                street_name=request.POST.get('street_name', ''),
+                barangay=request.POST.get('barangay', ''),
+                city_municipality=request.POST.get('city_municipality', ''),
+                province=request.POST.get('province', ''),
+                zip_code=request.POST.get('zip_code', '')
+            )
 
-            # 5. Get or create Users instance
+            # Get or create Users instance
             customer, _ = Users.objects.get_or_create(
                 name=user_name,
                 defaults={
@@ -804,19 +850,19 @@ def new_sale_view(request):
                 }
             )
 
-            # 6. Get Rice object
+            # Get Rice object
             try:
                 rice = Rice.objects.get(riceID=rice_type_id)
             except Rice.DoesNotExist:
                 return JsonResponse({'status': 'error', 'message': 'Selected rice type does not exist.'})
 
-            # 7. Get employee
+            # Get employee
             employee = None
             employee_id = request.POST.get('employee_id')
             if employee_id:
                 employee = Employee.objects.filter(EmployeeID=employee_id).first()
 
-            # 8. Parse numeric fields
+            # Parse numeric fields
             def parse_decimal(value, field_name):
                 try:
                     return Decimal(str(value))
@@ -835,7 +881,7 @@ def new_sale_view(request):
             except ValueError as e:
                 return JsonResponse({'status': 'error', 'message': str(e)})
 
-            # 9. Create the CustomerOrder
+            # Create the CustomerOrder
             CustomerOrder.objects.create(
                 customer=customer,
                 rice_type=rice,
@@ -847,8 +893,9 @@ def new_sale_view(request):
                 amount_change=amount_change,
                 delivery_type=request.POST.get('delivery_type', 'delivery').lower(),
                 delivery_status='pending',
-                approval_status='pending',
+                approval_status='pending',  # Always set to pending initially
                 employee=employee,
+                is_active=True
             )
 
             return redirect('view_sales_history')
@@ -895,6 +942,7 @@ from django.views.decorators.csrf import csrf_exempt
 from webapp.models import Stock
 import json
 
+@csrf_exempt
 def update_stock(request, stockID):
     if request.method == 'POST':
         try:
@@ -902,22 +950,40 @@ def update_stock(request, stockID):
             price = data.get('price_per_sack')
             desc = data.get('description')
 
-            stock = Stock.objects.get(pk=stockID)
+            if price is None:
+                return JsonResponse({'status': 'error', 'message': 'Price is required'}, status=400)
+
+            try:
+                price = Decimal(price)
+                if price < 0:
+                    return JsonResponse({'status': 'error', 'message': 'Price cannot be negative'}, status=400)
+            except (InvalidOperation, TypeError, ValueError):
+                return JsonResponse({'status': 'error', 'message': 'Invalid price format'}, status=400)
+
+            stock = get_object_or_404(Stock, stockID=stockID)
             stock.price_per_sack = price
+            stock.save()
 
             if desc is not None:
-                # Update description on related Rice model, NOT Stock
                 rice = stock.rice_type
                 rice.description = desc
                 rice.save()
 
-            stock.save()
-
-            return JsonResponse({'status': 'success', 'message': 'Stock updated successfully!'})
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Stock updated successfully!',
+                'data': {
+                    'price': float(stock.price_per_sack),
+                    'description': stock.rice_type.description
+                }
+            })
+        except Stock.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Stock not found'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON data'}, status=400)
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)})
-    else:
-        return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
 
 
 def removestock(request):
@@ -928,17 +994,25 @@ from .models import Stock
 
 def viewstocklevel(request):
     stock_data = Stock.objects.select_related('rice_type').all()
-
-    # Extract distinct rice types and packaging values
-    rice_types = Stock.objects.values_list('rice_type__rice_type', flat=True).distinct()
+    rice_types = Rice.objects.values_list('rice_type', flat=True).distinct()
     packaging_types = Stock.objects.values_list('packaging', flat=True).distinct()
 
-    return render(request, 'viewstocklevel.html', {
+    # Calculate stock counts
+    total_stock_count = stock_data.count()
+    low_stock_count = stock_data.filter(current_stock__gt=0, current_stock__lte=100).count()
+    out_of_stock_count = stock_data.filter(current_stock=0).count()
+    in_stock_count = stock_data.filter(current_stock__gt=100).count()
+
+    context = {
         'stock_data': stock_data,
         'rice_types': rice_types,
         'packaging_types': packaging_types,
-    })
-
+        'total_stock_count': total_stock_count,
+        'low_stock_count': low_stock_count,
+        'out_of_stock_count': out_of_stock_count,
+        'in_stock_count': in_stock_count,
+    }
+    return render(request, 'viewstocklevel.html', context)
 
 def logout_view(request):
     request.session.flush()
@@ -1003,26 +1077,39 @@ from django.shortcuts import render, get_object_or_404, redirect
 from .models import Employee  # assuming your Django model is named Employee
 
 def edituser(request, EmployeeID=None):
+    # Get search and filter parameters
     search_query = request.GET.get('search', '')
-
-    # Active users excluding soft-deleted ones (Account_Status != 'deleted')
+    role_filter = request.GET.get('role', '').lower()
+    status_filter = request.GET.get('status', '').lower()
+    
+    # Get all users and apply filters
+    users = Employee.objects.all().order_by('EmployeeID')
+    
     if search_query:
-        all_users = Employee.objects.filter(
-            (Q(FirstName__icontains=search_query) | Q(LastName__icontains=search_query) | Q(Username__icontains=search_query)) &
-            ~Q(Account_Status='deleted')
+        users = users.filter(
+            Q(Username__icontains=search_query) |
+            Q(FirstName__icontains=search_query) |
+            Q(LastName__icontains=search_query)
         )
-    else:
-        all_users = Employee.objects.exclude(Account_Status='deleted')
+    
+    if role_filter:
+        users = users.filter(Role__iexact=role_filter)
+    
+    if status_filter:
+        users = users.filter(Account_Status__iexact=status_filter)
 
-    # Soft-deleted users
-    deleted_users = Employee.objects.filter(Account_Status='deleted')
-
-    selected_user = None
-    success_message = None
+    # Pagination
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(users, 10)  # Show 10 users per page
+    users_page = paginator.get_page(page_number)
+    
+    # Get deleted users with pagination
+    deleted_users = Employee.objects.filter(Account_Status__iexact='deleted').order_by('EmployeeID')
+    deleted_paginator = Paginator(deleted_users, 10)
+    deleted_page = deleted_paginator.get_page(request.GET.get('deleted_page', 1))
 
     if EmployeeID:
         selected_user = get_object_or_404(Employee, EmployeeID=EmployeeID)
-
         if request.method == "POST":
             selected_user.FirstName = request.POST.get("FirstName")
             selected_user.MiddleName = request.POST.get("MiddleName")
@@ -1036,14 +1123,24 @@ def edituser(request, EmployeeID=None):
 
             success_message = "User updated successfully!"
             return redirect('edituser', EmployeeID=EmployeeID)
+    else:
+        selected_user = None
+
+    # Define all possible roles and statuses
+    all_roles = ['Admin', 'Employee', 'Cashier']
+    all_statuses = ['Active', 'Inactive']
 
     context = {
-        'users': all_users,
-        'deleted_users': deleted_users,
+        'users': users_page,
+        'deleted_users': deleted_page,
         'selected_user': selected_user,
-        'success_message': success_message,
+        'all_roles': all_roles,
+        'all_statuses': all_statuses,
+        'current_role': role_filter.capitalize() if role_filter else '',
+        'current_status': status_filter.capitalize() if status_filter else '',
     }
-    return render(request, "edituser.html", context)
+    
+    return render(request, 'edituser.html', context)
 
 
 def profile(request):
@@ -1109,8 +1206,9 @@ def log_user_action(employee_id, action_type):
 
 
 from django.shortcuts import render, redirect
-from .models import Rice, Stock, UserLog, Users
+from .models import Rice, Stock, UserLog, Employee
 from django.utils import timezone
+from django.contrib import messages
 
 def addstock(request):
     if request.method == "POST":
@@ -1120,19 +1218,21 @@ def addstock(request):
         employee_id = request.session.get('employee_id')
 
         if not rice_type_id or not quantity:
+            messages.error(request, 'All fields are required.')
             return render(request, 'addstock.html', {
                 'rice_data': Rice.objects.all(),
                 'stock_data': Stock.objects.select_related('rice_type').all(),
-                'error': 'All fields are required.'
+                'update_logs': []
             })
 
         try:
             rice = Rice.objects.get(riceID=rice_type_id)
         except Rice.DoesNotExist:
+            messages.error(request, 'Selected rice type does not exist.')
             return render(request, 'addstock.html', {
                 'rice_data': Rice.objects.all(),
                 'stock_data': Stock.objects.select_related('rice_type').all(),
-                'error': 'Selected rice type does not exist.'
+                'update_logs': []
             })
 
         try:
@@ -1140,62 +1240,77 @@ def addstock(request):
             if quantity_int <= 0:
                 raise ValueError
         except ValueError:
+            messages.error(request, 'Quantity must be a positive integer.')
             return render(request, 'addstock.html', {
                 'rice_data': Rice.objects.all(),
                 'stock_data': Stock.objects.select_related('rice_type').all(),
-                'error': 'Quantity must be a positive integer.'
+                'update_logs': []
             })
 
         # Get or create stock record
         stock_obj, created = Stock.objects.get_or_create(
             rice_type=rice,
             packaging=packaging,
-            defaults={'stock_in': 0, 'stock_out': 0, 'price_per_sack': 0}
+            defaults={
+                'stock_in': 0,
+                'stock_out': 0,
+                'price_per_sack': 0,
+                'current_stock': 0
+            }
         )
 
-        # Update stock_in
+        # Update stock_in and current_stock
         stock_obj.stock_in += quantity_int
-        stock_obj.save()  # This also updates current_stock
+        stock_obj.current_stock = stock_obj.stock_in - stock_obj.stock_out
+        stock_obj.save()
 
-        # ✅ Record log if employee is logged in
+        # Record log if employee is logged in
         if employee_id:
             try:
                 employee_obj = Employee.objects.get(pk=employee_id)
                 action = f"Added {quantity_int} sacks to {rice.rice_type} ({packaging})"
-                UserLog.objects.create(employee=employee_obj, action_type=action, timestamp=timezone.now())
+                UserLog.objects.create(
+                    employee=employee_obj,
+                    action_type=action,
+                    timestamp=timezone.now()
+                )
+                messages.success(request, f'Successfully added {quantity_int} sacks of {rice.rice_type}.')
             except Employee.DoesNotExist:
-                pass  # Optionally handle this case if needed
+                messages.warning(request, 'Stock added but employee log not recorded.')
 
         return redirect('addstock')
 
-    # Show logs
-    logs = UserLog.objects.select_related('employee').order_by('-timestamp')[:20]
+    # Get logs for display
+    logs = UserLog.objects.select_related('employee').filter(
+        action_type__startswith='Added',
+        action_type__contains='sacks to'
+    ).order_by('-timestamp')[:20]
+    
     update_logs = []
     for log in logs:
-        if log.action_type.startswith('Added') and 'sacks to' in log.action_type:
-            try:
-                parts = log.action_type.split()
-                quantity = int(parts[1])
-                rice_type = ' '.join(parts[4:])  # e.g., "Dinorado (50kg)"
-            except Exception:
-                quantity = None
-                rice_type = log.action_type
-            undone = '(Undone)' in log.action_type
-            update_logs.append({
-                'id': log.id,
-                'action': 'add_stock',
-                'quantity_added': quantity,
-                'rice_type': rice_type,
-                'timestamp': log.timestamp,
-                'undone': undone,
-                'user_full_name': log.employee.__str__() if log.employee else '',
-                'user_role': log.employee.Role if log.employee else '',
-            })
+        try:
+            parts = log.action_type.split()
+            quantity = int(parts[1])
+            rice_type = ' '.join(parts[4:])  # e.g., "Dinorado (50kg)"
+        except (IndexError, ValueError):
+            continue  # Skip malformed log entries
+            
+        undone = '(Undone)' in log.action_type
+        update_logs.append({
+            'id': log.id,
+            'action': 'add_stock',
+            'quantity_added': quantity,
+            'rice_type': rice_type,
+            'timestamp': log.timestamp,
+            'undone': undone,
+            'user_full_name': f"{log.employee.FirstName} {log.employee.LastName}" if log.employee else '',
+            'user_role': log.employee.Role if log.employee else ''
+        })
 
     return render(request, 'addstock.html', {
         'rice_data': Rice.objects.all(),
         'stock_data': Stock.objects.select_related('rice_type').all(),
-        'update_logs': update_logs,
+        'update_logs': update_logs
     })
 
 
@@ -1345,6 +1460,10 @@ def process_order(request):
     stock_id = request.POST.get("stock_id")
     customer_id = request.POST.get("customer_id")
     reference_code = request.POST.get("reference_code")
+    delivery_type = request.POST.get("delivery_type", "delivery").lower()
+    payment_method = request.POST.get("payment_method", "cash").lower()
+
+    print(f"Processing order - Delivery Type: {delivery_type}, Payment Method: {payment_method}")
 
     if not stock_id:
         return JsonResponse({'status': 'error', 'message': 'Please select a rice type.'})
@@ -1369,19 +1488,6 @@ def process_order(request):
         except Employee.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Employee not found.'})
 
-    delivery_address = ""
-    if customer.address:
-        addr = customer.address
-        delivery_address = ", ".join(filter(None, [
-            addr.house_unit_number,
-            addr.building_name,
-            addr.street_name,
-            addr.barangay,
-            addr.city_municipality,
-            addr.province,
-            addr.zip_code
-        ]))
-
     try:
         quantity = int(request.POST.get("quantity", 0))
         cost_per_sack = Decimal(str(request.POST.get("cost_per_sack", '0')))
@@ -1394,21 +1500,7 @@ def process_order(request):
     total_cost = max(total_cost, Decimal('0.00'))
     amount_change = max(amount_paid - total_cost, Decimal('0.00'))
 
-    payment_method = request.POST.get("payment_method", "cash").lower()
-    approval_status = "Approved" if payment_method == "cash" and amount_paid >= total_cost else "Pending"
-
-    # Ensure reference code is unique
-    if not reference_code:
-        for _ in range(10):
-            temp_code = get_random_string(8)
-            if not CustomerOrder.objects.filter(reference_code=temp_code).exists():
-                reference_code = temp_code
-                break
-        else:
-            return JsonResponse({'status': 'error', 'message': 'Could not generate a unique reference code.'})
-    else:
-        if CustomerOrder.objects.filter(reference_code=reference_code).exists():
-            return JsonResponse({'status': 'error', 'message': 'Reference code already exists.'})
+    print(f"Order details - Total Cost: {total_cost}, Amount Paid: {amount_paid}")
 
     try:
         order = CustomerOrder.objects.create(
@@ -1421,19 +1513,16 @@ def process_order(request):
             payment_method=payment_method,
             amount_paid=amount_paid,
             amount_change=amount_change,
-            delivery_type=request.POST.get("delivery_type", "delivery"),
-            delivery_status=request.POST.get("delivery_status", "pending"),
-            approval_status=approval_status,
+            delivery_type=delivery_type,
+            delivery_status='pending',
+            approval_status='pending',  # Always set to pending initially
             employee=employee,
-            handled_by=employee,
-            receiver_name=request.POST.get("receiver_name", ""),
-            receiver_mobile_number=request.POST.get("receiver_mobile_number", ""),
-            delivery_address=delivery_address,
-            reference_code=reference_code,
-            order_notes=request.POST.get("order_notes", "")
+            is_active=True
         )
+        print(f"Order created successfully - ID: {order.order_id}, Active: {order.is_active}")
         return JsonResponse({'status': 'success', 'message': 'Order created successfully.'})
     except Exception as e:
+        print(f"Error creating order: {str(e)}")
         return JsonResponse({'status': 'error', 'message': f'Order creation failed: {str(e)}'})
 
 
@@ -2382,6 +2471,9 @@ def user_account_view(request):
     if not user_id or not user_role:
         return redirect('login')
 
+    # Get message from session if exists
+    message = request.session.pop('user_account_message', None)
+
     if user_role == 'admin':
         # Just get all customers (all users), no role filtering since Role field doesn't exist
         customers = Users.objects.all().order_by('name__last_name', 'name__first_name')
@@ -2397,6 +2489,7 @@ def user_account_view(request):
             'selected_customer': selected_customer,
             'orders': orders,
             'is_admin': True,
+            'message': message,
         })
 
     if user_role == 'user':
@@ -2406,6 +2499,7 @@ def user_account_view(request):
             'user': user,
             'orders': orders,
             'is_admin': False,
+            'message': message,
         })
 
     return redirect('dashboard')
@@ -2422,9 +2516,14 @@ def delete_customer(request, user_id):
         return render(request, 'delete_customer.html', {'customers': customers})
     customer = get_object_or_404(Users, UserID=user_id)
     if request.method == "POST":
+        customer_name = f"{customer.name.first_name} {customer.name.last_name}"
         customer.delete()
+        # Store message in session instead of using messages framework
+        request.session['user_account_message'] = {
+            'type': 'success',
+            'text': f'Customer {customer_name} has been successfully deleted.'
+        }
         return redirect('user_account')
-    return render(request, 'delete_customer.html', {'customer': customer, 'customers': customers})
 
 from decimal import InvalidOperation
 from webapp.models import CustomerOrder
@@ -2438,35 +2537,83 @@ from django.shortcuts import render
 from .models import CustomerOrder
 
 def allorder_history(request):
-    # Show orders that are considered 'history' (completed/approved)
-    # Pickup+Cash: approved
-    # Pickup+GCash/Credit Card: approved
-    # Delivery+Cash: approved and delivered
-    # Delivery+GCash/Credit Card: approved and delivered
-    orders_list = CustomerOrder.objects.filter(
-        is_active=True,
-        approval_status__iexact='approved'
-    ).filter(
-        (
-            # Pickup + Cash (approved)
-            Q(delivery_type__iexact='pickup', payment_method__iexact='cash') |
-            # Pickup + GCash/Credit Card (approved)
-            Q(delivery_type__iexact='pickup', payment_method__in=['gcash', 'credit card']) |
-            # Delivery + Cash (approved and delivered)
-            Q(delivery_type__iexact='delivery', payment_method__iexact='cash', delivery_status__iexact='delivered') |
-            # Delivery + GCash/Credit Card (approved and delivered)
-            Q(delivery_type__iexact='delivery', payment_method__in=['gcash', 'credit card'], delivery_status__iexact='delivered')
+    # Get filter parameters
+    search = request.GET.get('search', '')
+    payment_method = request.GET.get('payment_method', '')
+    delivery_type = request.GET.get('delivery_type', '')
+    rice_type = request.GET.get('rice_type', '')
+    start_date = request.GET.get('start_date', '')
+    end_date = request.GET.get('end_date', '')
+    order_status = request.GET.get('order_status', '')
+
+    # Base queryset
+    orders = CustomerOrder.objects.all()
+
+    # Apply filters
+    if search:
+        orders = orders.filter(
+            Q(order_id__icontains=search) |
+            Q(customer__name__first_name__icontains=search) |
+            Q(customer__name__last_name__icontains=search) |
+            Q(rice_type__rice_type__icontains=search)
         )
-    ).order_by('-created_at')
-    
-    paginator = Paginator(orders_list, 10)  # Show 10 orders per page
-    
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'allorder_history.html', {'page_obj': page_obj})
+
+    if payment_method:
+        orders = orders.filter(payment_method=payment_method)
+
+    if delivery_type:
+        orders = orders.filter(delivery_type=delivery_type)
+
+    if rice_type:
+        orders = orders.filter(rice_type__rice_type__iexact=rice_type)
+
+    if start_date:
+        orders = orders.filter(created_at__gte=start_date)
+
+    if end_date:
+        orders = orders.filter(created_at__lte=end_date)
+
+    if order_status:
+        orders = orders.filter(approval_status=order_status)
+    else:
+        # If no status filter, show both confirmed and cancelled orders
+        orders = orders.filter(Q(approval_status='confirmed') | Q(approval_status='cancelled'))
+
+    # Calculate statistics
+    total_orders = orders.count()
+    cancelled_count = orders.filter(approval_status='cancelled').count()
+    total_revenue = orders.aggregate(Sum('total_cost'))['total_cost__sum'] or 0
+    total_quantity = orders.aggregate(Sum('quantity'))['quantity__sum'] or 0
+
+    # Get unique rice types for filter
+    rice_types = Rice.objects.all()
+
+    # Pagination
+    paginator = Paginator(orders.order_by('-created_at'), 10)
+    page = request.GET.get('page')
+    try:
+        page_obj = paginator.get_page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.get_page(1)
+    except EmptyPage:
+        page_obj = paginator.get_page(paginator.num_pages)
+
+    context = {
+        'page_obj': page_obj,
+        'total_orders': total_orders,
+        'cancelled_count': cancelled_count,
+        'total_revenue': total_revenue,
+        'total_quantity': total_quantity,
+        'rice_types': rice_types,
+    }
+
+    return render(request, 'allorder_history.html', context)
 
 def payment_confirmation(request, order_id):
+    # Get and clear any payment messages from session
+    payment_message = request.session.pop('payment_message', None)
+    payment_message_type = request.session.pop('payment_message_type', None)
+
     # Validate order_id is a positive integer or zero
     if not str(order_id).isdigit() or int(order_id) < 0:
         return render(request, 'payment_confirmation.html', {
@@ -2477,52 +2624,148 @@ def payment_confirmation(request, order_id):
     order_id = int(order_id)
 
     if order_id == 0:
-        # Show orders for payment confirmation:
-        # Pickup + GCash/Credit Card (pending)
-        # Delivery + GCash/Credit Card (pending)
-        orders = CustomerOrder.objects.filter(
-            approval_status__iexact='pending',
-            is_active=True
-        ).filter(
-            (
-                # Pickup + GCash/Credit Card
-                Q(delivery_type__iexact='pickup', payment_method__in=['gcash', 'credit card']) |
-                # Delivery + GCash/Credit Card
-                Q(delivery_type__iexact='delivery', payment_method__in=['gcash', 'credit card'])
-            )
-        ).order_by('-created_at')
+        # Get all orders first for debugging
+        all_orders = CustomerOrder.objects.all()
+        print(f"Total orders in database: {all_orders.count()}")
 
-        return render(request, 'payment_confirmation.html', {'orders': orders})
+        # Show orders where:
+        # 1. Order is active
+        active_orders = all_orders.filter(is_active=True)
+        print(f"Active orders: {active_orders.count()}")
 
-    # For a specific order_id:
+        # 2. Status is pending
+        pending_active_orders = active_orders.filter(approval_status__iexact='pending')
+        print(f"Pending active orders: {pending_active_orders.count()}")
+
+        # 3. Payment is not complete
+        orders = pending_active_orders.filter(amount_paid__lt=F('total_cost'))
+        print(f"Final orders (payment incomplete): {orders.count()}")
+
+        # Print details of each order for debugging
+        for order in orders:
+            print(f"Order {order.order_id}: Type={order.delivery_type}, Active={order.is_active}, "
+                  f"Status={order.approval_status}, Paid={order.amount_paid}, Total={order.total_cost}")
+
+        return render(request, 'payment_confirmation.html', {
+            'orders': orders,
+            'payment_message': payment_message,
+            'payment_message_type': payment_message_type
+        })
+
     order = get_object_or_404(CustomerOrder, order_id=order_id)
 
     if request.method == "POST":
+        # Check if this is a payment processing request
+        if request.POST.get('process_payment') == 'true':
+            try:
+                amount = Decimal(request.POST.get('amount', '0'))
+                payment_method = request.POST.get('payment_method')
+                notes = request.POST.get('notes', '')
+
+                # Validate amount
+                if amount <= 0:
+                    request.session['payment_message'] = 'Payment amount must be greater than 0.'
+                    request.session['payment_message_type'] = 'error'
+                    return redirect('payment_confirmation', order_id=0)
+
+                # Update order with payment
+                current_amount_paid = order.amount_paid or Decimal('0')
+                order.amount_paid = current_amount_paid + amount
+                
+                # If payment is complete, approve the order
+                if order.amount_paid >= order.total_cost:
+                    order.approval_status = "confirmed"
+                    
+                    # For delivery orders, always set delivery_status to pending
+                    if order.delivery_type.lower() == 'delivery':
+                        order.delivery_status = 'pending'
+                        print(f"Debug - Set delivery status to pending for order {order.order_id}")
+                    
+                    # Handle stock deduction
+                    from .models import Stock
+                    stock_qs = Stock.objects.filter(rice_type=order.rice_type)
+                    if hasattr(order, 'packaging') and order.packaging:
+                        stock_qs = stock_qs.filter(packaging=order.packaging)
+                    stock = stock_qs.first()
+                    if stock and stock.current_stock >= order.quantity:
+                        stock.stock_out += order.quantity
+                        stock.save()
+
+                # Add payment method and notes if provided
+                if payment_method:
+                    order.payment_method = payment_method
+                if notes:
+                    order.notes = (order.notes or '') + f"\nPayment received: ₱{amount} via {payment_method}. {notes}"
+
+                order.save()
+                request.session['payment_message'] = f'Payment of ₱{amount} processed successfully.'
+                request.session['payment_message_type'] = 'success'
+                
+                # If this is a delivery order and payment is complete, redirect to delivery confirmation
+                if order.delivery_type.lower() == 'delivery' and order.amount_paid >= order.total_cost:
+                    return redirect('delivery_confirmation', order_id=0)
+                return redirect('payment_confirmation', order_id=0)
+
+            except (InvalidOperation, ValueError) as e:
+                request.session['payment_message'] = f'Invalid payment amount: {str(e)}'
+                request.session['payment_message_type'] = 'error'
+                return redirect('payment_confirmation', order_id=0)
+            except Exception as e:
+                request.session['payment_message'] = f'Error processing payment: {str(e)}'
+                request.session['payment_message_type'] = 'error'
+                return redirect('payment_confirmation', order_id=0)
+
+        # Regular order confirmation
         if order.approval_status.lower() != "approved":
-            # Deduct stock and increment stock_out
-            from .models import Stock
-            # Try to match both rice_type and packaging (if available)
-            stock_qs = Stock.objects.filter(rice_type=order.rice_type)
-            if hasattr(order, 'packaging') and order.packaging:
-                stock_qs = stock_qs.filter(packaging=order.packaging)
-            stock = stock_qs.first()
-            if stock and stock.current_stock >= order.quantity:
-                stock.stock_out += order.quantity
-                stock.save()  # current_stock auto-updates in model
-            # else: optionally handle not enough stock
-            order.approval_status = "approved"
-            order.is_active = True  # Ensure it is active
-            order.save()
+            # Only allow confirmation if payment is complete
+            if order.amount_paid >= order.total_cost:
+                # Deduct stock and increment stock_out
+                from .models import Stock
+                # Try to match both rice_type and packaging (if available)
+                stock_qs = Stock.objects.filter(rice_type=order.rice_type)
+                if hasattr(order, 'packaging') and order.packaging:
+                    stock_qs = stock_qs.filter(packaging=order.packaging)
+                stock = stock_qs.first()
+                if stock and stock.current_stock >= order.quantity:
+                    stock.stock_out += order.quantity
+                    stock.save()  # current_stock auto-updates in model
+                # else: optionally handle not enough stock
+                order.approval_status = "confirmed"
+                order.is_active = True  # Ensure it is active
+                
+                # For delivery orders, set delivery_status to pending
+                if order.delivery_type.lower() == 'delivery':
+                    order.delivery_status = 'pending'
+                
+                order.save()
+                request.session['payment_message'] = 'Order has been confirmed successfully.'
+                request.session['payment_message_type'] = 'success'
+                
+                # If this is a delivery order, redirect to delivery confirmation
+                if order.delivery_type.lower() == 'delivery':
+                    return redirect('delivery_confirmation', order_id=0)
+                else:
+                    return redirect('allorder_history')
+            else:
+                request.session['payment_message'] = 'Order cannot be approved. Payment is incomplete.'
+                request.session['payment_message_type'] = 'error'
+                return redirect('payment_confirmation', order_id=0)
         return redirect('allorder_history')
 
-    # Only allow confirmation for eligible payment methods
-    if order.payment_method.lower() not in ['gcash', 'credit card', 'cash']:
+    # Only show the specific order if it meets our criteria
+    if order.amount_paid >= order.total_cost:
         return render(request, 'payment_confirmation.html', {
             'orders': [],
-            'error_message': 'Payment method not eligible for confirmation.'
+            'error_message': 'Order is not eligible for confirmation. Payment is already complete.',
+            'payment_message': payment_message,
+            'payment_message_type': payment_message_type
         })
 
-    return render(request, 'payment_confirmation.html', {'orders': [order]})
+    return render(request, 'payment_confirmation.html', {
+        'orders': [order],
+        'payment_message': payment_message,
+        'payment_message_type': payment_message_type
+    })
 
 
 from django.shortcuts import render, get_object_or_404
@@ -2531,51 +2774,176 @@ from django.db.models import Q
 def delivery_confirmation(request, order_id=None):
     orders = None
     error_message = None
+    success_message = None
 
     if request.method == 'POST' and order_id:
         try:
             order = get_object_or_404(CustomerOrder, order_id=order_id, delivery_type='delivery')
-            if order.delivery_status.lower() == 'pending':
-                # Deduct stock and increment stock_out from Stock model
-                from .models import Stock
-                # Try to match both rice_type and packaging (if available)
-                stock_qs = Stock.objects.filter(rice_type=order.rice_type)
-                # If your CustomerOrder has a packaging field, use it; otherwise, remove this filter
-                if hasattr(order, 'packaging') and order.packaging:
-                    stock_qs = stock_qs.filter(packaging=order.packaging)
-                stock = stock_qs.first()
-                if stock and stock.current_stock >= order.quantity:
-                    stock.stock_out += order.quantity
-                    stock.save()  # current_stock auto-updates in model
-                # else: optionally handle not enough stock
-                order.delivery_status = 'delivered'
-                order.approval_status = 'approved'
-                order.is_active = True
+            print(f"Debug - Order {order_id}:")
+            print(f"- Delivery Status: {order.delivery_status}")
+            print(f"- Approval Status: {order.approval_status}")
+            print(f"- Is Active: {order.is_active}")
+            print(f"- Delivery Type: {order.delivery_type}")
+            print(f"- Amount Paid: {order.amount_paid}")
+            print(f"- Total Cost: {order.total_cost}")
+
+            # Reset delivery status to pending if it's delivered but needs to be reconfirmed
+            if order.delivery_status.lower() == 'delivered' and order.approval_status == 'confirmed' and order.is_active:
+                order.delivery_status = 'pending'
                 order.save()
+                print(f"Debug - Reset delivery status to pending for order {order_id}")
+            
+            # Now check if it can be delivered
+            if order.delivery_status.lower() == 'pending' and order.approval_status == 'confirmed' and order.is_active:
+                order.delivery_status = 'delivered'
+                order.save()
+                print(f"Debug - Successfully marked order {order_id} as delivered")
+                success_message = f"Order #{order.order_id} has been successfully confirmed for delivery!"
             else:
-                error_message = "Order is not eligible for delivery confirmation."
+                error_message = f"Order is not eligible for delivery confirmation. Status: {order.delivery_status}, Approval: {order.approval_status}, Active: {order.is_active}"
         except Exception as e:
             error_message = f"Failed to update order: {e}"
+            print(f"Debug - Exception: {e}")
 
     try:
+        # Query for eligible orders
+        base_query = {
+            'delivery_type': 'delivery',
+            'is_active': True,
+            'delivery_status__iexact': 'pending',
+            'approval_status': 'confirmed',
+            'amount_paid__gte': F('total_cost')  # Ensure payment is complete
+        }
+
         if order_id:
-            orders = CustomerOrder.objects.filter(
-                order_id=order_id,
-                delivery_type='delivery',
-                is_active=True,
-                delivery_status__iexact='pending',
-            )
+            orders = CustomerOrder.objects.filter(order_id=order_id, **base_query)
+            # Debug log for specific order query
+            print(f"Debug - Searching for order {order_id}")
+            specific_order = CustomerOrder.objects.get(order_id=order_id)
+            print(f"- Found order: {specific_order}")
+            print(f"- Delivery Status: {specific_order.delivery_status}")
+            print(f"- Approval Status: {specific_order.approval_status}")
+            print(f"- Is Active: {specific_order.is_active}")
         else:
-            orders = CustomerOrder.objects.filter(
-                delivery_type='delivery',
-                is_active=True,
-                delivery_status__iexact='pending',
-            )
+            orders = CustomerOrder.objects.filter(**base_query)
+            # Debug log for all orders query
+            print(f"Debug - Total orders found: {orders.count()}")
+            for order in orders:
+                print(f"Order {order.order_id}:")
+                print(f"- Delivery Status: {order.delivery_status}")
+                print(f"- Approval Status: {order.approval_status}")
+                print(f"- Is Active: {order.is_active}")
+
+        # Get counts for stats
+        from django.utils import timezone
+        from django.db.models import Sum
+        import datetime
+
+        today = timezone.now().date()
+        
+        pending_count = CustomerOrder.objects.filter(
+            delivery_type='delivery',
+            delivery_status__iexact='pending',
+            approval_status='confirmed',
+            is_active=True
+        ).count()
+
+        today_count = CustomerOrder.objects.filter(
+            delivery_type='delivery',
+            delivery_status__iexact='pending',
+            approval_status='confirmed',
+            created_at__date=today,
+            is_active=True
+        ).count()
+
+        completed_count = CustomerOrder.objects.filter(
+            delivery_type='delivery',
+            delivery_status__iexact='delivered',
+            is_active=True
+        ).count()
+
+        total_value = CustomerOrder.objects.filter(
+            delivery_type='delivery',
+            delivery_status__iexact='pending',
+            approval_status='confirmed',
+            is_active=True
+        ).aggregate(total=Sum('total_cost'))['total'] or 0
+
     except Exception as e:
-        error_message = "An unexpected error occurred while fetching delivery orders."
-        print(f"Exception in delivery_confirmation: {e}")
+        error_message = f"An unexpected error occurred while fetching delivery orders: {e}"
+        print(f"Debug - Exception in delivery_confirmation: {e}")
+        pending_count = today_count = completed_count = 0
+        total_value = 0
 
     return render(request, 'delivery_confirmation.html', {
         'orders': orders if orders is not None else [],
         'error_message': error_message,
+        'success_message': success_message,
+        'pending_count': pending_count,
+        'today_count': today_count,
+        'completed_count': completed_count,
+        'total_value': total_value,
     })
+
+@require_http_methods(["GET", "POST"])
+def edit_customer_view(request, user_id):
+    customer = get_object_or_404(Users, UserID=user_id)
+    
+    if request.method == "POST":
+        # Update name
+        customer.name.first_name = request.POST.get('first_name')
+        customer.name.middle_name = request.POST.get('middle_name')
+        customer.name.last_name = request.POST.get('last_name')
+        customer.name.suffix = request.POST.get('suffix')
+        customer.name.save()
+        
+        # Update address
+        customer.address.house_unit_number = request.POST.get('house_unit_number')
+        customer.address.building_name = request.POST.get('building_name')
+        customer.address.street_name = request.POST.get('street_name')
+        customer.address.barangay = request.POST.get('barangay')
+        customer.address.city_municipality = request.POST.get('city_municipality')
+        customer.address.province = request.POST.get('province')
+        customer.address.zip_code = request.POST.get('zip_code')
+        customer.address.save()
+        
+        # Update customer
+        customer.Customer_Mobile_Number = request.POST.get('customer_mobile_number')
+        customer.save()
+        
+        messages.success(request, 'Customer updated successfully.')
+        return redirect('user_account')
+    
+    return render(request, 'edit_customer.html', {
+        'customer': customer,
+    })
+
+@require_POST
+@csrf_protect
+def cancel_order(request, order_id):
+    try:
+        # Get the order
+        order = CustomerOrder.objects.get(pk=order_id)
+        
+        # Update order status to cancelled
+        order.approval_status = 'cancelled'
+        order.delivery_status = 'cancelled'
+        order.save()
+        
+        # Log the cancellation
+        log_user_action(request.session.get('user_id'), f'Cancelled order #{order_id}')
+        
+        # Add success message
+        messages.success(request, f'Order #{order_id} has been cancelled successfully.')
+        
+        # Redirect back to the appropriate page
+        if request.META.get('HTTP_REFERER'):
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+        return redirect('dashboard')
+        
+    except CustomerOrder.DoesNotExist:
+        messages.error(request, f'Order #{order_id} not found.')
+        return redirect('dashboard')
+    except Exception as e:
+        messages.error(request, f'Error cancelling order: {str(e)}')
+        return redirect('dashboard')

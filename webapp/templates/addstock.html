@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard - Dragon Ricemill</title>
+  <title>Stock Management - Dragon Ricemill</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
   <style>
@@ -16,6 +16,43 @@
     }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .fade-in {
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .stock-input {
+      @apply w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-200;
+    }
+    
+    .stock-label {
+      @apply block text-sm font-medium text-gray-700 mb-1.5;
+    }
+    
+    .stock-section {
+      @apply bg-white rounded-xl shadow-md p-8 transition-all duration-300 hover:shadow-lg;
+    }
+
+    .table-row-hover {
+      @apply hover:bg-yellow-50 transition-colors duration-200;
+    }
+
+    .btn-primary {
+      @apply bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors duration-200;
+    }
+
+    .btn-secondary {
+      @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200;
+    }
+
+    .btn-danger {
+      @apply bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200;
+    }
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen font-sans leading-relaxed overflow-x-hidden">
@@ -128,276 +165,490 @@
 </header>
 
 
-<!-- Push content so it’s not behind the sidebar -->
+<!-- Push content so it's not behind the sidebar -->
 <div class="mr-56 min-h-screen bg-gray-50">
-  <main class="max-w-screen-xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+  <main class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <!-- Page Header -->
+    <div class="mb-8 fade-in">
+      <h1 class="text-3xl font-bold text-gray-900">Stock Management</h1>
+      <p class="mt-2 text-sm text-gray-600">Add and manage rice stock inventory</p>
+    </div>
+
     <!-- Messages -->
-    {% if messages %}
-      <div class="mb-6">
+    <div class="fixed top-4 left-64 z-50 space-y-2 max-w-md">
+      {% if messages %}
         {% for message in messages %}
-          <div class="p-3 mb-2 rounded text-sm font-medium
-            {% if message.tags == 'success' %} bg-green-100 text-green-800
-            {% elif message.tags == 'error' %} bg-red-100 text-red-800
-            {% elif message.tags == 'warning' %} bg-yellow-100 text-yellow-800
-            {% else %} bg-gray-100 text-gray-800
-            {% endif %}">
-            {{ message }}
+          <div class="message-toast fade-in flex items-center p-4 rounded-lg shadow-lg border bg-white ml-4 {% if message.tags == 'success' %}bg-green-50 border-green-200{% else %}bg-red-50 border-red-200{% endif %}">
+            <div class="flex-shrink-0 mr-3">
+              <i class="fas {% if message.tags == 'success' %}fa-check-circle text-green-500{% else %}fa-exclamation-circle text-red-500{% endif %} text-2xl"></i>
+            </div>
+            <div class="flex-1 mr-2">
+              <p class="text-sm">{{ message }}</p>
+            </div>
+            <button onclick="this.closest('.message-toast').remove()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
         {% endfor %}
-      </div>
-    {% endif %}
-
-
-<!-- API/JS Success Banner (Simple) -->
-<div id="apiSuccessBanner" style="display:none;" class="mb-6 p-3 rounded text-sm font-medium text-center"></div>
-
-<main class="container mx-auto px-4 py-8">
-
-  <!-- Page Title -->
-  <div class="flex flex-col sm:flex-row justify-between items-center mb-10">
-    <h1 class="text-3xl font-bold text-[#1e293b] mb-4 sm:mb-0">Stock Management</h1>
-  </div>
-
- <!-- Add New Rice Type -->
-<section class="bg-white p-6 rounded-lg shadow-md mb-8">
-  <h2 class="text-xl font-bold mb-4 text-gray-800">Add New Rice Type</h2>
-  <form id="add-rice-form" class="space-y-4">
-    {% csrf_token %}
-    <div>
-      <label for="rice_type" class="font-medium text-gray-700">Rice Type:</label>
-      <input type="text" name="rice_type" id="rice_type" required
-             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+      {% endif %}
     </div>
-    <div>
-      <label for="description" class="font-medium text-gray-700">Description:</label>
-      <textarea name="description" id="description" rows="3"
-                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"></textarea>
-    </div>
-    <div>
-      <button type="submit"
-              class="w-full bg-green-600 text-white font-semibold py-2 rounded-md hover:bg-green-700 text-sm">
-        Add Rice Type
-      </button>
-    </div>
-  </form>
-  <p id="response-msg" class="text-sm mt-2"></p>
-</section>
 
-<script>
-  document.getElementById('add-rice-form').addEventListener('submit', async function (e) {
-    e.preventDefault();
-
-    const rice_type = document.getElementById('rice_type').value;
-    const description = document.getElementById('description').value;
-
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-    const response = await fetch("{% url 'add_rice' %}", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': getCookie('csrftoken'),
-      },
-      body: JSON.stringify({
-        rice_type: rice_type,
-        description: description
-        // price_per_sack will default to 0.00 in the view
-      })
-    });
-
-    const result = await response.json();
-    const msgBox = document.getElementById('response-msg');
-
-    if (result.status === 'success') {
-      msgBox.textContent = '✅ ' + result.message;
-      msgBox.className = 'text-green-600';
-      // Optionally clear the form
-      document.getElementById('add-rice-form').reset();
-    } else {
-      msgBox.textContent = '❌ ' + result.message;
-      msgBox.className = 'text-red-600';
-    }
-  });
-</script>
-
-
-  <!-- Add Rice Stock -->
-  <section class="bg-white p-6 rounded-lg shadow-md mb-8">
-    <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Add Rice Stock</h2>
-    <form method="POST" action="{% url 'addstock' %}" onsubmit="return confirm('Confirm adding stock?')">
-      {% csrf_token %}
-      <div class="grid grid-cols-1 sm:grid-cols-4 gap-6 items-end">
-        <div>
-          <label for="riceType" class="block text-sm font-medium text-gray-700">Rice Type</label>
-          <select id="riceType" name="riceType" required
-                  class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm">
-            <option value="" disabled selected>-- Select --</option>
-            {% for rice in rice_data %}
-              <option value="{{ rice.riceID }}">{{ rice.rice_type }}</option>
-            {% endfor %}
-          </select>
+    <!-- Notification Toast -->
+    <div id="notification-toast" class="fixed top-4 left-64 max-w-md transform transition-all duration-300 translate-y-[-100%] opacity-0 z-50">
+      <div class="flex items-center p-4 rounded-lg shadow-lg border bg-white ml-4">
+        <div class="flex-shrink-0 mr-3">
+          <i id="notification-icon" class="fas fa-check-circle text-2xl"></i>
         </div>
-        <div>
-          <label for="packaging" class="block text-sm font-medium text-gray-700">Packaging</label>
-          <select id="packaging" name="packaging" required
-                  class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm">
-            <option value="" disabled selected>-- Select Packaging --</option>
+        <div class="flex-1 mr-2">
+          <p id="notification-title" class="font-semibold"></p>
+          <p id="notification-message" class="text-sm"></p>
+        </div>
+        <button onclick="hideNotification()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-4 flex items-center space-x-3">
+        <div class="animate-spin rounded-full h-6 w-6 border-4 border-yellow-500 border-t-transparent"></div>
+        <span class="text-gray-700">Processing undo request...</span>
+      </div>
+    </div>
+
+    <!-- Add styles for message animations -->
+    <style>
+      .message-toast {
+        animation: slideIn 0.3s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(-20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(-20px);
+          opacity: 0;
+        }
+      }
+
+      .message-toast.hiding {
+        animation: slideOut 0.3s ease-in forwards;
+      }
+
+      /* Auto-hide Django messages after 5 seconds */
+      .message-toast {
+        animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 5s forwards;
+      }
+
+      @keyframes fadeOut {
+        to {
+          opacity: 0;
+          visibility: hidden;
+        }
+      }
+    </style>
+
+    <script>
+      // Auto-hide Django messages after 5 seconds
+      document.addEventListener('DOMContentLoaded', function() {
+        const messages = document.querySelectorAll('.message-toast');
+        messages.forEach(message => {
+          setTimeout(() => {
+            message.classList.add('hiding');
+            setTimeout(() => message.remove(), 300);
+          }, 5000);
+        });
+      });
+    </script>
+
+    <!-- Side by Side Boxes -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+      <!-- Add New Rice Type Box -->
+      <div class="bg-white rounded-lg shadow-md p-6 fade-in">
+        <div class="mb-6">
+          <h2 class="text-xl font-bold text-gray-900">Add New Rice Type</h2>
+          <p class="text-sm text-gray-500 mt-1">* Required fields</p>
+        </div>
+        
+        <form id="add-rice-form" class="space-y-4">
+          {% csrf_token %}
+          <div>
+            <label for="rice_type" class="block text-sm font-medium text-gray-700 mb-1">Rice Type *</label>
+            <input type="text" 
+                   name="rice_type" 
+                   id="rice_type" 
+                   required 
+                   placeholder="Enter rice type name"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500" />
+          </div>
+          
+          <div>
+            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea name="description" 
+                      id="description" 
+                      placeholder="Enter rice description"
+                      rows="3"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"></textarea>
+          </div>
+          
+          <div id="rice-type-message" class="text-sm"></div>
+          
+          <button type="submit" 
+                  class="w-full mt-6 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors">
+            Add Rice Type
+          </button>
+        </form>
+      </div>
+
+      <!-- Add Stock Box -->
+      <div class="bg-white rounded-lg shadow-md p-6 fade-in">
+        <div class="mb-6">
+          <h2 class="text-xl font-bold text-gray-900">Add Stock</h2>
+          <p class="text-sm text-gray-500 mt-1">* Required fields</p>
+        </div>
+        
+        <form method="POST" 
+              action="{% url 'addstock' %}" 
+              onsubmit="return validateStockForm(event)" 
+              class="space-y-4">
+          {% csrf_token %}
+          
+          {% if messages %}
+          <div class="mb-4">
+            {% for message in messages %}
+              <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <div>
+            <label for="riceType" class="block text-sm font-medium text-gray-700 mb-1">Rice Type *</label>
+            <select id="riceType" 
+                    name="riceType" 
+                    required 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500">
+              <option value="" disabled selected>Select rice type</option>
+              {% for rice in rice_data %}
+                <option value="{{ rice.riceID }}">{{ rice.rice_type }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div>
+            <label for="packaging" class="block text-sm font-medium text-gray-700 mb-1">Packaging *</label>
+            <select id="packaging" 
+                    name="packaging" 
+                    required 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500">
+              <option value="" disabled selected>Select packaging</option>
+              <option value="25kg">25kg sacks</option>
+              <option value="50kg">50kg sacks</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Stock In Quantity (sacks) *</label>
+            <input type="number" 
+                   id="quantity" 
+                   name="quantity" 
+                   min="1" 
+                   required 
+                   placeholder="Enter quantity"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500" />
+          </div>
+          
+          <div id="stock-message" class="text-sm"></div>
+          
+          <button type="submit" 
+                  class="w-full mt-6 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors">
+            Add Stock
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Stock Overview Section -->
+    <section class="stock-section fade-in">
+      <div class="flex flex-col sm:flex-row items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4 sm:mb-0">Stock Overview</h2>
+        
+        <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          <input type="text" id="riceFilterInput" placeholder="Search rice type..."
+                 class="stock-input" />
+          <select id="packagingFilter" name="packaging" class="stock-input">
+            <option value="">All Packaging</option>
             <option value="25kg">25kg sacks</option>
             <option value="50kg">50kg sacks</option>
             <option value="Other">Other</option>
           </select>
         </div>
-        <div>
-          <label for="quantity" class="block text-sm font-medium text-gray-700">Stock In Quantity (sacks)</label>
-          <input type="number" id="quantity" name="quantity" min="1" required placeholder="e.g. 100"
-                 class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm" />
-        </div>
-        <div>
-          <button type="submit"
-                  class="w-full bg-indigo-600 text-white font-semibold py-2 rounded-md hover:bg-indigo-700 flex items-center justify-center text-sm">
-            <i class="fas fa-plus mr-2"></i> Add Stock
-          </button>
-        </div>
       </div>
-    </form>
-  </section>
 
-<!-- Rice Stock Table -->
-<section class="bg-white p-6 rounded-lg shadow-md">
-  <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Rice Stock Management</h2>
+      <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rice Type</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Packaging</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock In</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Out</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price/Sack</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200" id="riceTableBody">
+            {% for stock in stock_data %}
+              <tr class="table-row-hover" data-stock-id="{{ stock.stockID }}">
+                <td class="px-6 py-4 whitespace-nowrap">{{ stock.rice_name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ stock.packaging }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">{{ stock.stock_in }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">{{ stock.stock_out }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right font-medium {% if stock.current_stock < 10 %}text-red-600{% endif %}">
+                  {{ stock.current_stock }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">
+                  <span class="price-display">₱{{ stock.price_per_sack }}</span>
+                  <input type="number" class="price-input hidden stock-input" 
+                         value="{{ stock.price_per_sack }}" step="0.01" min="0" />
+                </td>
+                <td class="px-6 py-4">
+                  <span class="desc-display">{{ stock.description|default:"-" }}</span>
+                  <textarea class="desc-input hidden stock-input">{{ stock.description }}</textarea>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ stock.last_updated|date:"M d, Y H:i" }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <div class="flex justify-center space-x-2">
+                    <button onclick="toggleEdit(this)" class="edit-btn btn-secondary text-sm">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="saveChanges(this)" class="save-btn hidden btn-primary text-sm">
+                      <i class="fas fa-save"></i>
+                    </button>
+                    {% if stock.stockID %}
+                    <form method="POST" action="{% url 'deletestock' stock.stockID %}" 
+                          onsubmit="return confirm('Delete this stock?');" class="inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-danger text-sm">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="9" class="px-6 py-4 text-center text-gray-500">
+                  No stock records found
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-  <!-- Search and Filter in One Row -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-    <!-- Search Input -->
-    <input type="text" id="riceFilterInput" placeholder="Filter by Rice Name or Packaging"
-           class="w-full sm:w-1/2 border border-gray-300 rounded px-4 py-2 text-sm" />
-
-    <!-- Packaging Filter Dropdown -->
-    <select id="packagingFilter" name="packaging"
-            class="w-full sm:w-1/2 border border-gray-300 rounded-md px-2 py-2 text-sm">
-      <option value="" selected> All Packaging </option>
-      <option value="25kg">25kg sacks</option>
-      <option value="50kg">50kg sacks</option>
-      <option value="Other">Other</option>
-    </select>
-  </div>
-
-
-  <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-200 text-sm">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="px-4 py-3 text-left font-medium text-gray-700">Rice Type</th>
-          <th class="px-4 py-3 text-left font-medium text-gray-700">Packaging</th>
-          <th class="px-4 py-3 text-right font-medium text-gray-700">Stock In</th>
-          <th class="px-4 py-3 text-right font-medium text-gray-700">Stock Out</th>
-          <th class="px-4 py-3 text-right font-semibold text-gray-700">Current Stock</th>
-          <th class="px-4 py-3 text-right font-medium text-gray-700">Price/Sack</th>
-          <th class="px-4 py-3 text-left font-medium text-gray-700">Description</th>
-          <th class="px-4 py-3 text-left font-medium text-gray-700">Last Updated</th>
-          <th class="px-4 py-3 text-center font-medium text-gray-700">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="riceTableBody" class="divide-y divide-gray-200">
-        {% for stock in stock_data %}
-          <tr data-stock-id="{{ stock.stockID }}">
-            <td class="px-4 py-2">{{ stock.rice_name }}</td>
-            <td class="px-4 py-2">{{ stock.packaging }}</td>
-            <td class="px-4 py-2 text-right">{{ stock.stock_in }}</td>
-            <td class="px-4 py-2 text-right">{{ stock.stock_out }}</td>
-            <td class="px-4 py-2 text-right font-semibold">{{ stock.current_stock }}</td>
-            <td class="px-4 py-2 text-right">
-              <span class="price-display">₱{{ stock.price_per_sack }}</span>
-              <input type="number" class="price-input hidden w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
-                     value="{{ stock.price_per_sack }}" step="0.01" min="0" />
-            </td>
-            <td class="px-4 py-2">
-              <span class="desc-display">{{ stock.description|default:"-" }}</span>
-              <textarea class="desc-input hidden w-full border border-gray-300 rounded-md px-2 py-1 text-sm">{{ stock.description }}</textarea>
-            </td>
-            <td class="px-4 py-2 text-left">{{ stock.last_updated|date:"M d, Y H:i" }}</td>
-            <td class="px-4 py-2 text-center flex justify-center gap-2">
-              <button onclick="toggleEdit(this)" class="edit-btn bg-yellow-400 text-white px-2 py-1 rounded">Edit</button>
-              <button onclick="saveChanges(this)" class="save-btn hidden bg-green-500 text-white px-2 py-1 rounded">Save</button>
-
-              {% if stock.stockID %}
-              <form method="POST" action="{% url 'deletestock' stock.stockID %}" onsubmit="return confirm('Delete this stock?');">
-                {% csrf_token %}
-                <button type="submit" class="bg-red-600 text-white px-2 py-1 rounded">Delete</button>
-              </form>
+    <!-- Update Log -->
+    <section class="stock-section mt-8 fade-in">
+      <h2 class="text-xl font-bold text-gray-900 mb-6">Update History</h2>
+      <div id="update-log-list" class="space-y-2">
+        {% if update_logs %}
+          {% for log in update_logs %}
+            <div id="log-{{ log.id }}" class="flex items-center justify-between p-4 rounded-lg {% if not log.undone %}bg-gray-50{% else %}bg-red-50{% endif %} border border-gray-200 transition-all duration-300">
+              <div class="flex items-center space-x-2">
+                <i class="fas {% if not log.undone %}fa-history text-yellow-500{% else %}fa-undo text-red-500{% endif %}"></i>
+                <div>
+                  <p class="text-sm text-gray-900">
+                    <span class="font-medium">{{ log.user_full_name }}</span>
+                    <span class="text-gray-500">({{ log.user_role }})</span>
+                  </p>
+                  <p class="text-sm text-gray-600">
+                    Added {{ log.quantity_added }} sacks to {{ log.rice_type }}
+                    <span class="text-gray-400">• {{ log.timestamp|date:"M d, Y H:i" }}</span>
+                    {% if log.undone %}
+                      <span class="text-red-500 ml-2">(Undone)</span>
+                    {% endif %}
+                  </p>
+                </div>
+              </div>
+              {% if not log.undone %}
+                <form method="POST" action="{% url 'undo_update' log.id %}" class="inline" onsubmit="return handleUndoSubmit(event, {{ log.id }})">
+                  {% csrf_token %}
+                  <input type="hidden" name="log_id" value="{{ log.id }}">
+                  <button type="submit" 
+                          class="undo-btn text-sm px-3 py-1 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 transition-colors duration-200 flex items-center space-x-1"
+                          data-log-id="{{ log.id }}">
+                    <i class="fas fa-undo"></i>
+                    <span>Undo</span>
+                  </button>
+                </form>
               {% endif %}
-            </td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="9" class="text-center py-4 text-gray-500">No stock records found.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-center text-gray-500 py-4">No updates yet</p>
+        {% endif %}
+      </div>
+    </section>
 
+    <!-- Move Notification Toast to Left Side -->
+    <div id="notification-toast" class="fixed top-4 left-64 max-w-md transform transition-all duration-300 translate-y-[-100%] opacity-0 z-50">
+      <div class="flex items-center p-4 rounded-lg shadow-lg border bg-white max-w-md w-full ml-4">
+        <div class="flex-shrink-0 mr-3">
+          <i id="notification-icon" class="fas fa-check-circle text-2xl"></i>
+        </div>
+        <div class="flex-1 mr-2">
+          <p id="notification-title" class="font-semibold"></p>
+          <p id="notification-message" class="text-sm"></p>
+        </div>
+        <button onclick="hideNotification()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
 
-<section class="bg-white p-6 rounded-lg shadow-md mb-8">
-  <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Update Log</h2>
-  <div id="update-log-list">
-    {% if update_logs %}
-      <ul>
-        {% for log in update_logs %}
-          <li class="flex justify-between items-center border-b py-2">
-            <span class="text-sm text-gray-700">
-              <span class="font-medium">{{ log.user_full_name }}</span>
-              (<span class="italic text-gray-500">{{ log.user_role }}</span>) —
-              Added {{ log.quantity_added }} sacks to {{ log.rice_type }} at {{ log.timestamp|date:"M d, Y H:i" }}
-              {% if log.undone %}
-                <span class="text-red-500 ml-2">(Undone)</span>
-              {% endif %}
-            </span>
-            {% if not log.undone %}
-              <button type="button"
-                      class="undo-btn text-xs text-red-600 border border-red-400 rounded px-2 py-1 hover:bg-red-50 ml-2"
-                      data-log-id="{{ log.id }}">
-                Undo
-              </button>
-            {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="text-gray-500 text-center">No updates yet.</p>
-    {% endif %}
-  </div>
-</section>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-4 flex items-center space-x-3">
+        <div class="animate-spin rounded-full h-6 w-6 border-4 border-yellow-500 border-t-transparent"></div>
+        <span class="text-gray-700">Processing undo request...</span>
+      </div>
+    </div>
+  </main>
+</div>
 
 <!-- Popup Message -->
-<div id="popup-message" style="display:none; position: fixed; top: 10px; right: 10px; 
-  background-color: #f0f0f0; padding: 10px 20px; border-radius: 5px; box-shadow: 0 0 5px #ccc;">
+<div id="popup-message" class="fixed top-4 right-4 max-w-sm bg-white rounded-lg shadow-lg border border-gray-200 transform transition-all duration-300 translate-y-[-100%] opacity-0">
+  <div class="p-4">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <i id="popup-icon" class="fas fa-check-circle text-green-400"></i>
+      </div>
+      <div class="ml-3">
+        <p id="popup-text" class="text-sm font-medium text-gray-900"></p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
+// Function to show messages
+function showMessage(elementId, message, isSuccess) {
+  const messageElement = document.getElementById(elementId);
+  messageElement.textContent = message;
+  messageElement.className = `text-sm ${isSuccess ? 'text-green-600' : 'text-red-600'} mt-2`;
+  
+  // Clear message after 3 seconds
+  setTimeout(() => {
+    messageElement.textContent = '';
+    messageElement.className = 'text-sm';
+  }, 3000);
+}
 
+// Add Rice Type form submission
+document.getElementById('add-rice-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const riceType = document.getElementById('rice_type').value.trim();
+  const description = document.getElementById('description').value.trim();
+  
+  if (!riceType) {
+    showMessage('rice-type-message', 'Rice type is required', false);
+    return;
+  }
+  
+  try {
+    const response = await fetch("{% url 'add_rice' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      body: JSON.stringify({
+        rice_type: riceType,
+        description: description
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.status === 'success') {
+      showMessage('rice-type-message', 'Rice type added successfully!', true);
+      // Clear form
+      this.reset();
+      // Refresh the page after 1 second to update rice type list
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      showMessage('rice-type-message', data.message || 'Failed to add rice type', false);
+    }
+  } catch (error) {
+    showMessage('rice-type-message', 'An error occurred. Please try again.', false);
+  }
+});
 
-   document.getElementById('packagingFilter').addEventListener('change', function() {
-    const selectedPackaging = this.value.toLowerCase();
-    const rows = document.querySelectorAll('#riceTableBody tr');
+// Validate stock form before submission
+function validateStockForm(event) {
+  const riceType = document.getElementById('riceType').value;
+  const packaging = document.getElementById('packaging').value;
+  const quantity = document.getElementById('quantity').value;
+  
+  if (!riceType || !packaging || !quantity) {
+    showMessage('stock-message', 'Please fill in all required fields', false);
+    event.preventDefault();
+    return false;
+  }
+  
+  if (quantity < 1) {
+    showMessage('stock-message', 'Quantity must be at least 1', false);
+    event.preventDefault();
+    return false;
+  }
+  
+  return confirm('Confirm adding stock?');
+}
 
-    rows.forEach(row => {
-      const packaging = row.cells[1].textContent.toLowerCase();
-      if (selectedPackaging === "" || packaging === selectedPackaging) {
+document.getElementById('packagingFilter').addEventListener('change', function() {
+  const selectedPackaging = this.value.toLowerCase();
+  const rows = document.querySelectorAll('#riceTableBody tr');
+
+  rows.forEach(row => {
+    const packaging = row.cells[1].textContent.toLowerCase();
+    if (selectedPackaging === "" || packaging === selectedPackaging) {
+      row.style.display = '';
+    } else if (selectedPackaging === "other") {
+      // Show rows where packaging is NOT 25kg or 50kg
+      if (packaging !== '25kg' && packaging !== '50kg') {
         row.style.display = '';
-      } else if (selectedPackaging === "other") {
-        // Show rows where packaging is NOT 25kg or 50kg
-        if (packaging !== '25kg' && packaging !== '50kg') {
-          row.style.display = '';
-        } else {
-          row.style.display = 'none';
-        }
       } else {
         row.style.display = 'none';
       }
-    });
+    } else {
+      row.style.display = 'none';
+    }
   });
+});
 
 document.addEventListener('DOMContentLoaded', function () {
   const popup = document.getElementById('popup-message');
@@ -408,33 +659,103 @@ document.addEventListener('DOMContentLoaded', function () {
       const logId = this.dataset.logId;
       if (!confirm('Undo this stock addition?')) return;
 
-      fetch(`/undo_update/${logId}/`, {
+      // Construct the URL using the base URL and logId
+      const undoUrl = `/undo_update/${logId}/`;
+
+      fetch(undoUrl, {
         method: 'POST',
         headers: {
           'X-CSRFToken': getCookie('csrftoken'),
           'X-Requested-With': 'XMLHttpRequest',
-        },
+          'Accept': 'application/json'
+        }
       })
-      .then(checkJsonResponse)
-      .then(data => {
-        popup.innerText = data.status === 'success' ? 'Successfully undone!' : (data.message || 'An error occurred.');
-        popup.style.display = 'block';
-        popup.style.backgroundColor = data.status === 'success' ? '#d1fae5' : '#fee2e2';
-        popup.style.color = data.status === 'success' ? '#065f46' : '#991b1b';
-
-        setTimeout(() => {
-          popup.style.display = 'none';
-          if (data.status === 'success') {
-            location.reload();
+      .then(async response => {
+        const contentType = response.headers.get('content-type');
+        if (!response.ok) {
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to undo the stock update');
+          } else {
+            const errorText = await response.text();
+            if (response.status === 404) {
+              throw new Error('The undo endpoint could not be found. Please check your configuration.');
+            } else if (response.status === 403) {
+              throw new Error('You do not have permission to perform this action.');
+            } else {
+              console.error('Server returned HTML error:', errorText);
+              throw new Error('An unexpected error occurred. Please try again.');
+            }
           }
-        }, 2000);
+        }
+        
+        if (contentType && contentType.includes('application/json')) {
+          return response.json();
+        } else {
+          throw new Error('Server returned an invalid response format');
+        }
       })
-      .catch((error) => {
-        popup.innerText = error.message || 'Something went wrong.';
-        popup.style.backgroundColor = '#fee2e2';
-        popup.style.color = '#991b1b';
-        popup.style.display = 'block';
-        setTimeout(() => popup.style.display = 'none', 3000);
+      .then(data => {
+        if (data.status === 'success') {
+          // Update UI for success
+          const logElement = document.getElementById(`log-${logId}`);
+          if (logElement) {
+            // Change background color
+            logElement.classList.remove('bg-gray-50');
+            logElement.classList.add('bg-red-50');
+            
+            // Update icon
+            const icon = logElement.querySelector('.fas');
+            if (icon) {
+              icon.classList.remove('fa-history', 'text-yellow-500');
+              icon.classList.add('fa-undo', 'text-red-500');
+            }
+            
+            // Add undone text
+            const textContainer = logElement.querySelector('p:last-child');
+            if (textContainer && !textContainer.querySelector('.undone-text')) {
+              const undoneSpan = document.createElement('span');
+              undoneSpan.className = 'text-red-500 ml-2 undone-text';
+              undoneSpan.textContent = '(Undone)';
+              textContainer.appendChild(undoneSpan);
+            }
+            
+            // Remove the undo button
+            button.style.opacity = '0';
+            setTimeout(() => button.remove(), 300);
+          }
+
+          // Show success message
+          showNotification(
+            'Success',
+            'Stock update has been successfully undone.',
+            'success'
+          );
+
+          // Refresh the page after a delay
+          setTimeout(() => location.reload(), 2000);
+        } else {
+          throw new Error(data.message || 'Failed to undo the stock update');
+        }
+      })
+      .catch(error => {
+        console.error('Undo error:', error);
+        
+        // Reset button state
+        button.disabled = false;
+        button.innerHTML = originalContent;
+
+        // Show error message
+        showNotification(
+          'Error',
+          `<p>Failed to undo the stock update.</p>
+           <p class="text-sm mt-2">Error: ${error.message}</p>
+           <p class="text-sm mt-2 text-gray-600">If this error persists, please refresh the page and try again.</p>`,
+          'error'
+        );
+      })
+      .finally(() => {
+        hideLoading();
       });
     });
   });
@@ -480,74 +801,310 @@ function getCookie(name) {
   return cookieValue;
 }
 
-// Check JSON response or throw if HTML or invalid
-function checkJsonResponse(response) {
-  const contentType = response.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    return response.json();
+function showPopup(message, type = 'success') {
+  const popup = document.getElementById('popup-message');
+  const icon = document.getElementById('popup-icon');
+  const text = document.getElementById('popup-text');
+  
+  text.textContent = message;
+  
+  if (type === 'success') {
+    popup.classList.add('bg-green-50', 'border-green-100');
+    icon.classList.add('text-green-400');
+    icon.classList.remove('text-red-400');
   } else {
-    return response.text().then(text => {
-      throw new Error('Unexpected response: ' + text.substring(0, 100));
-    });
+    popup.classList.add('bg-red-50', 'border-red-100');
+    icon.classList.add('text-red-400');
+    icon.classList.remove('text-green-400');
+  }
+  
+  popup.style.transform = 'translateY(0)';
+  popup.style.opacity = '1';
+  
+  setTimeout(() => {
+    popup.style.transform = 'translateY(-100%)';
+    popup.style.opacity = '0';
+  }, 3000);
+}
+
+function showLoading() {
+  const overlay = document.getElementById('loading-overlay');
+  overlay.style.display = 'flex';
+}
+
+function hideLoading() {
+  const overlay = document.getElementById('loading-overlay');
+  overlay.style.display = 'none';
+}
+
+function showNotification(title, message, type = 'success') {
+  const toast = document.getElementById('notification-toast');
+  const titleEl = document.getElementById('notification-title');
+  const messageEl = document.getElementById('notification-message');
+  const icon = document.getElementById('notification-icon');
+  const toastContent = toast.querySelector('div');
+  
+  // Set content
+  titleEl.textContent = title;
+  messageEl.innerHTML = message;
+  
+  // Style based on type
+  if (type === 'success') {
+    toastContent.classList.remove('bg-red-50', 'border-red-200');
+    toastContent.classList.add('bg-green-50', 'border-green-200');
+    icon.classList.remove('text-red-500', 'fa-exclamation-circle');
+    icon.classList.add('text-green-500', 'fa-check-circle');
+  } else {
+    toastContent.classList.remove('bg-green-50', 'border-green-200');
+    toastContent.classList.add('bg-red-50', 'border-red-200');
+    icon.classList.remove('text-green-500', 'fa-check-circle');
+    icon.classList.add('text-red-500', 'fa-exclamation-circle');
+  }
+  
+  // Show notification with slide-in animation
+  toast.style.transform = 'translateY(0)';
+  toast.style.opacity = '1';
+  
+  // Auto-hide for success messages, keep error messages until dismissed
+  if (type === 'success') {
+    setTimeout(hideNotification, 5000);
   }
 }
 
-function saveChanges(button) {
-  const row = button.closest('tr');
-  const stockID = row.getAttribute('data-stock-id');
-  const newPrice = row.querySelector('.price-input').value;
-  const newDesc = row.querySelector('.desc-input').value;
+function hideNotification() {
+  const toast = document.getElementById('notification-toast');
+  toast.style.transform = 'translateY(-100%)';
+  toast.style.opacity = '0';
+}
 
-  fetch(`/updatestock/${stockID}/`, {
+// Add shake animation
+const style = document.createElement('style');
+style.textContent = `
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.animate-shake {
+  animation: shake 0.3s ease-in-out;
+}
+
+/* Add slide-in animation */
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Add slide-out animation */
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+.slide-out {
+  animation: slideOut 0.3s ease-in;
+}
+`;
+document.head.appendChild(style);
+
+// Function to handle undo submission
+function handleUndoSubmit(event, logId) {
+  event.preventDefault();
+  
+  if (!logId) {
+    showNotification(
+      'Error',
+      'Invalid log ID. Please refresh the page and try again.',
+      'error'
+    );
+    return false;
+  }
+
+  if (!confirm('Are you sure you want to undo this stock addition? This action cannot be reversed.')) {
+    return false;
+  }
+
+  const form = event.target;
+  const submitButton = form.querySelector('button[type="submit"]');
+  const originalContent = submitButton.innerHTML;
+
+  // Disable button and show loading state
+  submitButton.disabled = true;
+  submitButton.innerHTML = `
+    <div class="flex items-center space-x-2">
+      <div class="animate-spin rounded-full h-4 w-4 border-2 border-red-500 border-t-transparent"></div>
+      <span>Processing...</span>
+    </div>
+  `;
+
+  // Show loading overlay
+  showLoading();
+
+  // Submit form data using form's action URL
+  fetch(form.action, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
       'X-CSRFToken': getCookie('csrftoken'),
+      'X-Requested-With': 'XMLHttpRequest'
     },
-    body: JSON.stringify({
-      price_per_sack: newPrice,
-      description: newDesc
-    })
+    body: new URLSearchParams(new FormData(form))
   })
-  .then(checkJsonResponse)
+  .then(response => {
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('The undo endpoint could not be found. Please check the URL.');
+      } else if (response.status === 403) {
+        throw new Error('You do not have permission to perform this action.');
+      }
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    return response.json();
+  })
   .then(data => {
-    if (data.status !== 'success') throw new Error(data.message || 'Update failed.');
-    alert('Stock updated successfully!');
-    row.querySelector('.price-display').textContent = `₱${parseFloat(newPrice).toFixed(2)}`;
-    row.querySelector('.desc-display').textContent = newDesc || '-';
-    toggleEdit(button);
+    if (data.status === 'success') {
+      // Get the log entry container
+      const logEntry = form.closest('[id^="log-"]');
+      if (logEntry) {
+        // Update background color
+        logEntry.classList.remove('bg-gray-50');
+        logEntry.classList.add('bg-red-50');
+        
+        // Update icon
+        const icon = logEntry.querySelector('.fas');
+        if (icon) {
+          icon.classList.remove('fa-history', 'text-yellow-500');
+          icon.classList.add('fa-undo', 'text-red-500');
+        }
+        
+        // Add undone text
+        const textContainer = logEntry.querySelector('p:last-child');
+        if (textContainer && !textContainer.querySelector('.undone-text')) {
+          const undoneSpan = document.createElement('span');
+          undoneSpan.className = 'text-red-500 ml-2 undone-text';
+          undoneSpan.textContent = '(Undone)';
+          textContainer.appendChild(undoneSpan);
+        }
+        
+        // Remove the undo button form with animation
+        form.style.opacity = '0';
+        setTimeout(() => form.remove(), 300);
+
+        // Show success message
+        showNotification(
+          'Success',
+          'Stock update has been successfully undone.',
+          'success'
+        );
+
+        // Refresh page after delay
+        setTimeout(() => window.location.reload(), 2000);
+      }
+    } else {
+      throw new Error(data.message || 'Failed to undo the stock update');
+    }
   })
   .catch(error => {
-    console.error('Error updating stock:', error);
-    alert(`Error updating stock: ${error.message}`);
+    console.error('Undo error:', error);
+    
+    // Reset button state
+    submitButton.disabled = false;
+    submitButton.innerHTML = originalContent;
+    
+    // Show error message
+    showNotification(
+      'Error',
+      `<p>Failed to undo the stock update.</p>
+       <p class="text-sm mt-2">Error: ${error.message}</p>
+       <p class="text-sm mt-2 text-gray-600">If this error persists, please refresh the page and try again.</p>`,
+      'error'
+    );
+  })
+  .finally(() => {
+    hideLoading();
   });
+
+  return false;
 }
 
-// Optional: Show API success or error banners
-function showApiSuccessBanner(data) {
-  const banner = document.getElementById('apiSuccessBanner');
-  if (!banner) return;
-
-  let status = '';
-  let message = '';
-
-  if (typeof data === 'string') {
-    try { data = JSON.parse(data); } catch { message = data; }
+// Save changes in table row
+async function saveChanges(button) {
+  const row = button.closest('tr');
+  const stockId = row.dataset.stockId;
+  const priceInput = row.querySelector('.price-input');
+  const descInput = row.querySelector('.desc-input');
+  
+  const price = parseFloat(priceInput.value);
+  const description = descInput.value.trim();
+  
+  if (isNaN(price) || price < 0) {
+    showNotification(
+      'Error',
+      'Please enter a valid price (must be 0 or greater).',
+      'error'
+    );
+    return;
   }
-  if (typeof data === 'object' && data !== null) {
-    status = data.status || '';
-    message = data.message || '';
-  } else if (!message) {
-    message = 'Success!';
+  
+  try {
+    const response = await fetch(`/updatestock/${stockId}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      body: JSON.stringify({
+        price_per_sack: price,
+        description: description
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.status === 'success') {
+      // Update display values
+      row.querySelector('.price-display').textContent = `₱${price.toFixed(2)}`;
+      row.querySelector('.desc-display').textContent = description || '-';
+      
+      // Toggle back to display mode
+      toggleEdit(button);
+      
+      showNotification(
+        'Success',
+        'Stock details updated successfully!',
+        'success'
+      );
+    } else {
+      throw new Error(data.message || 'Failed to update stock');
+    }
+  } catch (error) {
+    console.error('Save error:', error);
+    showNotification(
+      'Error',
+      `Failed to save changes: ${error.message}`,
+      'error'
+    );
   }
-
-  let colorClass = 'bg-green-100 text-green-800';
-  if (status === 'error') colorClass = 'bg-red-100 text-red-800';
-  else if (status === 'warning') colorClass = 'bg-yellow-100 text-yellow-800';
-
-  banner.className = `mb-6 p-3 rounded text-sm font-medium text-center ${colorClass}`;
-  banner.textContent = (status === 'success' || !status) ? message : (status.charAt(0).toUpperCase() + status.slice(1) + ': ' + message);
-  banner.style.display = 'block';
-  setTimeout(() => { banner.style.display = 'none'; }, 4000);
 }
 </script>
+
+</body>
+</html>

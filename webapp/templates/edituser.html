@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard - Dragon Ricemill</title>
+  <title>Edit Users - Dragon Ricemill</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
   <style>
@@ -16,9 +16,23 @@
     }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .form-input:focus {
+      box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.2);
+      border-color: #EAB308;
+    }
+    .table-row-hover:hover {
+      background-color: rgba(234, 179, 8, 0.05);
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-800 min-h-screen font-sans leading-relaxed overflow-x-hidden">
+<body class="bg-gray-50 text-gray-800 min-h-screen font-sans leading-relaxed overflow-x-hidden">
 
 <header class="fixed top-0 right-0 h-screen w-56 bg-white shadow-lg flex flex-col z-50 border-l border-gray-200">
   <div class="h-14 flex items-center justify-center border-b border-gray-200">
@@ -129,295 +143,555 @@
 
 
 
-<!-- Push content so it’s not behind the sidebar -->
+<!-- Push content so it's not behind the sidebar -->
 <div class="mr-56 min-h-screen bg-gray-50">
-  <main class="max-w-screen-xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+  <main class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
+      <p class="mt-2 text-sm text-gray-600">Manage system users, their roles, and permissions.</p>
+    </div>
+
     <!-- Messages -->
     {% if messages %}
-      <div class="mb-6">
-        {% for message in messages %}
-          <div class="p-3 mb-2 rounded text-sm font-medium
-            {% if message.tags == 'success' %} bg-green-100 text-green-800
-            {% elif message.tags == 'error' %} bg-red-100 text-red-800
-            {% elif message.tags == 'warning' %} bg-yellow-100 text-yellow-800
-            {% else %} bg-gray-100 text-gray-800
-            {% endif %}">
-            {{ message }}
-          </div>
-        {% endfor %}
+    <div class="mb-6 fade-in">
+      {% for message in messages %}
+      <div class="p-4 rounded-lg mb-2 flex items-center justify-between {% if message.tags == 'success' %}bg-green-100 text-green-700 border border-green-200{% else %}bg-red-100 text-red-700 border border-red-200{% endif %}">
+        <div class="flex items-center">
+          <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} mr-2"></i>
+          <p>{{ message }}</p>
+        </div>
+        <button onclick="this.parentElement.remove()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
+      {% endfor %}
+    </div>
     {% endif %}
 
-</nav>
+    <!-- Search and Filter Panel -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 fade-in">
+      <form method="GET" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="col-span-2">
+            <label for="search-input" class="block text-sm font-medium text-gray-700 mb-1">Search Users</label>
+            <div class="relative">
+              <input 
+                id="search-input" 
+                type="text" 
+                name="search" 
+                value="{{ request.GET.search }}" 
+                placeholder="Search by name or username..."
+                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              />
+              <span class="absolute left-3 top-2.5 text-gray-400">
+                <i class="fas fa-search"></i>
+              </span>
+            </div>
+          </div>
+          
+          <!-- Role Filter -->
+          <div>
+            <label for="role-filter" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <div class="relative">
+              <select id="role-filter" name="role" 
+                      class="appearance-none w-full pl-8 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white">
+                <option value="">All Roles</option>
+                <option value="admin">Administrator</option>
+                <option value="employee">Employee</option>
+                <option value="cashier">Cashier</option>
+              </select>
+              <span class="absolute left-2.5 top-2.5 text-yellow-500">
+                <i class="fas fa-user-tag"></i>
+              </span>
+              <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
+                <i class="fas fa-chevron-down"></i>
+              </span>
+            </div>
+          </div>
 
-<!-- Main content -->
- <div class="flex h-screen overflow-hidden bg-gray-50">
-    <main class="flex-1 p-8 overflow-auto">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Edit User</h1>
- 
-<main class="flex-1 p-8 max-w-7xl mx-auto">
-    
+          <!-- Status Filter -->
+          <div>
+            <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <div class="relative">
+              <select id="status-filter" name="status" 
+                      class="appearance-none w-full pl-8 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <span class="absolute left-2.5 top-2.5 text-yellow-500">
+                <i class="fas fa-toggle-on"></i>
+              </span>
+              <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
+                <i class="fas fa-chevron-down"></i>
+              </span>
+            </div>
+          </div>
+        </div>
 
-    
-
-    <!-- Role and Status Filter Form -->
-    <form method="GET" class="mb-6 flex flex-wrap gap-4 items-center">
-        <input 
-            id="search-input" 
-            type="text" 
-            name="search" 
-            value="{{ request.GET.search }}" 
-            placeholder="Search by name or username" 
-            class="border px-4 py-2 rounded w-full sm:w-1/3"
-        />
-        <select id="role-filter" name="role" class="border px-4 py-2 rounded">
-            <option value="">All Roles</option>
-            <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>Admin</option>
-            <option value="employee" {% if request.GET.role == 'employee' %}selected{% endif %}>Employee</option>
-            <option value="cashier" {% if request.GET.role == 'cashier' %}selected{% endif %}>Cashier</option>
-        </select>
-        <select id="status-filter" name="status" class="border px-4 py-2 rounded">
-            <option value="">All Status</option>
-            <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
-            <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
-        </select>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Filter</button>
-    </form>
+        <!-- Filter Tags -->
+        <div class="flex flex-wrap gap-2 pt-2" id="active-filters">
+          <!-- Active filters will be dynamically added here -->
+        </div>
+      </form>
+    </div>
 
     <!-- Edit Form -->
     {% if selected_user %}
-    <div id="edit-form" class="bg-white p-6 rounded shadow-md mb-8">
-        <h3 class="text-xl font-bold mb-4">Edit User Details</h3>
-        <form method="POST" action="{% url 'edituser' selected_user.EmployeeID %}" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {% csrf_token %}
+    <div id="edit-form" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 fade-in">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-gray-900">Edit User: {{ selected_user.Username }}</h2>
+        <button onclick="cancelEdit()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form method="POST" action="{% url 'edituser' selected_user.EmployeeID %}" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Personal Information -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold text-gray-900 border-b pb-2">
+            <i class="fas fa-user text-yellow-500 mr-2"></i>Personal Information
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-                <label class="block text-sm font-medium mb-1">First Name</label>
-                <input 
-                    type="text" 
-                    name="FirstName" 
-                    value="{{ selected_user.FirstName }}" 
-                    class="w-full border rounded px-3 py-2" 
-                    required 
-                />
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Middle Name</label>
-                <input 
-                    type="text" 
-                    name="MiddleName" 
-                    value="{{ selected_user.MiddleName }}" 
-                    class="w-full border rounded px-3 py-2" 
-                />
+              <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+              <input type="text" name="FirstName" value="{{ selected_user.FirstName }}" required
+                     class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 py-2 px-3" />
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Last Name</label>
-                <input 
-                    type="text" 
-                    name="LastName" 
-                    value="{{ selected_user.LastName }}" 
-                    class="w-full border rounded px-3 py-2" 
-                    required 
-                />
+              <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+              <input type="text" name="MiddleName" value="{{ selected_user.MiddleName }}"
+                     class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 py-2 px-3" />
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Suffix</label>
-                <input  
-    type="text" 
-    name="Suffix" 
-    value="{{ selected_user.Suffix|default_if_none:'' }}" 
-    class="w-full border rounded px-3 py-2" 
-/>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+              <input type="text" name="LastName" value="{{ selected_user.LastName }}" required
+                     class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 py-2 px-3" />
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Username</label>
-                <input 
-                    type="text" 
-                    name="Username" 
-                    value="{{ selected_user.Username }}" 
-                    class="w-full border rounded px-3 py-2" 
-                    required 
-                />
+              <label class="block text-sm font-medium text-gray-700 mb-1">Suffix</label>
+              <input type="text" name="Suffix" value="{{ selected_user.Suffix|default_if_none:'' }}"
+                     class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 py-2 px-3" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Information -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold text-gray-900 border-b pb-2">
+            <i class="fas fa-lock text-yellow-500 mr-2"></i>Account Information
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+              <input type="text" name="Username" value="{{ selected_user.Username }}" required
+                     class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 py-2 px-3" />
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Role</label>
-                <select name="Role" class="w-full border rounded px-3 py-2" required>
-                    <option value="admin" {% if selected_user.Role == "admin" %}selected{% endif %}>Admin</option>
-                    <option value="employee" {% if selected_user.Role == "employee" %}selected{% endif %}>Employee</option>
-                    <option value="cashier" {% if selected_user.Role == "cashier" %}selected{% endif %}>Cashier</option>
-                </select>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+              <div class="relative">
+                <input type="password" id="password" name="Password" value="{{ selected_user.Password }}" required
+                       class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 py-2 px-3 pr-10" />
+                <button type="button" onclick="togglePassword()" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
+                  <i class="fas fa-eye" id="toggleIcon"></i>
+                </button>
+              </div>
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Password</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="Password" 
-                    value="{{ selected_user.Password }}" 
-                    class="w-full border rounded px-3 py-2" 
-                    required 
-                />
-                <label class="inline-flex items-center mt-2">
-                    <input type="checkbox" class="mr-2" onclick="togglePassword()" /> Show Password
-                </label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+              <select name="Role" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 py-2" required>
+                <option value="admin" {% if selected_user.Role == "admin" %}selected{% endif %}>Administrator</option>
+                <option value="employee" {% if selected_user.Role == "employee" %}selected{% endif %}>Employee</option>
+                <option value="cashier" {% if selected_user.Role == "cashier" %}selected{% endif %}>Cashier</option>
+              </select>
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Account Status</label>
-                <select name="Account_Status" class="w-full border rounded px-3 py-2" required>
-                    <option value="active" {% if selected_user.Account_Status == "active" %}selected{% endif %}>Active</option>
-                    <option value="inactive" {% if selected_user.Account_Status == "inactive" %}selected{% endif %}>Inactive</option>
-                </select>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Account Status *</label>
+              <select name="Account_Status" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 py-2" required>
+                <option value="active" {% if selected_user.Account_Status == "active" %}selected{% endif %}>Active</option>
+                <option value="inactive" {% if selected_user.Account_Status == "inactive" %}selected{% endif %}>Inactive</option>
+              </select>
             </div>
-            <div class="md:col-span-2 text-right space-x-4">
-                <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">Save Changes</button>
-                <button type="button" onclick="cancelEdit()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Cancel</button>
-            </div>
-        </form>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex justify-end space-x-3 pt-6 border-t">
+          <button type="button" onclick="cancelEdit()" 
+                  class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+            Save Changes
+          </button>
+        </div>
+      </form>
     </div>
     {% endif %}
 
     <!-- Users Table -->
-    <div class="bg-white p-6 rounded shadow-md">
-        <h3 class="text-xl font-bold mb-4">User List</h3>
-        <table class="min-w-full table-auto border-collapse">
-            <thead>
-                <tr class="bg-gray-200 text-left">
-                    <th class="px-4 py-2">ID</th>
-                    <th class="px-4 py-2">Username</th>
-                    <th class="px-4 py-2">Full Name</th>
-                    <th class="px-4 py-2">Role</th>
-                    <th class="px-4 py-2">Status</th>
-                    <th class="px-4 py-2 text-center">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
-                <tr class="user-row border-b" data-role="{{ user.Role|lower }}" data-status="{{ user.Account_Status|lower }}">
-                    <td class="px-4 py-2">{{ user.EmployeeID }}</td>
-                    <td class="px-4 py-2">{{ user.Username }}</td>
-                    <td class="px-4 py-2">{{ user.FirstName }}{% if user.MiddleName %} {{ user.MiddleName }}{% endif %} {{ user.LastName }}{% if user.Suffix %}, {{ user.Suffix }}{% endif %}</td>
-                    <td class="px-4 py-2">{{ user.Role }}</td>
-                    <td class="px-4 py-2">{{ user.Account_Status }}</td>
-                    <td class="px-4 py-2 text-center space-x-2">
-                        <a href="{% url 'edituser' user.EmployeeID %}" class="text-blue-600 hover:underline">Edit</a>
-                        <form method="POST" action="{% url 'delete_user' user.EmployeeID %}" class="inline">
-                            {% csrf_token %}
-                            <button type="submit" class="text-red-600 hover:underline" onclick="return confirm('Are you sure you want to delete this user?');">
-                                Delete
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="text-center py-4 text-gray-500">No users found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
- <!-- Recently Deleted Users Section -->
-<div class="bg-white p-6 rounded shadow-md mt-10">
-    <h3 class="text-xl font-bold mb-4 text-red-600">Recently Deleted Users</h3>
-    <table class="min-w-full table-auto border-collapse">
-        <thead>
-            <tr class="bg-red-100 text-left">
-                <th class="px-4 py-2">ID</th>
-                <th class="px-4 py-2">Username</th>
-                <th class="px-4 py-2">Full Name</th>
-                <th class="px-4 py-2">Role</th>
-                <th class="px-4 py-2">Status</th>
-                <th class="px-4 py-2 text-center">Actions</th>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden fade-in">
+      <div class="p-6 border-b border-gray-200">
+        <h2 class="text-xl font-bold text-gray-900">User List</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
-        </thead>
-        <tbody>
-            {% for user in deleted_users %}
-            <tr class="border-b">
-                <td class="px-4 py-2">{{ user.EmployeeID }}</td>
-                <td class="px-4 py-2">{{ user.Username }}</td>
-                <td class="px-4 py-2">{{ user.FirstName }}{% if user.MiddleName %} {{ user.MiddleName }}{% endif %} {{ user.LastName }}{% if user.Suffix %}, {{ user.Suffix }}{% endif %}</td>
-                <td class="px-4 py-2">{{ user.Role }}</td>
-                <td class="px-4 py-2">{{ user.Account_Status }}</td>
-                <td class="px-4 py-2 text-center space-x-4">
-                    <!-- Restore Button -->
-                    <form method="POST" action="{% url 'restore_user' user.EmployeeID %}" class="inline">
-                        {% csrf_token %}
-                        <button type="submit" class="text-green-600 hover:underline" onclick="return confirm('Are you sure you want to restore this user?');">
-                            Restore
-                        </button>
-                    </form>
-
-                    <!-- Permanent Delete Button -->
-                    <form method="POST" action="{% url 'permanent_delete_user' user.EmployeeID %}" class="inline">
-                        {% csrf_token %}
-                        <button type="submit" class="text-red-600 hover:underline" onclick="return confirm('Are you sure you want to permanently delete this user? This action cannot be undone.');">
-                            Delete
-                        </button>
-                    </form>
-                </td>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for user in users %}
+            <tr class="user-row table-row-hover" 
+                data-role="{{ user.Role|lower }}" 
+                data-status="{{ user.Account_Status|lower }}">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ user.EmployeeID }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ user.Username }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {{ user.FirstName }}{% if user.MiddleName %} {{ user.MiddleName }}{% endif %} {{ user.LastName }}{% if user.Suffix %}, {{ user.Suffix }}{% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                  {% if user.Role == 'admin' %}bg-purple-100 text-purple-800
+                  {% elif user.Role == 'employee' %}bg-blue-100 text-blue-800
+                  {% else %}bg-green-100 text-green-800{% endif %}">
+                  {{ user.Role|title }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                  {% if user.Account_Status == 'active' %}bg-green-100 text-green-800
+                  {% else %}bg-red-100 text-red-800{% endif %}">
+                  {{ user.Account_Status|title }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                <div class="flex justify-center space-x-3">
+                  <a href="{% url 'edituser' user.EmployeeID %}" 
+                     class="text-yellow-600 hover:text-yellow-900 transition-colors">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <form method="POST" action="{% url 'delete_user' user.EmployeeID %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" 
+                            class="text-red-600 hover:text-red-900 transition-colors"
+                            onclick="return confirm('Are you sure you want to delete this user?');">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" class="text-center py-4 text-gray-500">No recently deleted users found.</td>
+              <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No users found.</td>
             </tr>
             {% endfor %}
-        </tbody>
-    </table>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Pagination Controls -->
+      {% if users.paginator.num_pages > 1 %}
+      <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center text-sm text-gray-500">
+            Showing {{ users.start_index }}-{{ users.end_index }} of {{ users.paginator.count }} users
+          </div>
+          <div class="flex items-center space-x-2">
+            {% if users.has_previous %}
+            <a href="?page={{ users.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+               class="px-3 py-1 rounded-md bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+            {% endif %}
+            
+            {% for num in users.paginator.page_range %}
+              {% if users.number == num %}
+              <span class="px-3 py-1 rounded-md bg-yellow-500 text-white text-sm font-medium">
+                {{ num }}
+              </span>
+              {% elif num > users.number|add:'-3' and num < users.number|add:'3' %}
+              <a href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+                 class="px-3 py-1 rounded-md bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                {{ num }}
+              </a>
+              {% endif %}
+            {% endfor %}
+            
+            {% if users.has_next %}
+            <a href="?page={{ users.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+               class="px-3 py-1 rounded-md bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Recently Deleted Users -->
+    <div class="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden fade-in">
+      <div class="p-6 border-b border-gray-200 bg-red-50">
+        <h2 class="text-xl font-bold text-red-900">
+          <i class="fas fa-trash-alt text-red-500 mr-2"></i>Recently Deleted Users
+        </h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for user in deleted_users %}
+            <tr class="table-row-hover">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ user.EmployeeID }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ user.Username }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {{ user.FirstName }}{% if user.MiddleName %} {{ user.MiddleName }}{% endif %} {{ user.LastName }}{% if user.Suffix %}, {{ user.Suffix }}{% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  {{ user.Role|title }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  {{ user.Account_Status|title }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                <div class="flex justify-center space-x-4">
+                  <form method="POST" action="{% url 'restore_user' user.EmployeeID %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" 
+                            class="text-green-600 hover:text-green-900 transition-colors"
+                            onclick="return confirm('Are you sure you want to restore this user?');">
+                      <i class="fas fa-undo-alt"></i>
+                    </button>
+                  </form>
+                  <form method="POST" action="{% url 'permanent_delete_user' user.EmployeeID %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" 
+                            class="text-red-600 hover:text-red-900 transition-colors"
+                            onclick="return confirm('Are you sure you want to permanently delete this user? This action cannot be undone.');">
+                      <i class="fas fa-times-circle"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No recently deleted users found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls for Deleted Users -->
+      {% if deleted_users.paginator.num_pages > 1 %}
+      <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center text-sm text-gray-500">
+            Showing {{ deleted_users.start_index }}-{{ deleted_users.end_index }} of {{ deleted_users.paginator.count }} deleted users
+          </div>
+          <div class="flex items-center space-x-2">
+            {% if deleted_users.has_previous %}
+            <a href="?deleted_page={{ deleted_users.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+               class="px-3 py-1 rounded-md bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+            {% endif %}
+            
+            {% for num in deleted_users.paginator.page_range %}
+              {% if deleted_users.number == num %}
+              <span class="px-3 py-1 rounded-md bg-red-500 text-white text-sm font-medium">
+                {{ num }}
+              </span>
+              {% elif num > deleted_users.number|add:'-3' and num < deleted_users.number|add:'3' %}
+              <a href="?deleted_page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+                 class="px-3 py-1 rounded-md bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                {{ num }}
+              </a>
+              {% endif %}
+            {% endfor %}
+            
+            {% if deleted_users.has_next %}
+            <a href="?deleted_page={{ deleted_users.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+               class="px-3 py-1 rounded-md bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Add this right after the table body -->
+    <tr id="no-results-row" style="display: none;">
+      <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
+        No users found matching the current filters.
+      </td>
+    </tr>
+  </main>
 </div>
 
-</main>
-
 <script>
-    // Toggle password visibility
-    function togglePassword() {
-        const pwdInput = document.getElementById("password");
-        pwdInput.type = pwdInput.type === "password" ? "text" : "password";
+  // Toggle password visibility
+  function togglePassword() {
+    const pwdInput = document.getElementById("password");
+    const toggleIcon = document.getElementById("toggleIcon");
+    if (pwdInput.type === "password") {
+      pwdInput.type = "text";
+      toggleIcon.classList.remove("fa-eye");
+      toggleIcon.classList.add("fa-eye-slash");
+    } else {
+      pwdInput.type = "password";
+      toggleIcon.classList.remove("fa-eye-slash");
+      toggleIcon.classList.add("fa-eye");
+    }
+  }
+
+  // Cancel edit and hide the edit form with animation
+  function cancelEdit() {
+    const formDiv = document.getElementById("edit-form");
+    formDiv.style.opacity = "0";
+    formDiv.style.transform = "translateY(-10px)";
+    setTimeout(() => {
+      formDiv.style.display = "none";
+      window.location.href = "{% url 'edituser' %}";
+    }, 300);
+  }
+
+  // Main filtering function
+  function filterTable() {
+    const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+    const selectedRole = document.getElementById('role-filter').value.toLowerCase();
+    const selectedStatus = document.getElementById('status-filter').value.toLowerCase();
+
+    // Get all user rows
+    const rows = document.querySelectorAll('.user-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      // Get text content for searching
+      const searchableText = [
+        row.querySelector('td:nth-child(2)').textContent, // Username
+        row.querySelector('td:nth-child(3)').textContent  // Full Name
+      ].join(' ').toLowerCase();
+
+      // Get role and status from the actual displayed text in the badges
+      const roleText = row.querySelector('td:nth-child(4) span').textContent.toLowerCase().trim();
+      const statusText = row.querySelector('td:nth-child(5) span').textContent.toLowerCase().trim();
+
+      // Check if row matches all filters
+      const matchesSearch = !searchQuery || searchableText.includes(searchQuery);
+      const matchesRole = !selectedRole || roleText.includes(selectedRole);
+      const matchesStatus = !selectedStatus || statusText.includes(selectedStatus);
+
+      // Show/hide row
+      const shouldShow = matchesSearch && matchesRole && matchesStatus;
+      row.style.display = shouldShow ? '' : 'none';
+      
+      if (shouldShow) visibleCount++;
+    });
+
+    // Show/hide no results message
+    const noResultsRow = document.getElementById('no-results-row');
+    if (noResultsRow) {
+      noResultsRow.style.display = visibleCount === 0 ? '' : 'none';
     }
 
-    // Cancel edit and hide the edit form
-    function cancelEdit() {
-        const formDiv = document.getElementById("edit-form");
-        formDiv.style.display = "none"; // Hide the form
+    // Update active filters display
+    updateActiveFilters(searchQuery, selectedRole, selectedStatus);
+  }
+
+  // Update the active filters display
+  function updateActiveFilters(searchQuery, selectedRole, selectedStatus) {
+    const activeFiltersDiv = document.getElementById('active-filters');
+    activeFiltersDiv.innerHTML = '';
+
+    if (searchQuery) {
+      addFilterTag('Search: ' + searchQuery, () => {
+        document.getElementById('search-input').value = '';
+        filterTable();
+      });
     }
 
-    // Attach event listeners for live search and filters
+    if (selectedRole) {
+      addFilterTag('Role: ' + selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1), () => {
+        document.getElementById('role-filter').value = '';
+        filterTable();
+      });
+    }
+
+    if (selectedStatus) {
+      addFilterTag('Status: ' + selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1), () => {
+        document.getElementById('status-filter').value = '';
+        filterTable();
+      });
+    }
+  }
+
+  // Add a filter tag
+  function addFilterTag(text, removeCallback) {
+    const activeFiltersDiv = document.getElementById('active-filters');
+    const tag = document.createElement('div');
+    tag.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800';
+    tag.innerHTML = `
+      ${text}
+      <button class="ml-2 text-yellow-600 hover:text-yellow-900">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+    tag.querySelector('button').onclick = removeCallback;
+    activeFiltersDiv.appendChild(tag);
+  }
+
+  // Add event listeners
+  document.addEventListener('DOMContentLoaded', () => {
+    // Add filter event listeners
     document.getElementById('search-input').addEventListener('input', filterTable);
-    document.getElementById("role-filter").addEventListener("change", filterTable);
-    document.getElementById("status-filter").addEventListener("change", filterTable);
+    document.getElementById('role-filter').addEventListener('change', filterTable);
+    document.getElementById('status-filter').addEventListener('change', filterTable);
 
-    // Filter table rows based on search input, role filter, and status filter
-    function filterTable() {
-        const searchQuery = document.getElementById('search-input').value.toLowerCase();
-        const selectedRole = document.getElementById("role-filter").value;
-        const selectedStatus = document.getElementById("status-filter").value;
-
-        const rows = document.querySelectorAll('.user-row');
-
-        rows.forEach(row => {
-            const username = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-            const fullName = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
-            const userRole = row.getAttribute('data-role');
-            const userStatus = row.getAttribute('data-status');
-
-            // Show row if it matches all filter criteria, else hide it
-            if (
-                (username.includes(searchQuery) || fullName.includes(searchQuery)) &&
-                (selectedRole === '' || userRole === selectedRole) &&
-                (selectedStatus === '' || userStatus === selectedStatus)
-            ) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
+    // Set initial values from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('search')) {
+      document.getElementById('search-input').value = urlParams.get('search');
+    }
+    if (urlParams.has('role')) {
+      document.getElementById('role-filter').value = urlParams.get('role');
+    }
+    if (urlParams.has('status')) {
+      document.getElementById('status-filter').value = urlParams.get('status');
     }
 
-    // Hide the success/error message after 5 seconds
-    if (document.getElementById('message')) {
-        setTimeout(() => {
-            document.getElementById('message').style.display = 'none';
-        }, 5000);
+    // Run initial filter if any parameters are set
+    if (urlParams.has('search') || urlParams.has('role') || urlParams.has('status')) {
+      filterTable();
     }
+  });
 </script>
 
 </body>

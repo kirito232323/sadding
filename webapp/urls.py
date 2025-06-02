@@ -57,11 +57,11 @@ urlpatterns = [
     path('allorder-history/', views.allorder_history, name='allorder_history'),
     path('payment-confirmation/<int:order_id>/', views.payment_confirmation, name='payment_confirmation'),
     path('delivery-confirmation/<int:order_id>/', views.delivery_confirmation, name='delivery_confirmation'),
+    path('cancel-order/<int:order_id>/', views.cancel_order, name='cancel_order'),
     path('customer-ledger/create/', views.customer_ledger_create, name='customer_ledger_create'),
     path('api/orders-for-customer/<int:customer_id>/', views.orders_for_customer, name='orders_for_customer'),
     path('stock-movement-report/', views.stock_movement_report, name='stock_movement_report'),
-
-
+    path('edit-customer/<int:user_id>/', views.edit_customer_view, name='edit_customer'),
 ]
 
 

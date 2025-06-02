@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard - Dragon Ricemill</title>
+  <title>Delivery Confirmation - Dragon Ricemill</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
   <style>
@@ -16,6 +16,81 @@
     }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .delivery-badge {
+      @apply px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200;
+    }
+    .delivery-pending {
+      @apply bg-yellow-100 text-yellow-800 hover:bg-yellow-200;
+    }
+    .delivery-confirmed {
+      @apply bg-green-100 text-green-800 hover:bg-green-200;
+    }
+    .payment-badge {
+      @apply px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200;
+    }
+    .payment-cash {
+      @apply bg-emerald-100 text-emerald-800 hover:bg-emerald-200;
+    }
+    .payment-gcash {
+      @apply bg-blue-100 text-blue-800 hover:bg-blue-200;
+    }
+    .payment-credit {
+      @apply bg-purple-100 text-purple-800 hover:bg-purple-200;
+    }
+    .hover-scale {
+      @apply transition-transform duration-200;
+    }
+    .hover-scale:hover {
+      transform: scale(1.02);
+    }
+    @media (max-width: 768px) {
+      .responsive-table {
+        @apply block w-full overflow-x-auto;
+      }
+      .responsive-table table {
+        @apply w-full whitespace-nowrap;
+      }
+      .responsive-table td, 
+      .responsive-table th {
+        @apply px-4 py-2;
+      }
+    }
+    .loading {
+      @apply animate-pulse bg-gray-200;
+    }
+    .card-shadow {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      @apply bg-gray-100 rounded-full;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      @apply bg-gray-400 rounded-full hover:bg-gray-500 transition-colors;
+    }
+
+    /* Success Message Animation */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    /* Auto-hide animation */
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-10px); }
+    }
+
+    .animate-fade-out {
+      animation: fadeOut 0.5s ease-out forwards;
+    }
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen font-sans leading-relaxed overflow-x-hidden">
@@ -127,74 +202,345 @@
   </nav>
 </header>
 
-<main class="max-w-7xl mx-auto p-6">
-  <div class="flex justify-between items-center mb-4">
-    <h2 class="text-2xl font-bold">Payment Orders</h2>
-    <a href="{% url 'allorder_history' %}" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition">View All Orders</a>
-  </div>
-
-  {% if error_message %}
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-      {{ error_message }}
+<main class="mr-64 p-8">
+  <div class="max-w-5xl mx-auto">
+    <div class="mb-8">
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+        <i class="fas fa-truck text-yellow-500"></i>
+        Delivery Confirmation
+        <span class="text-sm font-normal text-gray-500 ml-2">Manage deliveries and track orders</span>
+      </h1>
     </div>
-  {% endif %}
 
-  <div class="overflow-x-auto rounded shadow bg-white">
-    <table class="w-full text-sm text-left text-gray-600">
-      <thead class="text-xs uppercase bg-gray-50 text-gray-500 border-b border-gray-200">
-        <tr>
-          <th class="py-3 px-4">Order ID</th>
-          <th class="py-3 px-4">Customer Name</th>
-          <th class="py-3 px-4">Rice Type</th>
-          <th class="py-3 px-4">Quantity</th>
-          <th class="py-3 px-4">Cost Per Sack</th>
-          <th class="py-3 px-4">Discount (%)</th>
-          <th class="py-3 px-4">Total Cost</th>
-          <th class="py-3 px-4">Payment Method</th>
-          <th class="py-3 px-4">Amount Paid</th>
-          <th class="py-3 px-4">Amount Change</th>
-          <th class="py-3 px-4">Status</th>
-          <th class="py-3 px-4">Date Ordered</th>
-          <th class="py-3 px-4">Date Approved</th>
-          <th class="py-3 px-4">Approved By</th>
-          <th class="py-3 px-4">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for order in orders %}
-          <tr class="border-b border-gray-100 hover:bg-yellow-50">
-            <td class="py-2 px-4">{{ order.order_id }}</td>
-            <td class="py-2 px-4">{{ order.customer_name }}</td>
-            <td class="py-2 px-4">{{ order.rice_type.rice_type }}</td>
-            <td class="py-2 px-4">{{ order.quantity }}</td>
-            <td class="py-2 px-4">₱{{ order.cost_per_sack|floatformat:2 }}</td>
-            <td class="py-2 px-4">{{ order.discount|floatformat:2 }}</td>
-            <td class="py-2 px-4">₱{{ order.total_cost|floatformat:2 }}</td>
-            <td class="py-2 px-4">{{ order.payment_method|title }}</td>
-            <td class="py-2 px-4">₱{{ order.amount_paid|floatformat:2 }}</td>
-            <td class="py-2 px-4">₱{{ order.amount_change|floatformat:2 }}</td>
-            <td class="py-2 px-4">{{ order.approval_status|title }} / {{ order.delivery_status|title }}</td>
-            <td class="py-2 px-4">{{ order.created_at|date:"M d, Y H:i" }}</td>
-            <td class="py-2 px-4">{% if order.updated_at %}{{ order.updated_at|date:"M d, Y H:i" }}{% else %}-{% endif %}</td>
-            <td class="py-2 px-4">
-              {% if order.handled_by %}
-                {{ order.handled_by.FirstName }}{% if order.handled_by.MiddleName %} {{ order.handled_by.MiddleName }}{% endif %} {{ order.handled_by.LastName }}{% if order.handled_by.Suffix %} {{ order.handled_by.Suffix }}{% endif %}
-              {% else %}-{% endif %}
-            </td>
-            <td class="py-2 px-4 space-x-1">
-  <form method="post" action="{% url 'delivery_confirmation' order.order_id %}">
-    {% csrf_token %}
-    <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Confirm Delivered</button>
-  </form>
-</td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="15" class="text-center py-4 text-gray-400">No orders found.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+    {% if success_message %}
+      <div class="lg:col-span-4">
+        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-r-lg animate-fade-in" role="alert">
+          <div class="flex items-center">
+            <i class="fas fa-check-circle mr-2"></i>
+            <span>{{ success_message }}</span>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if error_message %}
+      <div class="lg:col-span-4">
+        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-r-lg" role="alert">
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <span>{{ error_message }}</span>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+      <div class="bg-white rounded-xl p-6 card-shadow hover-scale">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Pending Deliveries</p>
+            <h3 class="text-2xl font-bold text-yellow-600 mt-1">{{ pending_count|default:0 }}</h3>
+          </div>
+          <div class="bg-yellow-100 p-3 rounded-lg">
+            <i class="fas fa-clock text-yellow-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-6 card-shadow hover-scale">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Today's Deliveries</p>
+            <h3 class="text-2xl font-bold text-blue-600 mt-1">{{ today_count|default:0 }}</h3>
+          </div>
+          <div class="bg-blue-100 p-3 rounded-lg">
+            <i class="fas fa-calendar-day text-blue-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-6 card-shadow hover-scale">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Completed</p>
+            <h3 class="text-2xl font-bold text-green-600 mt-1">{{ completed_count|default:0 }}</h3>
+          </div>
+          <div class="bg-green-100 p-3 rounded-lg">
+            <i class="fas fa-check-circle text-green-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-6 card-shadow hover-scale">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Value</p>
+            <h3 class="text-2xl font-bold text-purple-600 mt-1">₱{{ total_value|default:0|floatformat:2|intcomma }}</h3>
+          </div>
+          <div class="bg-purple-100 p-3 rounded-lg">
+            <i class="fas fa-money-bill-wave text-purple-600"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="bg-white rounded-xl shadow-md mb-8">
+      <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-filter text-yellow-500"></i>
+          <h2 class="text-lg font-semibold">Search & Filters</h2>
+        </div>
+      </div>
+      
+      <div class="p-6">
+        <form id="delivery-filters" method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <!-- Search Field -->
+          <div class="form-group">
+            <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Search Order/Customer</label>
+            <div class="relative">
+              <input type="text" 
+                     name="search" 
+                     id="search" 
+                     class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all text-sm" 
+                     placeholder="Enter Order ID or name..."
+                     value="{{ request.GET.search }}">
+              <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+            </div>
+          </div>
+
+          <!-- Payment Method -->
+          <div class="form-group">
+            <label for="payment_method" class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+            <div class="relative">
+              <select name="payment_method" 
+                      id="payment_method" 
+                      class="w-full py-2.5 pl-4 pr-10 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all appearance-none text-sm">
+                <option value="">All Payment Methods</option>
+                <option value="cash" {% if request.GET.payment_method == 'cash' %}selected{% endif %}>Cash</option>
+                <option value="gcash" {% if request.GET.payment_method == 'gcash' %}selected{% endif %}>GCash</option>
+                <option value="credit" {% if request.GET.payment_method == 'credit' %}selected{% endif %}>Credit Card</option>
+              </select>
+              <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+            </div>
+          </div>
+
+          <!-- Delivery Type -->
+          <div class="form-group">
+            <label for="delivery_type" class="block text-sm font-medium text-gray-700 mb-2">Delivery Type</label>
+            <div class="relative">
+              <select name="delivery_type" 
+                      id="delivery_type" 
+                      class="w-full py-2.5 pl-4 pr-10 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all appearance-none text-sm">
+                <option value="">All Types</option>
+                <option value="pickup" {% if request.GET.delivery_type == 'pickup' %}selected{% endif %}>Pickup</option>
+                <option value="delivery" {% if request.GET.delivery_type == 'delivery' %}selected{% endif %}>Delivery</option>
+              </select>
+              <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+            </div>
+          </div>
+
+          <!-- Date Range -->
+          <div class="form-group">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="relative">
+                <input type="date" 
+                       name="start_date" 
+                       id="start_date" 
+                       class="w-full py-2.5 px-4 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all text-sm"
+                       value="{{ request.GET.start_date }}">
+              </div>
+              <div class="relative">
+                <input type="date" 
+                       name="end_date" 
+                       id="end_date" 
+                       class="w-full py-2.5 px-4 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all text-sm"
+                       value="{{ request.GET.end_date }}">
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter Button -->
+          <div class="lg:col-span-4 flex justify-end">
+            <button type="submit" 
+                    class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-sm hover:shadow">
+              <i class="fas fa-filter"></i>
+              <span>Apply Filters</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="bg-white rounded-xl shadow-md">
+      <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-truck text-yellow-500"></i>
+            <h2 class="text-lg font-semibold">Delivery Records</h2>
+          </div>
+          <span class="bg-yellow-100 text-yellow-800 text-sm font-medium px-3 py-1 rounded-full">
+            {{ orders|length }} Records
+          </span>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full table-fixed">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="w-1/12 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
+              <th class="w-1/12 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+              <th class="w-2/12 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+              <th class="w-1/12 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receiver</th>
+              <th class="w-1/12 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+              <th class="w-1/12 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Payment</th>
+              <th class="w-1/12 px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+              <th class="w-1/12 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th class="w-2/12 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for order in orders %}
+              <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-3 py-4 text-sm text-gray-900">#{{ order.order_id }}</td>
+                <td class="px-3 py-4 text-sm text-gray-500">{{ order.created_at|date:"M d, Y" }}</td>
+                <td class="px-3 py-4 text-sm text-gray-900">
+                  {% if order.customer %}
+                    {{ order.customer.name.first_name }} {{ order.customer.name.last_name }}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </td>
+                <td class="px-3 py-4 text-sm text-gray-900">
+                  {{ order.receiver_name|default:"Same as customer" }}
+                </td>
+                <td class="px-3 py-4 text-sm text-gray-500">
+                  {% if order.receiver_mobile_number %}
+                    {{ order.receiver_mobile_number }}
+                  {% elif order.customer and order.customer.contact_number %}
+                    {{ order.customer.contact_number }}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </td>
+                <td class="px-3 py-4 text-center">
+                  <span class="payment-badge {% if order.payment_method == 'cash' %}payment-cash{% elif order.payment_method == 'gcash' %}payment-gcash{% else %}payment-credit{% endif %}">
+                    {{ order.payment_method|upper }}
+                  </span>
+                </td>
+                <td class="px-3 py-4 text-sm text-right font-medium text-gray-900">
+                  ₱{{ order.total_cost|floatformat:2|intcomma }}
+                </td>
+                <td class="px-3 py-4 text-center">
+                  <span class="delivery-badge {% if order.delivery_status == 'pending' %}delivery-pending{% else %}delivery-confirmed{% endif %}">
+                    {{ order.delivery_status|title }}
+                  </span>
+                </td>
+                <td class="px-3 py-4 text-center">
+                  {% if order.approval_status == 'confirmed' %}
+                  <div class="flex justify-center gap-2">
+                    <form method="post" action="{% url 'delivery_confirmation' order.order_id %}" class="inline-block">
+                      {% csrf_token %}
+                      <button type="submit" 
+                              onclick="return confirm('Confirm delivery for order #{{ order.order_id }}?')"
+                              class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 flex items-center gap-1 text-xs">
+                        <i class="fas fa-truck"></i>
+                        <span>Confirm</span>
+                      </button>
+                    </form>
+                    <form method="post" action="{% url 'cancel_order' order.order_id %}" class="inline-block" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                      {% csrf_token %}
+                      <button type="submit" 
+                              class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 flex items-center gap-1 text-xs">
+                        <i class="fas fa-times"></i>
+                        <span>Cancel</span>
+                      </button>
+                    </form>
+                  </div>
+                  {% else %}
+                  <div class="text-sm text-yellow-600">
+                    <i class="fas fa-clock mr-1"></i>
+                    Waiting for payment
+                  </div>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="9" class="px-6 py-10 text-center">
+                  <div class="flex flex-col items-center">
+                    <i class="fas fa-truck text-4xl text-gray-400 mb-3"></i>
+                    <p class="text-lg font-medium">No orders ready for delivery</p>
+                    <p class="text-sm text-gray-400">Orders will appear here after payment is confirmed</p>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if orders.has_other_pages %}
+      <div class="mt-6 flex justify-center items-center space-x-4">
+        {% if orders.has_previous %}
+          <a href="?page={{ orders.previous_page_number }}" 
+             class="flex items-center px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            <i class="fas fa-chevron-left mr-2"></i>
+            Previous
+          </a>
+        {% endif %}
+
+        <span class="text-sm text-gray-700">
+          Page {{ orders.number }} of {{ orders.paginator.num_pages }}
+        </span>
+
+        {% if orders.has_next %}
+          <a href="?page={{ orders.next_page_number }}" 
+             class="flex items-center px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            Next
+            <i class="fas fa-chevron-right ml-2"></i>
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
   </div>
 </main>
+
+<script>
+// Auto-hide success messages
+document.addEventListener('DOMContentLoaded', function() {
+  // Auto-hide success messages after 5 seconds
+  const successMessages = document.querySelectorAll('.bg-green-100');
+  successMessages.forEach(function(message) {
+    setTimeout(function() {
+      message.classList.add('animate-fade-out');
+      setTimeout(() => message.remove(), 500);
+    }, 5000);
+  });
+
+  // Add loading state to form submission
+  document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function() {
+      const button = this.querySelector('button[type="submit"]');
+      if (button) {
+        button.disabled = true;
+        button.classList.add('opacity-75', 'cursor-not-allowed');
+        const icon = button.querySelector('i');
+        if (icon) {
+          icon.className = 'fas fa-spinner fa-spin';
+        }
+      }
+    });
+  });
+});
+</script>
 
 </body>
 </html>

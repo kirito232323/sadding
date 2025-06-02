@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard - Dragon Ricemill</title>
+  <title>Payment Confirmation - Dragon Ricemill</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
   <style>
@@ -16,9 +16,303 @@
     }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Enhanced Badges */
+    .payment-badge {
+      @apply px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200;
+    }
+    .payment-badge-gcash {
+      @apply bg-blue-100 text-blue-800 hover:bg-blue-200;
+    }
+    .payment-badge-credit {
+      @apply bg-purple-100 text-purple-800 hover:bg-purple-200;
+    }
+    .payment-badge-cash {
+      @apply bg-green-100 text-green-800 hover:bg-green-200;
+    }
+    .delivery-badge {
+      @apply px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200;
+    }
+    .delivery-pickup {
+      @apply bg-yellow-100 text-yellow-800 hover:bg-yellow-200;
+    }
+    .delivery-delivery {
+      @apply bg-indigo-100 text-indigo-800 hover:bg-indigo-200;
+    }
+    .status-badge {
+      @apply px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200;
+    }
+    .status-pending {
+      @apply bg-yellow-100 text-yellow-800 hover:bg-yellow-200;
+    }
+    .status-confirmed {
+      @apply bg-green-100 text-green-800 hover:bg-green-200;
+    }
+
+    /* Card Hover Effects */
+    .hover-scale {
+      @apply transition-transform duration-200;
+    }
+    .hover-scale:hover {
+      transform: scale(1.02);
+    }
+
+    /* Responsive Table */
+    @media (max-width: 768px) {
+      .responsive-table {
+        @apply block w-full overflow-x-auto;
+      }
+      .responsive-table table {
+        @apply w-full whitespace-nowrap;
+      }
+      .responsive-table td, 
+      .responsive-table th {
+        @apply px-4 py-2;
+      }
+    }
+
+    /* Loading Animation */
+    .loading {
+      @apply animate-pulse bg-gray-200;
+    }
+
+    /* Card Shadow */
+    .card-shadow {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Custom Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      @apply bg-gray-100 rounded-full;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      @apply bg-gray-400 rounded-full hover:bg-gray-500 transition-colors;
+    }
+
+    /* Enhanced Responsive Styles */
+    @media (max-width: 640px) {
+      .header {
+        width: 100%;
+        height: auto;
+        position: static;
+      }
+      
+      .main-content {
+        margin-left: 0;
+        padding: 1rem;
+      }
+      
+      .table-container {
+        margin: 0 -1rem;
+      }
+      
+      .card {
+        padding: 1rem;
+      }
+      
+      .button-text {
+        font-size: 0.875rem;
+      }
+    }
+
+    /* Table Responsive Enhancements */
+    @media (max-width: 768px) {
+      .responsive-table {
+        @apply block w-full overflow-x-auto -mx-4 px-4;
+      }
+      
+      .responsive-table table {
+        @apply w-full whitespace-nowrap text-sm;
+      }
+      
+      .responsive-table td, 
+      .responsive-table th {
+        @apply px-2 py-1.5;
+      }
+      
+      .responsive-hide {
+        @apply hidden;
+      }
+      
+      .responsive-show {
+        @apply block;
+      }
+    }
+
+    /* Card Responsive Styles */
+    @media (max-width: 640px) {
+      .stat-card {
+        @apply p-4;
+      }
+      
+      .stat-value {
+        @apply text-xl;
+      }
+      
+      .stat-label {
+        @apply text-sm;
+      }
+    }
+
+    /* Form Responsive Styles */
+    @media (max-width: 640px) {
+      .form-group {
+        @apply mb-3;
+      }
+      
+      .form-label {
+        @apply text-sm mb-1;
+      }
+      
+      .form-input {
+        @apply text-sm py-1.5;
+      }
+      
+      .form-button {
+        @apply w-full justify-center;
+      }
+    }
+
+    /* Enhanced Form Styles */
+    .form-group {
+      @apply relative flex flex-col;
+    }
+    
+    .form-label {
+      @apply absolute -top-2 left-2 bg-white px-1 text-xs font-medium text-gray-600 transition-all;
+    }
+    
+    .form-input:focus + .form-label {
+      @apply text-yellow-500;
+    }
+    
+    /* Mobile Card Styles */
+    .mobile-card {
+      @apply border-b border-gray-200 p-4;
+    }
+    
+    .mobile-card:last-child {
+      @apply border-b-0;
+    }
+    
+    .mobile-label {
+      @apply text-xs font-medium text-gray-500 mb-1;
+    }
+    
+    .mobile-value {
+      @apply text-sm font-medium text-gray-900;
+    }
+    
+    /* Enhanced Table Styles */
+    @media (max-width: 640px) {
+      .table-wrapper {
+        @apply -mx-4;
+      }
+      
+      .mobile-grid {
+        @apply grid grid-cols-2 gap-4;
+      }
+    }
+    
+    /* Improved Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+      @apply h-1.5 w-1.5;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+      @apply bg-gray-100 rounded-full;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
+    }
+
+    /* Enhanced Form Styles */
+    .form-group {
+      @apply transition-all duration-200;
+    }
+    
+    .form-group:hover {
+      @apply border-yellow-200 bg-yellow-50;
+    }
+    
+    .form-group:focus-within {
+      @apply border-yellow-300 bg-yellow-50;
+    }
+    
+    /* Table Cell Hover Effect */
+    .table-cell-hover {
+      @apply transition-colors duration-200;
+    }
+    
+    .table-cell-hover:hover {
+      @apply bg-yellow-50;
+    }
+    
+    /* Card Hover Effects */
+    .record-card {
+      @apply transition-all duration-200;
+    }
+    
+    .record-card:hover {
+      @apply bg-yellow-50 transform scale-[1.01];
+    }
+    
+    /* Custom Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+      @apply h-1.5 w-1.5;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+      @apply bg-gray-100 rounded-full;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
+    }
+    
+    /* Enhanced Borders */
+    .table-bordered {
+      @apply border-collapse border border-gray-200;
+    }
+    
+    .table-bordered th,
+    .table-bordered td {
+      @apply border border-gray-200;
+    }
+
+    /* Message Toast Animation */
+    @keyframes slideIn {
+      from { transform: translateX(-20px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(-20px); opacity: 0; }
+    }
+
+    .message-toast {
+      animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 5s forwards;
+    }
+
+    .message-toast.hiding {
+      animation: slideOut 0.3s ease-in forwards;
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        visibility: hidden;
+      }
+    }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-800 min-h-screen font-sans leading-relaxed overflow-x-hidden">
+<body class="bg-gray-50 text-gray-800 min-h-screen font-sans leading-relaxed antialiased">
 
 <header class="fixed top-0 right-0 h-screen w-56 bg-white shadow-lg flex flex-col z-50 border-l border-gray-200">
   <div class="h-14 flex items-center justify-center border-b border-gray-200">
@@ -128,75 +422,797 @@
 </header>
 
 
-<main class="max-w-7xl mx-auto p-6 ml-56">
-  {% if error_message %}
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-      <strong class="font-bold">Error:</strong> <span class="block sm:inline">{{ error_message }}</span>
+<main class="mr-64 p-8">
+  <div class="max-w-5xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+        <i class="fas fa-credit-card text-yellow-500"></i>
+        Payment Confirmation
+        <span class="text-sm font-normal text-gray-500 ml-2">Manage and process payment transactions</span>
+      </h1>
     </div>
-  {% endif %}
-  <div class="flex justify-between items-center mb-4">
-    <h2 class="text-2xl font-bold">Payment Orders</h2>
-    <a href="{% url 'allorder_history' %}" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Back to Order History</a>
+
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white rounded-xl p-6 card-shadow hover-scale">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Pending Payments</p>
+            <h3 class="text-2xl font-bold text-yellow-600 mt-1">{{ pending_count|default:0 }}</h3>
+          </div>
+          <div class="bg-yellow-100 p-3 rounded-lg">
+            <i class="fas fa-clock text-yellow-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-6 card-shadow hover-scale">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Amount</p>
+            <h3 class="text-2xl font-bold text-green-600 mt-1">₱{{ total_amount|default:0|floatformat:2|intcomma }}</h3>
+          </div>
+          <div class="bg-green-100 p-3 rounded-lg">
+            <i class="fas fa-money-bill-wave text-green-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-6 card-shadow hover-scale">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">GCash Payments</p>
+            <h3 class="text-2xl font-bold text-blue-600 mt-1">{{ gcash_count|default:0 }}</h3>
+          </div>
+          <div class="bg-blue-100 p-3 rounded-lg">
+            <i class="fas fa-mobile-alt text-blue-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-6 card-shadow hover-scale">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Credit Card Payments</p>
+            <h3 class="text-2xl font-bold text-purple-600 mt-1">{{ credit_count|default:0 }}</h3>
+          </div>
+          <div class="bg-purple-100 p-3 rounded-lg">
+            <i class="fas fa-credit-card text-purple-600"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add this right after the Stats Overview section -->
+    {% if payment_message %}
+    <div class="mb-8">
+        <div class="{% if payment_message_type == 'error' %}bg-red-100 text-red-800{% else %}bg-green-100 text-green-800{% endif %} rounded-lg p-4 flex items-center gap-2">
+            <i class="fas {% if payment_message_type == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
+            <span>{{ payment_message }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filters Section -->
+    <div class="bg-white rounded-xl shadow-md mb-8">
+      <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-filter text-yellow-500"></i>
+          <h2 class="text-lg font-semibold">Search & Filters</h2>
+        </div>
+      </div>
+      
+      <div class="p-6">
+        <form id="payment-filters" method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <!-- Search Field -->
+          <div class="form-group">
+            <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Search Order/Customer</label>
+            <div class="relative">
+              <input type="text" 
+                     name="search" 
+                     id="search" 
+                     class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all text-sm" 
+                     placeholder="Enter Order ID or name..."
+                     value="{{ request.GET.search }}">
+              <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+            </div>
+          </div>
+
+          <!-- Payment Method -->
+          <div class="form-group">
+            <label for="payment_method" class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+            <div class="relative">
+              <select name="payment_method" 
+                      id="payment_method" 
+                      class="w-full py-2.5 pl-4 pr-10 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all appearance-none text-sm">
+                <option value="">All Payment Methods</option>
+                <option value="gcash" {% if request.GET.payment_method == 'gcash' %}selected{% endif %}>GCash</option>
+                <option value="credit" {% if request.GET.payment_method == 'credit' %}selected{% endif %}>Credit Card</option>
+              </select>
+              <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+            </div>
+          </div>
+
+          <!-- Date Range -->
+          <div class="lg:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="relative">
+                <input type="date" 
+                       name="start_date" 
+                       id="start_date" 
+                       class="w-full py-2.5 px-4 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all text-sm"
+                       value="{{ request.GET.start_date }}">
+              </div>
+              <div class="relative">
+                <input type="date" 
+                       name="end_date" 
+                       id="end_date" 
+                       class="w-full py-2.5 px-4 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all text-sm"
+                       value="{{ request.GET.end_date }}">
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter Button -->
+          <div class="lg:col-span-4 flex justify-end">
+            <button type="submit" 
+                    class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-sm hover:shadow">
+              <i class="fas fa-filter"></i>
+              <span>Apply Filters</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="bg-white rounded-xl shadow-md">
+      <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-list text-yellow-500"></i>
+            <h2 class="text-lg font-semibold">Payment Records</h2>
+          </div>
+          <span class="bg-yellow-100 text-yellow-800 text-sm font-medium px-3 py-1 rounded-full">
+            {{ orders|length }} Records
+          </span>
+        </div>
+      </div>
+
+      <div class="w-full">
+        <table class="min-w-full table-fixed">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="w-1/12 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
+              <th class="w-1/12 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+              <th class="w-2/12 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+              <th class="w-1/12 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+              <th class="w-1/12 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Payment</th>
+              <th class="w-1/12 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Delivery</th>
+              <th class="w-1/12 px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+              <th class="w-1/12 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th class="w-1/12 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Cashier</th>
+              <th class="w-2/12 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for order in orders %}
+            <tr class="hover:bg-gray-50 transition-all" 
+                data-order-id="{{ order.order_id }}"
+                data-rice-type="{{ order.rice_type }}"
+                data-quantity="{{ order.quantity }}"
+                data-total-cost="{{ order.total_cost }}"
+                data-price-per-sack="{{ order.total_cost|default:0|floatformat:2 }}"
+                data-discount="{{ order.discount|default:'0.00' }}"
+                data-receiver-name="{{ order.receiver_name|default:'' }}"
+                data-receiver-contact="{{ order.receiver_mobile_number|default:'' }}"
+                data-payment-method="{{ order.payment_method }}"
+                {% if order.customer and order.customer.address %}
+                data-house-no="{{ order.customer.address.house_unit_number|default:'' }}"
+                data-building="{{ order.customer.address.building_name|default:'' }}"
+                data-street="{{ order.customer.address.street_name|default:'' }}"
+                data-barangay="{{ order.customer.address.barangay|default:'' }}"
+                data-city="{{ order.customer.address.city_municipality|default:'' }}"
+                data-province="{{ order.customer.address.province|default:'' }}"
+                data-zipcode="{{ order.customer.address.zip_code|default:'' }}"
+                {% endif %}>
+              <td class="px-3 py-4 text-sm text-gray-900">#{{ order.order_id }}</td>
+              <td class="px-3 py-4 text-sm text-gray-500">{{ order.created_at|date:"M d, Y" }}</td>
+              <td class="px-3 py-4 text-sm text-gray-900" data-customer-name="{% if order.customer and order.customer.name %}{{ order.customer.name.first_name }} {{ order.customer.name.last_name }}{% else %}N/A{% endif %}">
+                {% if order.customer and order.customer.name %}
+                  {{ order.customer.name.first_name }} {{ order.customer.name.last_name }}
+                {% else %}
+                  N/A
+                {% endif %}
+              </td>
+              <td class="px-3 py-4 text-sm text-gray-500">
+                {{ order.customer.Customer_Mobile_Number|default:"N/A" }}
+              </td>
+              <td class="px-3 py-4 text-center">
+                <span class="payment-badge {% if order.payment_method == 'gcash' %}payment-badge-gcash{% elif order.payment_method == 'cash' %}payment-badge-cash{% else %}payment-badge-credit{% endif %}" data-payment-method="{{ order.payment_method }}">
+                  {{ order.payment_method|upper }}
+                </span>
+              </td>
+              <td class="px-3 py-4 text-center">
+                <span class="delivery-badge {% if order.delivery_type == 'pickup' %}delivery-pickup{% else %}delivery-delivery{% endif %}">
+                  {{ order.delivery_type|title }}
+                </span>
+              </td>
+              <td class="px-3 py-4 text-sm text-right font-medium text-gray-900">
+                ₱{{ order.total_cost|floatformat:2|intcomma }}
+              </td>
+              <td class="px-3 py-4 text-center">
+                <span class="status-badge {% if order.approval_status == 'pending' %}status-pending{% else %}status-confirmed{% endif %}">
+                  {{ order.approval_status|title }}
+                </span>
+              </td>
+              <td class="px-3 py-4 text-sm text-center text-gray-900">
+                {% if order.employee %}
+                  {{ order.employee.FirstName }} {{ order.employee.LastName }}
+                {% else %}
+                  N/A
+                {% endif %}
+              </td>
+              <td class="px-3 py-4 text-center">
+                <div class="flex justify-center gap-2">
+                  <button type="button"
+                          data-order-id="{{ order.order_id }}"
+                          data-total-cost="{{ order.total_cost }}"
+                          onclick="openPaymentModal(this.dataset.orderId, parseFloat(this.dataset.totalCost))"
+                          class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200 flex items-center gap-1 text-xs">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Process</span>
+                  </button>
+                  <form method="post" action="{% url 'cancel_order' order.order_id %}" class="inline-block" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                    {% csrf_token %}
+                    <button type="submit" 
+                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 flex items-center gap-1 text-xs">
+                      <i class="fas fa-times"></i>
+                      <span>Cancel</span>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="9" class="px-6 py-10 text-center">
+                <div class="inline-block p-4 bg-gray-50 rounded-full mb-4">
+                  <i class="fas fa-file-invoice-dollar text-4xl text-gray-400"></i>
+                </div>
+                <p class="text-lg font-medium text-gray-900">No pending payments</p>
+                <p class="text-sm text-gray-500 mt-1">All payments have been processed</p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if orders.has_other_pages %}
+    <div class="mt-6 flex justify-center">
+      <div class="flex items-center gap-2">
+        {% if orders.has_previous %}
+        <a href="?page={{ orders.previous_page_number }}" 
+           class="flex items-center px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+          <i class="fas fa-chevron-left mr-2"></i>
+          Previous
+        </a>
+        {% endif %}
+
+        <span class="px-4 py-2 text-sm text-gray-700 bg-gray-50 rounded-lg">
+          Page {{ orders.number }} of {{ orders.paginator.num_pages }}
+        </span>
+
+        {% if orders.has_next %}
+        <a href="?page={{ orders.next_page_number }}" 
+           class="flex items-center px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+          Next
+          <i class="fas fa-chevron-right ml-2"></i>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
   </div>
-  <section class="bg-white shadow-lg rounded-lg p-4">
-    <form id="payment-filters" method="get" class="mb-6 flex flex-col sm:flex-row sm:items-end gap-4">
-      <div class="flex-grow">
-        <label for="search" class="block text-sm font-medium">Search by Customer / Order ID</label>
-        <input type="text" name="search" id="search" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Start typing..." value="{{ request.GET.search }}">
-      </div>
-      <div>
-        <label for="start_date" class="block text-sm font-medium">Start Date</label>
-        <input type="date" name="start_date" id="start_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" value="{{ request.GET.start_date }}">
-      </div>
-      <div>
-        <label for="end_date" class="block text-sm font-medium">End Date</label>
-        <input type="date" name="end_date" id="end_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" value="{{ request.GET.end_date }}">
-      </div>
-      <div>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">Filter</button>
-      </div>
-    </form>
-    <div class="overflow-x-auto">
-      <table class="min-w-full border border-gray-300 text-xs rounded-lg overflow-hidden">
-        <thead class="bg-gray-200 text-left font-semibold">
-          <tr>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Order ID</th>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Customer</th>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Date</th>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Payment Method</th>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Amount Due</th>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Amount Paid</th>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Status</th>
-            <th class="py-2 px-3 border-b border-gray-300 text-center">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for order in orders %}
-          <tr class="hover:bg-gray-50 transition {% cycle 'bg-white' 'bg-gray-50' %}">
-            <td class="py-2 px-3 border-b text-center">{{ order.order_id }}</td>
-            <td class="py-2 px-3 border-b text-center">
-              {% if order.customer and order.customer.name %}
-                {{ order.customer.name.first_name }}{% if order.customer.name.middle_name %} {{ order.customer.name.middle_name }}{% endif %} {{ order.customer.name.last_name }}{% if order.customer.name.suffix %} {{ order.customer.name.suffix }}{% endif %}
-              {% else %}N/A{% endif %}
-            </td>
-            <td class="py-2 px-3 border-b text-center">{{ order.created_at|date:"Y-m-d" }}</td>
-            <td class="py-2 px-3 border-b text-center">{{ order.payment_method|title }}</td>
-            <td class="py-2 px-3 border-b text-center">₱{{ order.total_cost }}</td>
-            <td class="py-2 px-3 border-b text-center">₱{{ order.amount_paid }}</td>
-            <td class="py-2 px-3 border-b text-center">{{ order.approval_status|title }}</td>
-            <td class="py-2 px-3 border-b text-center">
-              <form method="post" action="{% url 'payment_confirmation' order.order_id %}">
-                {% csrf_token %}
-                <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Confirm Payment</button>
-              </form>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="7" class="text-center py-4 text-gray-500">No payment orders found.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
 </main>
+
+<script>
+// Auto-hide success messages
+document.addEventListener('DOMContentLoaded', function() {
+  // Auto-hide messages
+  setTimeout(function() {
+    const messages = document.querySelectorAll('.message-toast');
+    messages.forEach(function(message) {
+      message.classList.add('hiding');
+      setTimeout(() => message.remove(), 300);
+    });
+  }, 5000);
+
+  // Add loading state to form submission
+  document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function() {
+      const button = this.querySelector('button[type="submit"]');
+      if (button) {
+        button.disabled = true;
+        button.classList.add('opacity-75', 'cursor-not-allowed');
+        const icon = button.querySelector('i');
+        if (icon) {
+          icon.className = 'fas fa-spinner fa-spin';
+        }
+      }
+    });
+  });
+});
+
+// Add form submission handler
+document.addEventListener('DOMContentLoaded', function() {
+  const paymentForm = document.getElementById('payment-form');
+  if (paymentForm) {
+    paymentForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const orderId = document.getElementById('modal-order-id').value;
+      const amount = parseFloat(document.getElementById('payment-amount').value);
+      const totalAmount = parseFloat(document.getElementById('payment-total').textContent.replace('₱', ''));
+      const paymentMethod = document.getElementById('modal-payment-method').value;
+      
+      if (isNaN(amount) || amount < totalAmount) {
+        alert('Please enter a valid payment amount that is equal to or greater than the total amount.');
+        return;
+      }
+      
+      // Update form action with the specific order ID
+      this.action = "{% url 'payment_confirmation' 0 %}".replace('0', orderId);
+      
+      // Add amount_paid and amount_change to the form
+      const amountInput = document.createElement('input');
+      amountInput.type = 'hidden';
+      amountInput.name = 'amount';
+      amountInput.value = amount;
+      this.appendChild(amountInput);
+      
+      const changeAmount = amount - totalAmount;
+      const changeInput = document.createElement('input');
+      changeInput.type = 'hidden';
+      changeInput.name = 'amount_change';
+      changeInput.value = changeAmount;
+      this.appendChild(changeInput);
+      
+      // Submit the form
+      this.submit();
+    });
+  }
+});
+
+// Update the openPaymentModal function
+function openPaymentModal(orderId, totalAmount) {
+  const row = document.querySelector(`tr[data-order-id="${orderId}"]`);
+  
+  // Set basic order info
+  document.getElementById('payment-order-id').textContent = orderId;
+  document.getElementById('modal-order-id').value = orderId;
+  document.getElementById('payment-date').textContent = row.querySelector('td:nth-child(2)').textContent;
+  
+  // Set customer info
+  const customerName = row.querySelector('[data-customer-name]').getAttribute('data-customer-name');
+  document.getElementById('payment-customer-name').textContent = customerName || 'N/A';
+  const customerContact = row.querySelector('td:nth-child(4)').textContent;
+  document.getElementById('payment-customer-contact').textContent = customerContact || 'N/A';
+  
+  // Format address
+  const addressParts = [];
+  
+  // Get address parts and only add non-empty ones
+  const houseNo = row.getAttribute('data-house-no');
+  const building = row.getAttribute('data-building');
+  const street = row.getAttribute('data-street');
+  const barangay = row.getAttribute('data-barangay');
+  const city = row.getAttribute('data-city');
+  const province = row.getAttribute('data-province');
+  const zipcode = row.getAttribute('data-zipcode');
+  
+  if (houseNo) addressParts.push(houseNo);
+  if (building) addressParts.push(building);
+  if (street) addressParts.push(street);
+  if (barangay) addressParts.push(barangay);
+  if (city) addressParts.push(city);
+  if (province) addressParts.push(province);
+  if (zipcode) addressParts.push(zipcode);
+
+  const formattedAddress = addressParts.length > 0 
+    ? addressParts.join(', ')
+    : 'N/A';
+    
+  document.getElementById('payment-customer-address').textContent = formattedAddress;
+  
+  // Set order details
+  const riceType = row.getAttribute('data-rice-type');
+  document.getElementById('payment-rice-type').textContent = riceType || 'N/A';
+  
+  const quantity = parseInt(row.getAttribute('data-quantity')) || 0;
+  document.getElementById('payment-quantity').textContent = quantity ? `${quantity} sacks` : 'N/A';
+  
+  const pricePerSack = quantity > 0 ? (totalAmount / quantity).toFixed(2) : '0.00';
+  document.getElementById('payment-price-per-sack').textContent = `₱${pricePerSack}`;
+  
+  // Set payment method
+  const paymentMethod = row.getAttribute('data-payment-method');
+  const methodDisplay = document.getElementById('payment-method-display');
+  methodDisplay.textContent = paymentMethod.toUpperCase();
+  document.getElementById('modal-payment-method').value = paymentMethod;
+  
+  // Set delivery info
+  const deliveryType = row.querySelector('td:nth-child(6) .delivery-badge').textContent.trim();
+  const deliveryBadge = document.getElementById('payment-delivery-type');
+  deliveryBadge.textContent = deliveryType;
+  deliveryBadge.className = `delivery-badge ${deliveryType.toLowerCase() === 'pickup' ? 'delivery-pickup' : 'delivery-delivery'}`;
+  
+  // Set receiver info (if available)
+  const receiverName = row.getAttribute('data-receiver-name');
+  const receiverContact = row.getAttribute('data-receiver-contact');
+  document.getElementById('payment-receiver-name').textContent = receiverName || 'Same as customer';
+  document.getElementById('payment-receiver-contact').textContent = receiverContact || customerContact || 'N/A';
+  
+  // Set payment amounts
+  document.getElementById('payment-subtotal').textContent = `₱${totalAmount.toFixed(2)}`;
+  const discount = row.getAttribute('data-discount') || '0.00';
+  document.getElementById('payment-discount').textContent = `₱${discount}`;
+  document.getElementById('payment-total').textContent = `₱${totalAmount.toFixed(2)}`;
+  document.getElementById('payment-to-pay').textContent = `₱${totalAmount.toFixed(2)}`;
+  
+  // Reset payment fields
+  document.getElementById('payment-amount').value = '';
+  document.getElementById('payment-tendered').textContent = '₱0.00';
+  document.getElementById('payment-change').textContent = '₱0.00';
+  document.getElementById('payment-notes').value = '';
+  
+  // Show modal
+  document.getElementById('payment-modal').classList.remove('hidden');
+  
+  // Focus on payment amount field
+  document.getElementById('payment-amount').focus();
+}
+
+function getPaymentBadgeClass(method) {
+  switch(method.toLowerCase()) {
+    case 'gcash':
+      return 'payment-badge-gcash';
+    case 'cash':
+      return 'payment-badge-cash';
+    case 'credit':
+      return 'payment-badge-credit';
+    default:
+      return '';
+  }
+}
+
+function calculateChange() {
+  const paymentAmount = parseFloat(document.getElementById('payment-amount').value) || 0;
+  const totalAmount = parseFloat(document.getElementById('payment-total').textContent.replace('₱', ''));
+  
+  // Update amount tendered
+  document.getElementById('payment-tendered').textContent = '₱' + paymentAmount.toFixed(2);
+  
+  // Calculate and display change
+  const change = Math.max(0, paymentAmount - totalAmount);
+  document.getElementById('payment-change').textContent = '₱' + change.toFixed(2);
+  
+  // Update submit button state
+  const submitButton = document.querySelector('button[form="payment-form"]');
+  if (paymentAmount >= totalAmount) {
+    submitButton.removeAttribute('disabled');
+    submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+  } else {
+    submitButton.setAttribute('disabled', 'disabled');
+    submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+  }
+}
+
+function closePaymentModal() {
+  document.getElementById('payment-modal').classList.add('hidden');
+  document.getElementById('payment-amount').value = '';
+  document.getElementById('payment-tendered').textContent = '₱0.00';
+  document.getElementById('payment-change').textContent = '₱0.00';
+}
+
+function validatePaymentAmount(input) {
+  let value = parseFloat(input.value);
+  if (isNaN(value) || value < 0) {
+    input.value = "";
+  } else {
+    input.value = value.toFixed(2);
+  }
+  calculateChange();
+}
+
+// Customer Selection Auto-fill
+document.addEventListener('DOMContentLoaded', function() {
+  const customerSelect = document.getElementById('customer_id');
+  const receiverNameInput = document.querySelector('input[name="receiver_name"]');
+  const receiverContactInput = document.querySelector('input[name="receiver_mobile_number"]');
+
+  if (customerSelect) {
+    customerSelect.addEventListener('change', function() {
+      const selected = customerSelect.options[customerSelect.selectedIndex];
+      
+      // Auto-fill customer information
+      const fields = {
+        'first_name': 'data-first-name',
+        'middle_name': 'data-middle-name',
+        'last_name': 'data-last-name',
+        'suffix': 'data-suffix',
+        'house_unit_number': 'data-house-unit-number',
+        'building_name': 'data-building-name',
+        'street_name': 'data-street-name',
+        'barangay': 'data-barangay',
+        'city_municipality': 'data-city-municipality',
+        'province': 'data-province',
+        'zip_code': 'data-zip-code',
+        'customer_mobile_number': 'data-customer-mobile'
+      };
+
+      // Update each field with the corresponding data attribute
+      Object.entries(fields).forEach(([fieldName, dataAttr]) => {
+        const input = document.querySelector(`input[name="${fieldName}"]`);
+        if (input) {
+          input.value = selected.getAttribute(dataAttr) || '';
+        }
+      });
+
+      // Clear receiver fields to allow new input
+      if (receiverNameInput) {
+        receiverNameInput.value = '';
+      }
+      if (receiverContactInput) {
+        receiverContactInput.value = '';
+      }
+    });
+
+    // Check for new customer ID in URL and auto-select
+    const urlParams = new URLSearchParams(window.location.search);
+    const newCustomerId = urlParams.get('new_customer_id');
+    if (newCustomerId) {
+      customerSelect.value = newCustomerId;
+      // Trigger change event to populate fields
+      customerSelect.dispatchEvent(new Event('change'));
+    }
+  }
+});
+
+// Handle Delivery Type and Receiver Information
+document.addEventListener('DOMContentLoaded', function() {
+  const deliveryTypeSelect = document.getElementById('delivery_type_bottom');
+  const receiverInfo = document.getElementById('receiver_info');
+  const receiverNameInput = document.getElementById('receiver_name');
+  const receiverMobileInput = document.getElementById('receiver_mobile_number');
+
+  // Function to toggle receiver info visibility
+  function toggleReceiverInfo() {
+    if (deliveryTypeSelect.value === 'delivery') {
+      receiverInfo.classList.remove('hidden');
+      receiverInfo.classList.add('animate-fadeIn');
+      // Don't auto-fill receiver fields, let user input them
+      receiverNameInput.value = '';
+      receiverMobileInput.value = '';
+    } else {
+      receiverInfo.classList.add('hidden');
+      // Clear receiver fields when switching to pickup
+      receiverNameInput.value = '';
+      receiverMobileInput.value = '';
+    }
+  }
+
+  // Initial state
+  toggleReceiverInfo();
+
+  // Listen for delivery type changes
+  deliveryTypeSelect.addEventListener('change', toggleReceiverInfo);
+
+  // Validate receiver mobile number
+  if (receiverMobileInput) {
+    receiverMobileInput.addEventListener('input', function() {
+      // Remove any non-numeric characters
+      this.value = this.value.replace(/[^0-9]/g, '');
+      
+      // Limit to 11 digits
+      if (this.value.length > 11) {
+        this.value = this.value.slice(0, 11);
+      }
+    });
+  }
+});
+</script>
+
+<!-- Payment Modal -->
+<div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+  <div class="bg-white rounded-xl shadow-lg max-w-6xl w-full mx-4 overflow-hidden">
+    <div class="p-4 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">Process Payment</h3>
+        <button onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-500">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+    
+    <div class="p-4">
+      <form id="payment-form" method="post" action="{% url 'payment_confirmation' 0 %}" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="order_id" id="modal-order-id">
+        <input type="hidden" name="payment_method" id="modal-payment-method">
+        <input type="hidden" name="process_payment" value="true">
+        <input type="hidden" name="auto_confirm" value="true">
+        
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-3 gap-4">
+          <!-- Left Column - Order & Customer Info -->
+          <div class="space-y-4">
+            <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">Order Information</h4>
+              <div class="grid gap-2 text-sm">
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <span class="text-gray-500">Order ID:</span>
+                    <span class="block font-medium text-gray-900">#<span id="payment-order-id"></span></span>
+                  </div>
+                  <div>
+                    <span class="text-gray-500">Date:</span>
+                    <span class="block font-medium text-gray-900" id="payment-date"></span>
+                  </div>
+                </div>
+                <div>
+                  <span class="text-gray-500">Cashier:</span>
+                  <span class="block font-medium text-gray-900">{{ request.session.user_name }} ({{ request.session.user_role|title }})</span>
+                </div>
+                <div>
+                  <span class="text-gray-500">Customer:</span>
+                  <span class="block font-medium text-gray-900" id="payment-customer-name"></span>
+                </div>
+                <div>
+                  <span class="text-gray-500">Contact:</span>
+                  <span class="block font-medium text-gray-900" id="payment-customer-contact"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Middle Column - Order Details -->
+          <div class="space-y-4">
+            <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">Order Details</h4>
+              <div class="grid gap-2 text-sm">
+                <div>
+                  <span class="text-gray-500">Rice Type:</span>
+                  <span class="block font-medium text-gray-900" id="payment-rice-type"></span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <span class="text-gray-500">Quantity:</span>
+                    <span class="block font-medium text-gray-900" id="payment-quantity"></span>
+                  </div>
+                  <div>
+                    <span class="text-gray-500">Price/Sack:</span>
+                    <span class="block font-medium text-gray-900" id="payment-price-per-sack"></span>
+                  </div>
+                </div>
+                <div>
+                  <span class="text-gray-500">Payment Method:</span>
+                  <span class="payment-badge payment-badge-method block mt-1 text-center" id="payment-method-display"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Delivery Info -->
+            <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">Delivery Information</h4>
+              <div class="grid gap-2 text-sm">
+                <div>
+                  <span class="text-gray-500">Type:</span>
+                  <span class="delivery-badge block text-center mt-1" id="payment-delivery-type"></span>
+                </div>
+                <div>
+                  <span class="text-gray-500">Receiver Name:</span>
+                  <span class="block font-medium text-gray-900" id="payment-receiver-name"></span>
+                </div>
+                <div>
+                  <span class="text-gray-500">Receiver Contact Number:</span>
+                  <span class="block font-medium text-gray-900" id="payment-receiver-contact"></span>
+                </div>
+                <div>
+                  <span class="text-gray-500">Delivery Address:</span>
+                  <span class="block font-medium text-gray-900 whitespace-pre-line" id="payment-customer-address"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column - Payment Processing -->
+          <div class="space-y-4">
+            <!-- Payment Summary -->
+            <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">Payment Summary</h4>
+              <div class="grid gap-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-gray-500">Subtotal:</span>
+                  <span class="font-medium text-gray-900" id="payment-subtotal"></span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-500">Discount:</span>
+                  <span class="font-medium text-green-600" id="payment-discount"></span>
+                </div>
+                <div class="flex justify-between pt-2 border-t border-gray-200">
+                  <span class="text-gray-700">Total Amount:</span>
+                  <span class="font-medium text-gray-900" id="payment-total"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment Input -->
+            <div class="bg-yellow-50 rounded-lg p-4 space-y-3">
+              <div class="space-y-2">
+                <label for="payment-amount" class="block text-sm font-medium text-gray-700">Payment Amount</label>
+                <div class="relative rounded-md shadow-sm">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span class="text-gray-500 sm:text-sm">₱</span>
+                  </div>
+                  <input type="number" 
+                         name="amount" 
+                         id="payment-amount" 
+                         step="0.01" 
+                         required
+                         class="block w-full pl-7 pr-4 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-right text-lg font-medium"
+                         onchange="validatePaymentAmount(this)"
+                         oninput="calculateChange()">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span class="text-gray-500">Amount to Pay:</span>
+                  <span class="block font-medium text-gray-900 mt-1" id="payment-to-pay"></span>
+                </div>
+                <div>
+                  <span class="text-gray-500">Amount Tendered:</span>
+                  <span class="block font-medium text-blue-600 mt-1" id="payment-tendered">₱0.00</span>
+                </div>
+                <div class="col-span-2 pt-2 border-t border-gray-200">
+                  <span class="text-gray-500">Change:</span>
+                  <span class="block font-medium text-green-600 mt-1" id="payment-change">₱0.00</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="space-y-2">
+              <label for="payment-notes" class="block text-sm font-medium text-gray-700">Notes (Optional)</label>
+              <textarea name="notes" 
+                        id="payment-notes" 
+                        rows="2"
+                        class="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 resize-none text-sm"
+                        placeholder="Add any payment notes here..."></textarea>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+      <button type="button" 
+              onclick="closePaymentModal()" 
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+        Cancel
+      </button>
+      <button type="submit" 
+              form="payment-form"
+              class="px-4 py-2 text-sm font-medium text-white bg-yellow-500 border border-transparent rounded-lg hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+        Process & Confirm Payment
+      </button>
+    </div>
+  </div>
+</div>
 
